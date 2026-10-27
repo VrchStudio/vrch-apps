@@ -1,0 +1,68 @@
+{
+  "runtime": {
+    "bundle": "vision_bundle.js",
+    "wasm": "wasm",
+    "delegate": "CPU"
+  },
+  "models": {
+    "face": {
+      "label": "Face",
+      "factory": "FaceLandmarker",
+      "asset": "face.task",
+      "landmarks": "faceLandmarks",
+      "inputSize": 192,
+      "visibility": 0,
+      "connections": [
+        "FACE_LANDMARKS_FACE_OVAL",
+        "FACE_LANDMARKS_LEFT_EYE",
+        "FACE_LANDMARKS_RIGHT_EYE",
+        "FACE_LANDMARKS_LEFT_EYEBROW",
+        "FACE_LANDMARKS_RIGHT_EYEBROW",
+        "FACE_LANDMARKS_LIPS"
+      ],
+      "options": {
+        "numFaces": 1,
+        "minFaceDetectionConfidence": 0.5,
+        "minFacePresenceConfidence": 0.5,
+        "minTrackingConfidence": 0.5,
+        "outputFaceBlendshapes": false,
+        "outputFacialTransformationMatrixes": false
+      }
+    },
+    "body": {
+      "label": "Body",
+      "factory": "PoseLandmarker",
+      "asset": "body.task",
+      "landmarks": "landmarks",
+      "inputSize": 192,
+      "visibility": 0.35,
+      "connections": [
+        "POSE_CONNECTIONS"
+      ],
+      "options": {
+        "numPoses": 1,
+        "minPoseDetectionConfidence": 0.5,
+        "minPosePresenceConfidence": 0.5,
+        "minTrackingConfidence": 0.5,
+        "outputSegmentationMasks": false
+      }
+    },
+    "hand": {
+      "label": "Hand",
+      "factory": "HandLandmarker",
+      "asset": "hand.task",
+      "landmarks": "landmarks",
+      "inputSize": 192,
+      "visibility": 0,
+      "connections": [
+        "HAND_CONNECTIONS"
+      ],
+      "options": {
+        "numHands": 1,
+        "minHandDetectionConfidence": 0.5,
+        "minHandPresenceConfidence": 0.5,
+        "minTrackingConfidence": 0.5
+      }
+    }
+  }
+}

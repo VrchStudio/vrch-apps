@@ -1,0 +1,2 @@
+# Packaged source bytes must not change with the developer's checkout settings.
+apps/*/src/** -text

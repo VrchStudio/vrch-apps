@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hardware Check</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/apps/sdk/apps-v1.js?v=20261026-silent-context-a1"></script>
+  <script defer src="camera-tracking.js"></script>
+  <script defer src="camera.js"></script>
+  <script defer src="imu-model.js"></script>
+  <script defer src="imu.js"></script>
+  <link rel="stylesheet" href="/apps/sdk/system-info-v1.css?v=20261025-system-header-a1">
+  <script defer src="/apps/sdk/system-info-v1.js?v=20261025-system-header-a1"></script>
+  <script defer src="system.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+<main>
+  <header class="header">
+    <div><h1>Hardware Check</h1><p id="status">Starting…</p></div>
+    <div class="header-actions"><button id="systemInfo" class="button icon-button" aria-label="System information" title="System information"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 10v7M12 6v2" fill="none" stroke="currentColor" stroke-width="2"/></svg></button><button id="reset" class="button reset" title="Clear this test's readings">Reset test</button></div>
+  </header>
+  <nav class="tabs" aria-label="Test area">
+    <button id="controlsTab" class="tab" aria-pressed="true" aria-controls="controlsPanel">Controls</button>
+    <button id="audioTab" class="tab" aria-pressed="false" aria-controls="audioPanel">Audio</button>
+    <button id="touchTab" class="tab" aria-pressed="false" aria-controls="touchPanel">Touch</button>
+    <button id="cameraTab" class="tab" aria-pressed="false" aria-controls="cameraPanel">Camera</button>
+    <button id="imuTab" class="tab" aria-pressed="false" aria-controls="imuPanel">IMU</button>
+  </nav>
+  <section id="controlsPanel" class="panel controls" aria-label="Controls test">
+    <div class="encoders" aria-label="Encoder readings">
+      <article class="encoder" data-control="E1"><div class="tile-top"><h2>E1</h2><span class="control-state"><output class="turn-state" aria-label="Last turn"></output><span class="press-state"></span></span></div><output class="value">0</output><p class="reading">Turn / press</p></article>
+      <article class="encoder" data-control="E2"><div class="tile-top"><h2>E2</h2><span class="control-state"><output class="turn-state" aria-label="Last turn"></output><span class="press-state"></span></span></div><output class="value">0</output><p class="reading">Turn / press</p></article>
+      <article class="encoder" data-control="E3"><div class="tile-top"><h2>E3</h2><span class="control-state"><output class="turn-state" aria-label="Last turn"></output><span class="press-state"></span></span></div><output class="value">0</output><p class="reading">Turn / press</p></article>
+      <article class="encoder" data-control="E4"><div class="tile-top"><h2>E4</h2><span class="control-state"><output class="turn-state" aria-label="Last turn"></output><span class="press-state"></span></span></div><output class="value">0</output><p class="reading">Turn / press</p></article>
+    </div>
+    <div class="keys" aria-label="Key readings">
+      <article class="key system-key" data-control="K1"><div class="tile-top"><h2>K1</h2><output class="key-count"></output></div><p class="reading">Menu</p><div class="meter pressure-meter" role="meter" aria-label="K1 pressure" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span></span></div></article>
+      <article class="key" data-control="K2"><div class="tile-top"><h2>K2</h2><output class="key-count">0</output></div><p class="reading">Press key</p><div class="meter pressure-meter" role="meter" aria-label="K2 pressure" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span></span></div></article>
+      <article class="key" data-control="K3"><div class="tile-top"><h2>K3</h2><output class="key-count">0</output></div><p class="reading">Press key</p><div class="meter pressure-meter" role="meter" aria-label="K3 pressure" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span></span></div></article>
+      <article class="key" data-control="K4"><div class="tile-top"><h2>K4</h2><output class="key-count">0</output></div><p class="reading">Press key</p><div class="meter pressure-meter" role="meter" aria-label="K4 pressure" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span></span></div></article>
+    </div>
+
+  </section>
+  <section id="audioPanel" class="panel audio" aria-label="Audio test" hidden>
+    <article class="audio-section">
+      <div class="section-heading"><h2>Input recording</h2><output id="inputValue">— dBFS</output></div>
+      <div id="inputMeter" class="meter" role="meter" aria-label="Audio input level" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="-60"><span></span><i></i></div>
+      <div class="meter-scale"><span>−60</span><span>−30</span><span>−12</span><span>0 dB</span></div>
+      <div class="section-heading recording-status"><p id="inputState">No recording yet.</p><span id="recordTime">Up to 30 s</span></div>
+      <div class="audio-action recording-actions"><button id="inputButton" class="button">Record</button><button id="replayButton" class="button" disabled>Play recording</button></div>
+    </article>
+    <article class="audio-section">
+      <div class="section-heading"><h2>Output music</h2><span id="musicTime">12 seconds</span></div>
+      <div id="outputProgress" class="meter" role="progressbar" aria-label="Music playback" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><span></span></div>
+      <div class="audio-action"><p id="outputState">Melody, chords and bass.</p><button id="outputButton" class="button">Play music</button></div>
+    </article>
+  </section>
+  <section id="touchPanel" class="panel touch-panel" aria-label="Touch test" hidden>
+    <button id="touchPad" class="touch-pad" aria-label="Touch test pad. Tap or drag to test touch input.">
+      <span class="pad-title">Touch pad <span id="touches">0 touches</span></span>
+      <span class="pad-hint" id="touchHint">Tap or drag anywhere here</span>
+      <span id="touchPoints" aria-hidden="true"></span>
+      <span id="touchCoordinates" class="coordinates"></span>
+    </button>
+  </section>
+  <section id="cameraPanel" class="panel camera-panel" aria-label="Camera test" hidden>
+    <div class="camera-view"><canvas id="cameraImage" aria-label="Camera image and tracking skeleton" hidden></canvas><p id="cameraMessage">Press K2 to start the camera.</p><span id="cameraTracking" class="camera-tracking-state" hidden></span></div>
+    <div class="camera-readings"><span id="cameraName">External camera</span><span id="cameraSize">— × —</span><span id="cameraRate">— fps</span></div>
+  </section>
+  <section id="imuPanel" class="panel imu-panel" aria-label="IMU test" hidden>
+    <article class="imu-model"><h2>Relative rotation</h2><canvas id="imuModel" role="img" aria-label="K4E4 wireframe showing rotation relative to the last reset, with X, Y and Z axes"></canvas></article>
+    <p id="imuEmpty" class="imu-empty">Reading the motion sensor…</p>
+    <article id="imugyroSection" class="imu-section" hidden><div class="imu-heading"><h2>Gyroscope</h2><span id="imugyroThreshold">Threshold 0.10 rad/s</span></div>
+      <div class="imu-values"><span class="imu-axis-x">X <output id="imugyro0">—</output></span><span class="imu-axis-y">Y <output id="imugyro1">—</output></span><span class="imu-axis-z">Z <output id="imugyro2">—</output></span></div><canvas id="imugyroChart" aria-label="Gyroscope, last 60 seconds; X, Y and Z"></canvas></article>
+    <article id="imuaccelSection" class="imu-section" hidden><div class="imu-heading"><h2>Acceleration</h2><span id="imuaccelThreshold">Threshold 0.10 m/s²</span></div>
+      <div class="imu-values"><span class="imu-axis-x">X <output id="imuaccel0">—</output></span><span class="imu-axis-y">Y <output id="imuaccel1">—</output></span><span class="imu-axis-z">Z <output id="imuaccel2">—</output></span></div><canvas id="imuaccelChart" aria-label="Acceleration, last 60 seconds; X, Y and Z"></canvas></article>
+    <div class="imu-status"><span id="imuState">Ready</span><span id="imuCadence"></span><span>60 s history</span></div>
+  </section>
+</main>
+
+</body>
+</html>

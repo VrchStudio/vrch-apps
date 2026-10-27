@@ -1,0 +1,44 @@
+name: Release App
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: App directory (for example hardware-check)
+        required: true
+        type: string
+      version:
+        description: Version in app.json (for example 1.6.1)
+        required: true
+        type: string
+      source_ref:
+        description: Full source commit SHA on main
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: official-app-publishing
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate source identity
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+        run: '[[ "$SOURCE_REF" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s tests -v
+      - name: Publish package and catalog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP: ${{ inputs.app }}
+          VERSION: ${{ inputs.version }}
+        run: python3 tools/apps.py publish "$APP" --version "$VERSION"

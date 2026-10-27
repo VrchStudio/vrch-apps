@@ -1,0 +1,174 @@
+{
+  "capabilities": {
+    "audio_input": true,
+    "audio_output": true,
+    "controls": true,
+    "websocket": [],
+    "video_input": true,
+    "imu_input": true
+  },
+  "data_schema_version": 1,
+  "entry": "index.html",
+  "id": "f8f1c78b-6c03-4ed8-9d65-8237803d09e9",
+  "name": "Hardware Check",
+  "schema_version": 1,
+  "sdk_version": 1,
+  "version": "1.6.1",
+  "guide": {
+    "description": "Check controls, sound, touch, camera and motion.",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          {
+            "control": "Controls · E1 turn",
+            "action": "Watch the count and direction."
+          },
+          {
+            "control": "Audio · Play music",
+            "action": "Listen to the test tune."
+          },
+          {
+            "control": "Camera · Tap",
+            "action": "See the camera; turn E1 to choose tracking."
+          }
+        ]
+      },
+      {
+        "title": "Common controls",
+        "controls": [
+          {
+            "control": "K1 · Press",
+            "action": "Open Menu and this guide."
+          },
+          {
+            "control": "Tabs · Tap",
+            "action": "Choose a test."
+          },
+          {
+            "control": "Reset test",
+            "action": "Clear readings and recording; stop audio/camera."
+          }
+        ]
+      },
+      {
+        "title": "Controls",
+        "controls": [
+          {
+            "control": "E1–E4 · Turn",
+            "action": "Check counts and direction."
+          },
+          {
+            "control": "E1–E4 / K2–K4 · Press",
+            "action": "Check press and release feedback."
+          },
+          {
+            "control": "Pressure keys · Press slowly",
+            "action": "Watch 0–100% and release back to zero. K1 still opens Menu; use Console Monitor for its full travel."
+          }
+        ]
+      },
+      {
+        "title": "Audio",
+        "controls": [
+          {
+            "control": "Record / Stop",
+            "action": "Capture up to 30 seconds, preserving both input channels."
+          },
+          {
+            "control": "Play recording / Stop playback",
+            "action": "Replay both channels through the selected output at the original level."
+          },
+          {
+            "control": "Play / Stop music",
+            "action": "Test sound output."
+          }
+        ]
+      },
+      {
+        "title": "Touch",
+        "controls": [
+          {
+            "control": "Pad · Touch / drag",
+            "action": "Watch contact positions."
+          }
+        ]
+      },
+      {
+        "title": "Camera",
+        "controls": [
+          {
+            "control": "E1 · Turn",
+            "action": "Choose Off, Face, Body or Hand."
+          },
+          {
+            "control": "E1 · Press",
+            "action": "Start or retry tracking."
+          },
+          {
+            "control": "E2 · Turn / press",
+            "action": "Choose video + skeleton or skeleton only."
+          },
+          {
+            "control": "E3 · Turn / press",
+            "action": "Choose one or two hands; one is faster."
+          },
+          {
+            "control": "K2 · Press",
+            "action": "Stop or start the camera."
+          },
+          {
+            "control": "K3 · Press",
+            "action": "Rotate the view 90°."
+          },
+          {
+            "control": "K4 · Press",
+            "action": "Mirror the view."
+          }
+        ]
+      },
+      {
+        "title": "IMU",
+        "text": "Move the unit to watch its model and curves. Turn E1/E2 clockwise for more sensitivity.",
+        "controls": [
+          {
+            "control": "E1 · Turn",
+            "action": "Adjust rotation sensitivity."
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "Adjust acceleration-curve sensitivity."
+          },
+          {
+            "control": "K2 · Press",
+            "action": "Stop or start detection."
+          },
+          {
+            "control": "K3 · Press",
+            "action": "Choose 10, 25 or 50 Hz."
+          },
+          {
+            "control": "K4 · Short press",
+            "action": "Reset the model and curves."
+          },
+          {
+            "control": "K4 · Hold",
+            "action": "Keep still to calibrate both sensitivities."
+          }
+        ]
+      },
+      {
+        "title": "System",
+        "text": "Tap the info icon beside Reset test. E2 chooses Device, Running or Battery; E1 scrolls; K2 refreshes."
+      },
+      {
+        "title": "Audio settings",
+        "text": "Choose audio ports and levels in Menu."
+      },
+      {
+        "title": "Recording",
+        "text": "The last recording stays in memory until a new take, Reset test or closing the App. It is not saved with readings."
+      }
+    ]
+  }
+}

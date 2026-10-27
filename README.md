@@ -1,0 +1,41 @@
+# VRCH Apps
+
+Official VRCH apps — source code and releases.
+
+Download an App's `.vrchapp` attachment from [Releases](https://github.com/VrchStudio/vrch-apps/releases). Import it using My Apps. Each App has its own version and retains the same App ID between updates. Installation packages contain code and bundled resources, not your device's saved data.
+
+The device update interface is being implemented separately. Publishing this repository does not enable automatic update notifications on existing My Apps installations.
+
+## Develop
+
+Python 3.10+ is sufficient for building; no private repository or package download is required.
+
+```sh
+python3 tools/apps.py check hardware-check
+python3 tools/apps.py build hardware-check
+python3 -m unittest discover -s tests -v
+```
+
+Edit the App in `apps/<app>/src/`. Its `app.json` is the source of truth for its ID and version. Do not change an existing App's ID. Put release notes under `## x.y.z` in that App's `CHANGELOG.md`. Build output goes into ignored `dist/<app>/`.
+
+Hardware Check 1.6.1 builds to SHA256 `e5cf9d6b4ca9a2908afb65774e743badaa4276d6c1c9e839d4ff990658a7802f` and content revision `8ab39b62a645194f314ba560eebee0bef0bd590b9b4fdea109e1e20e31913fa5`.
+
+## Publish
+
+After testing and pushing the intended source commit to `main`, choose **Actions → Release App → Run workflow**, supply the App directory, its version and the full source commit SHA. Or use authenticated GitHub CLI through this single command:
+
+```sh
+python3 tools/apps.py release hardware-check --version 1.6.1
+```
+
+Both paths run the same queued workflow. It builds the requested source commit, publishes the versioned package and `release.json`, verifies the public download, then updates `catalog/stable.json`. Source pushes alone do not publish an App. The workflow uses GitHub's built-in token; devices need no GitHub credentials.
+
+Published assets are immutable. Fixes need a new version. Re-running the same source/version reuses matching assets and completes an interrupted catalog update. Different content under an existing version is rejected. If the Release succeeds but the catalog fails, re-run that same workflow; do not create another version just to repair the index.
+
+For a new App, add `apps/<slug>/src/app.json`, its code/resources and `CHANGELOG.md`. Use a fresh UUID, stable `x.y.z` version, HTML entry and supported schema/SDK/data schema 1. Run the same commands with its slug.
+
+## Source and resources
+
+This repository contains the Apps and their build tools. The My Apps host and fixed `/apps/sdk/` resources are provided by VRCH devices. App publication is separate from platform/Runtime updates.
+
+Bundled third-party resources retain their own license notices. Public source availability does not replace those notices or grant an additional blanket license to all repository contents. No new blanket license has been selected for VRCH-owned code.
