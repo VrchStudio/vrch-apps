@@ -184,9 +184,12 @@ def publish(app,version):
         notes_file.write_text(release['notes'],encoding='utf-8')
         gh('release','create',tag,'--repo',REPOSITORY,'--target',commit,'--draft',
            '--title',release['name']+' '+version,'--notes-file',str(notes_file))
-        existing=api(f'repos/{REPOSITORY}/releases/tags/{tag}')
+        # GitHub's by-tag endpoint only returns published releases.
+        existing=next(r for r in api(f'repos/{REPOSITORY}/releases?per_page=100') if r['tag_name']==tag)
     if existing['draft'] and existing['target_commitish']!=commit:
-        raise ValueError('An existing draft points to another source commit.')
+        if existing['assets']:
+            raise ValueError('An existing draft with assets points to another source commit.')
+        gh('release','edit',tag,'--repo',REPOSITORY,'--target',commit)
     for file in (package,package.parent/'release.json'):
         digest='sha256:'+hashlib.sha256(file.read_bytes()).hexdigest()
         asset=next((a for a in existing['assets'] if a['name']==file.name),None)
