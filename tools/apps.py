@@ -153,6 +153,18 @@ def update_catalog(catalog, release):
     return result
 
 
+def published_metadata(catalog, release):
+    """A catalog/tool-only commit must not manufacture a second source identity."""
+    app=catalog['apps'].get(release['appId'],{})
+    old=app.get('versions',{}).get(release['version'])
+    if old:
+        proposed={k:v for k,v in release.items() if k not in ('schemaVersion','appId','slug','sourceCommit')}
+        if app['slug']!=release['slug'] or proposed!={k:v for k,v in old.items() if k!='sourceCommit'}:
+            raise ValueError('A published version already contains different release metadata.')
+        return {**release,'sourceCommit':old['sourceCommit']}
+    return release
+
+
 def api(path):
     return json.loads(gh('api',path))
 
@@ -172,6 +184,8 @@ def publish(app,version):
     tag=release['tag']
     # Read the current catalog without mixing its commit into the source build.
     catalog=json.loads(command('git','show','origin/main:catalog/stable.json'))
+    release=published_metadata(catalog,release)
+    save_json(package.parent/'release.json',release)
     update_catalog(catalog,release)
     releases=api(f'repos/{REPOSITORY}/releases?per_page=100')
     existing=next((r for r in releases if r['tag_name']==tag),None)

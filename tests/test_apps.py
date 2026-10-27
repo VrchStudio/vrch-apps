@@ -96,6 +96,15 @@ class Packages(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'different'):
             apps.update_catalog(catalog,release)
 
+    def test_retry_after_catalog_commit_keeps_original_source(self):
+        _,release=self.build()
+        catalog=apps.update_catalog({'schemaVersion':1,'apps':{}},release)
+        retry={**release,'sourceCommit':'b'*40}
+        self.assertEqual(apps.published_metadata(catalog,retry),release)
+        retry['sha256']='0'*64
+        with self.assertRaisesRegex(ValueError,'different'):
+            apps.published_metadata(catalog,retry)
+
     def test_catalog_rejects_downgrade(self):
         _,release=self.build()
         newer={**release,'version':'1.1.0','tag':'demo-v1.1.0'}
