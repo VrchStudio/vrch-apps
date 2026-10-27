@@ -4,7 +4,7 @@ Official VRCH apps — source code and releases.
 
 Download an App's `.vrchapp` attachment from [Releases](https://github.com/VrchStudio/vrch-apps/releases). Import it using My Apps. Each App has its own version and retains the same App ID between updates. Installation packages contain code and bundled resources, not your device's saved data.
 
-The device update interface is being implemented separately. Publishing this repository does not enable automatic update notifications on existing My Apps installations.
+Update notifications require a My Apps platform release with official update support. Existing devices receive that capability through their normal Components and Runtime updates; publishing an App does not upgrade the platform.
 
 ## Develop
 
