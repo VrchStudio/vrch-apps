@@ -1,4 +1,30 @@
 {
   "schemaVersion": 1,
-  "apps": {}
+  "apps": {
+    "f8f1c78b-6c03-4ed8-9d65-8237803d09e9": {
+      "slug": "hardware-check",
+      "latest": "1.6.1",
+      "versions": {
+        "1.6.1": {
+          "version": "1.6.1",
+          "name": "Hardware Check",
+          "tag": "hardware-check-v1.6.1",
+          "sourceCommit": "e9f11985617b60365822c1c334a52936c0727d14",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/hardware-check-v1.6.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/hardware-check-v1.6.1/hardware-check-1.6.1.vrchapp",
+          "size": 38999067,
+          "sha256": "e5cf9d6b4ca9a2908afb65774e743badaa4276d6c1c9e839d4ff990658a7802f",
+          "packageDigest": "e5cf9d6b4ca9a2908afb65774e743badaa4276d6c1c9e839d4ff990658a7802f",
+          "revision": "8ab39b62a645194f314ba560eebee0bef0bd590b9b4fdea109e1e20e31913fa5",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "The shared Hardware Check release for controls, audio, touch, camera, IMU and system information. This publishes the existing 1.6.1 package without changing its contents."
+        }
+      }
+    }
+  }
 }
