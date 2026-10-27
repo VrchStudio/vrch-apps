@@ -2,9 +2,11 @@ import copy
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
 spec=importlib.util.spec_from_file_location('apps',Path(__file__).resolve().parents[1]/'tools/apps.py')
@@ -109,7 +111,7 @@ class Packages(unittest.TestCase):
             apps.update_catalog(catalog,release)
 
     def test_publish_requires_workflow(self):
-        with self.assertRaisesRegex(ValueError,'workflow'):
+        with mock.patch.dict(os.environ, {'GITHUB_ACTIONS':'false'}), self.assertRaisesRegex(ValueError,'workflow'):
             apps.publish('demo','1.0.0')
 
 
