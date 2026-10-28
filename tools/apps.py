@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build and publish official VRCH Apps using Python's standard library and gh."""
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -156,6 +157,19 @@ def update_catalog(catalog, release):
     return result
 
 
+def catalog_icons(catalog):
+    """Generate presentation metadata only from the exact published source."""
+    result=json.loads(json.dumps(catalog))
+    for identifier,app in result['apps'].items():
+        manifest,records,revision=source(app['slug'],root=ROOT)
+        latest=app['versions'][app['latest']]
+        if manifest['id']!=identifier or manifest['version']!=app['latest'] or revision!=latest['revision']:
+            continue
+        path=manifest['icon'];mime='image/svg+xml' if path.lower().endswith('.svg') else 'image/png'
+        app['icon']='data:'+mime+';base64,'+base64.b64encode(dict(records)[path]).decode('ascii')
+    return result
+
+
 def published_metadata(catalog, release):
     """A catalog/tool-only commit must not manufacture a second source identity."""
     app=catalog['apps'].get(release['appId'],{})
@@ -241,7 +255,7 @@ def publish(app,version):
     command('git','fetch','origin','main')
     command('git','checkout','-B','catalog-publish','origin/main')
     path=ROOT/'catalog/stable.json'
-    updated=update_catalog(read_json(path),release)
+    updated=catalog_icons(update_catalog(read_json(path),release))
     save_json(path,updated)
     if command('git','status','--porcelain','--','catalog/stable.json'):
         command('git','config','user.name','github-actions[bot]')

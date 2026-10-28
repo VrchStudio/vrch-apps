@@ -34,7 +34,7 @@ After testing and pushing the intended source commit to `main`, choose **Actions
 python3 tools/apps.py release hardware-check --version 1.6.1
 ```
 
-Both paths run the same queued workflow. It builds the requested source commit, publishes the versioned package and `release.json`, verifies the public download, then updates `catalog/stable.json`. Source pushes alone do not publish an App. The workflow uses GitHub's built-in token; devices need no GitHub credentials.
+Both paths run the same queued workflow. It builds the requested source commit, publishes the versioned package and `release.json`, verifies the public download, then updates `catalog/stable.json`. The workflow also embeds catalogue icons from source matching the latest published revision, so browsing does not download App packages. Source pushes alone do not publish an App. The workflow uses GitHub's built-in token; devices need no GitHub credentials.
 
 Published assets are immutable. Fixes need a new version. Re-running the same source/version reuses matching assets and completes an interrupted catalog update. Different content under an existing version is rejected. If the Release succeeds but the catalog fails, re-run that same workflow; do not create another version just to repair the index.
 
