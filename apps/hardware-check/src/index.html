@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Hardware Check</title>
+  <link rel="icon" href="assets/hardware-check.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
   <script src="/apps/sdk/apps-v1.js?v=20261026-silent-context-a1"></script>
   <script defer src="camera-tracking.js"></script>
@@ -18,7 +19,7 @@
 <body>
 <main>
   <header class="header">
-    <div><h1>Hardware Check</h1><p id="status">Starting…</p></div>
+    <div><h1><img class="app-icon" src="assets/hardware-check.svg" width="24" height="24" alt="">Hardware Check</h1><p id="status">Starting…</p></div>
     <div class="header-actions"><button id="systemInfo" class="button icon-button" aria-label="System information" title="System information"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 10v7M12 6v2" fill="none" stroke="currentColor" stroke-width="2"/></svg></button><button id="reset" class="button reset" title="Clear this test's readings">Reset test</button></div>
   </header>
   <nav class="tabs" aria-label="Test area">
