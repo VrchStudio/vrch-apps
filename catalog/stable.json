@@ -148,7 +148,7 @@
     },
     "2f91a6d2-f0b3-49dc-84fb-f168d6d98592": {
       "slug": "metronome",
-      "latest": "1.0.0",
+      "latest": "1.0.1",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -168,6 +168,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original Metronome package as the installed version baseline."
+        },
+        "1.0.1": {
+          "version": "1.0.1",
+          "name": "Metronome",
+          "tag": "metronome-v1.0.1",
+          "sourceCommit": "a7d96baa07bb7cc3204b03986a0fe29e5bb16346",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/metronome-v1.0.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/metronome-v1.0.1/metronome-1.0.1.vrchapp",
+          "size": 256790,
+          "sha256": "bbd7222a9b1d52e482d376054772b70baf441714d220402f67d703cb9bc73e3a",
+          "packageDigest": "bbd7222a9b1d52e482d376054772b70baf441714d220402f67d703cb9bc73e3a",
+          "revision": "9ceee4bcf31136ead8b02a057caa163490570080eb7d701adac6b4158312d4e2",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Fix audio startup on current device browsers.\n- Add a VRCH-style vector icon in Launcher, My Apps and Guide."
         }
       }
     }
