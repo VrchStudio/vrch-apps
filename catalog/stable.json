@@ -145,6 +145,31 @@
           "notes": "- Fix sound startup on current device browsers."
         }
       }
+    },
+    "2f91a6d2-f0b3-49dc-84fb-f168d6d98592": {
+      "slug": "metronome",
+      "latest": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "version": "1.0.0",
+          "name": "Metronome",
+          "tag": "metronome-v1.0.0",
+          "sourceCommit": "07139e29d3fca62b52a88aaf65739c64008d9e80",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/metronome-v1.0.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/metronome-v1.0.0/metronome-1.0.0.vrchapp",
+          "size": 256188,
+          "sha256": "1ee7758c5fa1d58a52d1bc2c74beacc1d7b6bc3d4540a8bf19143d9e6c5fb50e",
+          "packageDigest": "1ee7758c5fa1d58a52d1bc2c74beacc1d7b6bc3d4540a8bf19143d9e6c5fb50e",
+          "revision": "ac108f17658cc82b1684b25d535d322abb2d5ffd1e2d49845ca288d8b5ae0df8",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original Metronome package as the installed version baseline."
+        }
+      }
     }
   }
 }
