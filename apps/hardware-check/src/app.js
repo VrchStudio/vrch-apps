@@ -278,6 +278,7 @@ addEventListener('pagehide',() => {disposed=true;systemTest.close();imuTest.clos
 VrchApp.ready().then(async () => {
   const previous=await VrchApp.data.get('visits');check.visits=(Number(previous.value)||0)+1;
   await VrchApp.data.set('visits',check.visits,{expectedVersion:previous.version});
+  $('appVersion').textContent='v'+VrchApp.context.version;
   check.ready=true;$('status').textContent=check.mode==='device'?'Device · live input':'Preview · virtual controls';
   monitorDirty=true;persistCheck();
 }).catch(error => {recordError(error);$('status').textContent='App could not start. Reopen to retry.';});

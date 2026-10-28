@@ -1,5 +1,10 @@
 # Hardware Check
 
+## 1.6.3
+
+- Show the App icon in Launcher, My Apps and Guide on supported hosts.
+- Show the version in the Hardware Check header.
+
 ## 1.6.2
 
 Add a crisp vector App icon and a compact reset button, matching the vrch.io interface.
