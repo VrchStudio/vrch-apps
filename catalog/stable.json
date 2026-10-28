@@ -85,7 +85,7 @@
     },
     "ce96ad6b-8e44-4661-83f4-823bd546aa19": {
       "slug": "magic-circle",
-      "latest": "1.0.0",
+      "latest": "1.0.1",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -105,6 +105,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original Magic Circle release with eight visual patterns and three sound textures."
+        },
+        "1.0.1": {
+          "version": "1.0.1",
+          "name": "Magic Circle",
+          "tag": "magic-circle-v1.0.1",
+          "sourceCommit": "4ccc936b003abb7399336cff5708e610c502b832",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/magic-circle-v1.0.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/magic-circle-v1.0.1/magic-circle-1.0.1.vrchapp",
+          "size": 266006,
+          "sha256": "2db0e1d004bc400805efcc04ee7a9d1389761dd9e9a5ed0ff4fe42ea6843b569",
+          "packageDigest": "2db0e1d004bc400805efcc04ee7a9d1389761dd9e9a5ed0ff4fe42ea6843b569",
+          "revision": "fe3fd99ac29666f8eb26c4a3942d8c90f165f895fb644fcfe84ed6b5b286ffdc",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add a VRCH-style vector icon in Launcher, My Apps and Guide."
         }
       }
     }
