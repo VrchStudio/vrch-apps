@@ -81,7 +81,8 @@
           },
           "notes": "- Align the App icon beside the two-line name, version and status header."
         }
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPkhhcmR3YXJlIENoZWNrPC90aXRsZT4KICA8cGF0aCBkPSJNMTAgMnY1bTYtNXY1bTYtNXY1TTEwIDI1djVtNi01djVtNi01djVNMiAxMGg1bS01IDZoNW0tNSA2aDVtMTgtMTJoNW0tNSA2aDVtLTUgNmg1IiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxyZWN0IHg9IjciIHk9IjciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjEiIHN0cm9rZT0iI2YwZWVlOCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0ibTExIDE2IDQgNCA3LTgiIHN0cm9rZT0iI2ZmMTQ5MyIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0ic3F1YXJlIiBzdHJva2UtbGluZWpvaW49Im1pdGVyIi8+Cjwvc3ZnPgo="
     },
     "ce96ad6b-8e44-4661-83f4-823bd546aa19": {
       "slug": "magic-circle",
@@ -144,7 +145,8 @@
           },
           "notes": "- Fix sound startup on current device browsers."
         }
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPk1hZ2ljIENpcmNsZTwvdGl0bGU+CiAgPHBhdGggZD0iTTE2IDF2NG0wIDIydjRNMSAxNmg0bTIyIDBoNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxMSIgc3Ryb2tlPSIjZjBlZWU4IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJtMTYgOSAyLjIgNC44TDIzIDE2bC00LjggMi4yTDE2IDIzbC0yLjItNC44TDkgMTZsNC44LTIuMloiIGZpbGw9IiNmZjE0OTMiLz4KPC9zdmc+Cg=="
     },
     "2f91a6d2-f0b3-49dc-84fb-f168d6d98592": {
       "slug": "metronome",
@@ -188,7 +190,8 @@
           },
           "notes": "- Fix audio startup on current device browsers.\n- Add a VRCH-style vector icon in Launcher, My Apps and Guide."
         }
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPk1ldHJvbm9tZTwvdGl0bGU+CiAgPHBhdGggZD0iTTEzIDNoNmw3IDI1SDZMMTMgM1oiIHN0cm9rZT0iI2RlZGVkZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTEwIDIzaDEyTTE2IDh2M20wIDN2MyIgc3Ryb2tlPSIjODU4NTg1IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Im0xNiAyNCA3LTE2IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJtMTguMiAxMy43IDUuNSAyLjQgMS42LTMuNy01LjUtMi40LTEuNiAzLjdaIiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo="
     }
   }
 }
