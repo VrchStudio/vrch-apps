@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "ce96ad6b-8e44-4661-83f4-823bd546aa19",
   "name": "Magic Circle",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "entry": "index.html",
   "capabilities": {
     "controls": true,
@@ -95,5 +95,6 @@
         "text": "Parameter values are saved automatically. Reopening starts on the Visual layer with SFX off; device audio input starts on. Choose input/output ports and their levels in Menu. Preview input is silent; enable Listen to preview before testing synthesized sound on the computer. Input-driven visual pulses do not retrigger impact sounds."
       }
     ]
-  }
+  },
+  "icon": "assets/magic-circle.svg"
 }
