@@ -82,6 +82,31 @@
           "notes": "- Align the App icon beside the two-line name, version and status header."
         }
       }
+    },
+    "ce96ad6b-8e44-4661-83f4-823bd546aa19": {
+      "slug": "magic-circle",
+      "latest": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "version": "1.0.0",
+          "name": "Magic Circle",
+          "tag": "magic-circle-v1.0.0",
+          "sourceCommit": "f30bb512931b9c0c9da2c159717a1b7f75a6475e",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/magic-circle-v1.0.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/magic-circle-v1.0.0/magic-circle-1.0.0.vrchapp",
+          "size": 265504,
+          "sha256": "599a60d3283d93a4d476fc61c77a6f0bdfe5267b22a611b68d9803c7ac079eaa",
+          "packageDigest": "599a60d3283d93a4d476fc61c77a6f0bdfe5267b22a611b68d9803c7ac079eaa",
+          "revision": "ed346cbd10c6d3ca61fff204fcf4509eac5d58cdc5f3e0b64840696fcb00397d",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original Magic Circle release with eight visual patterns and three sound textures."
+        }
+      }
     }
   }
 }
