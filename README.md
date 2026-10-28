@@ -6,6 +6,11 @@ Download an App's `.vrchapp` attachment from [Releases](https://github.com/VrchS
 
 Update notifications require a My Apps platform release with official update support. Existing devices receive that capability through their normal Components and Runtime updates; publishing an App does not upgrade the platform.
 
+## Apps
+
+- [Hardware Check](apps/hardware-check): check controls, audio, touch, camera and motion.
+- [Magic Circle](apps/magic-circle): perform with audio-reactive geometry and synthesized sound.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.
@@ -32,7 +37,7 @@ Both paths run the same queued workflow. It builds the requested source commit, 
 
 Published assets are immutable. Fixes need a new version. Re-running the same source/version reuses matching assets and completes an interrupted catalog update. Different content under an existing version is rejected. If the Release succeeds but the catalog fails, re-run that same workflow; do not create another version just to repair the index.
 
-For a new App, add `apps/<slug>/src/app.json`, its code/resources and `CHANGELOG.md`. Use a fresh UUID, stable `x.y.z` version, HTML entry and supported schema/SDK/data schema 1. Run the same commands with its slug.
+For a new App, add `apps/<slug>/src/app.json`, its code/resources and `CHANGELOG.md`. For a newly created App, use a fresh UUID, stable `x.y.z` version, HTML entry and supported schema/SDK/data schema 1. When enrolling an existing App, keep its UUID and first publish an exact baseline so installed copies can be recognized. Run the same commands with its slug.
 
 ## Source and resources
 

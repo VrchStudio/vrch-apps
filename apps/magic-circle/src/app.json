@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "id": "ce96ad6b-8e44-4661-83f4-823bd546aa19",
+  "name": "Magic Circle",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "capabilities": {
+    "controls": true,
+    "audio_input": true,
+    "audio_output": true,
+    "websocket": []
+  },
+  "guide": {
+    "description": "A live, audio-reactive magic circle with eight evolving patterns, six palettes and three synthesized sound textures. Use K4E4 to perform while the canvas stays clear.",
+    "sections": [
+      {
+        "title": "Press actions",
+        "controls": [
+          {
+            "control": "K1",
+            "action": "Open the shared Menu, including Guide and audio routing."
+          },
+          {
+            "control": "E1 press",
+            "action": "Turn synthesized sound on or off."
+          },
+          {
+            "control": "E3 press",
+            "action": "Switch between Visual and Sound encoder layers. The monitor labels show the active layer."
+          },
+          {
+            "control": "E4 press",
+            "action": "Turn the audio-reactive input on or off; retry input after an error."
+          },
+          {
+            "control": "K2",
+            "action": "Next pattern: Orbit, Sigil, Lattice, Vortex, Eclipse, Bloom, Nova or Prism."
+          },
+          {
+            "control": "K3",
+            "action": "Next palette: Astral, Ember, Verdant, Ritual, Solar or Glacier."
+          },
+          {
+            "control": "K4 / screen tap",
+            "action": "Release an energy pulse. With SFX on, this also triggers an impact sound."
+          }
+        ]
+      },
+      {
+        "title": "Visual layer — turn encoders",
+        "controls": [
+          {
+            "control": "E1",
+            "action": "Rotation and animation speed."
+          },
+          {
+            "control": "E2",
+            "action": "Geometry point count, from 3 to 12."
+          },
+          {
+            "control": "E3",
+            "action": "Glow intensity."
+          },
+          {
+            "control": "E4",
+            "action": "Audio-input sensitivity."
+          }
+        ]
+      },
+      {
+        "title": "Sound layer — turn encoders",
+        "controls": [
+          {
+            "control": "E1",
+            "action": "Sound volume."
+          },
+          {
+            "control": "E2",
+            "action": "Base pitch, 55–440 Hz."
+          },
+          {
+            "control": "E3",
+            "action": "Timbre: Astral, Crystal or Void."
+          },
+          {
+            "control": "E4",
+            "action": "Space and stereo echo."
+          }
+        ]
+      },
+      {
+        "title": "Audio and saved settings",
+        "text": "Parameter values are saved automatically. Reopening starts on the Visual layer with SFX off; device audio input starts on. Choose input/output ports and their levels in Menu. Preview input is silent; enable Listen to preview before testing synthesized sound on the computer. Input-driven visual pulses do not retrigger impact sounds."
+      }
+    ]
+  }
+}
