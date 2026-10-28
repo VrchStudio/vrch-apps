@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "ce96ad6b-8e44-4661-83f4-823bd546aa19",
   "name": "Magic Circle",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "entry": "index.html",
   "capabilities": {
     "controls": true,

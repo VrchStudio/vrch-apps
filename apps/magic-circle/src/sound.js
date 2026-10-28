@@ -5,7 +5,7 @@ window.createMagicSound=function(onState){
  async function release(entry){if(!entry)return;entry.node?.disconnect();await Promise.all([entry.output?.close().catch(()=>{}),entry.context?.close().catch(()=>{})]);}
  async function stop(){++epoch;const old=current;current=null;notify('off');if(old?.node){old.node.port.postMessage({type:'mute'});await new Promise(r=>setTimeout(r,35));}await release(old);}
  async function start(){const id=++epoch,entry={};notify('starting');
-  try{entry.context=new AudioContext({sampleRate:48000});current=entry;await entry.context.resume();if(id!==epoch)return await release(entry);
+  try{entry.context=new AudioContext({sampleRate:48000,sinkId:{type:'none'}});current=entry;await entry.context.resume();if(id!==epoch)return await release(entry);
    entry.output=await VrchApp.audio.openOutput({channels:2});if(id!==epoch)return await release(entry);
    const destination=await entry.output.createNode(entry.context);await entry.context.audioWorklet.addModule(new URL('sound-worklet.js',location.href).href);if(id!==epoch)return await release(entry);
    entry.node=new AudioWorkletNode(entry.context,'magic-circle-sound',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]});entry.node.onprocessorerror=()=>{if(current===entry){current=null;void release(entry);notify('error','Sound unavailable. Press E1 to retry.');}};entry.node.port.postMessage({type:'settings',value:parameters});entry.node.connect(destination);notify('active');
