@@ -9,6 +9,7 @@ Update notifications require a My Apps platform release with official update sup
 ## Apps
 
 - [Hardware Check](apps/hardware-check): check controls, audio, touch, camera and motion.
+- [Metronome](apps/metronome): keep time with adjustable tempo, meter and subdivisions.
 - [Magic Circle](apps/magic-circle): perform with audio-reactive geometry and synthesized sound.
 
 ## Develop
@@ -21,7 +22,7 @@ python3 tools/apps.py build hardware-check
 python3 -m unittest discover -s tests -v
 ```
 
-Edit the App in `apps/<app>/src/`. Its `app.json` is the source of truth for its ID and version. Do not change an existing App's ID. Put release notes under `## x.y.z` in that App's `CHANGELOG.md`. Build output goes into ignored `dist/<app>/`.
+Edit the App in `apps/<app>/src/`. Its `app.json` is the source of truth for its ID and version. Do not change an existing App's ID. Every official App must include an `icon` path in `app.json` pointing to a bundled image. Use a transparent SVG by default, with a neutral gray/white subject and Deep Pink (`#ff1493`) accent; keep it legible in Launcher, My Apps and Guide. The build rejects missing icons. Put release notes under `## x.y.z` in that App's `CHANGELOG.md`. Build output goes into ignored `dist/<app>/`.
 
 Hardware Check 1.6.1 builds to SHA256 `e5cf9d6b4ca9a2908afb65774e743badaa4276d6c1c9e839d4ff990658a7802f` and content revision `8ab39b62a645194f314ba560eebee0bef0bd590b9b4fdea109e1e20e31913fa5`.
 
@@ -37,7 +38,7 @@ Both paths run the same queued workflow. It builds the requested source commit, 
 
 Published assets are immutable. Fixes need a new version. Re-running the same source/version reuses matching assets and completes an interrupted catalog update. Different content under an existing version is rejected. If the Release succeeds but the catalog fails, re-run that same workflow; do not create another version just to repair the index.
 
-For a new App, add `apps/<slug>/src/app.json`, its code/resources and `CHANGELOG.md`. For a newly created App, use a fresh UUID, stable `x.y.z` version, HTML entry and supported schema/SDK/data schema 1. When enrolling an existing App, keep its UUID and first publish an exact baseline so installed copies can be recognized. Run the same commands with its slug.
+For a new App, add `apps/<slug>/src/app.json`, its code/resources and `CHANGELOG.md`. For a newly created App, use a fresh UUID, stable `x.y.z` version, HTML entry and supported schema/SDK/data schema 1. When enrolling an existing App, keep its UUID and first publish an exact baseline so installed copies can be recognized. Historical baselines imported before the icon requirement may lack an icon; all current releases must include one. Run the same commands with its slug.
 
 ## Source and resources
 

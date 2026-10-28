@@ -23,14 +23,29 @@ class Packages(unittest.TestCase):
         self.src.mkdir(parents=True)
         self.manifest={'schema_version':1,'sdk_version':1,'data_schema_version':1,
                        'id':'f8f1c78b-6c03-4ed8-9d65-8237803d09e9','name':'Demo','version':'1.0.0',
-                       'entry':'index.html','capabilities':{'controls':True},'future':{'keep':True}}
+                       'entry':'index.html','icon':'icon.svg','capabilities':{'controls':True},'future':{'keep':True}}
         (self.src/'app.json').write_text(json.dumps(self.manifest))
         (self.src/'index.html').write_bytes(b'<p>demo</p>\n')
+        (self.src/'icon.svg').write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M4 4h24v24H4Z"/></svg>')
         (self.src/'unknown.bin').write_bytes(bytes(range(256)))
         (self.src.parent/'CHANGELOG.md').write_text('# Demo\n\n## 1.0.0\n\nFirst version.\n')
 
     def build(self):
         return apps.build('demo',root=self.root,source_commit='a'*40)
+
+    def test_official_icon_required(self):
+        for value in (None, '', 'missing.svg', 'index.html', 'https://example.com/icon.svg'):
+            with self.subTest(icon=value):
+                self.manifest['icon']=value
+                (self.src/'app.json').write_text(json.dumps(self.manifest))
+                with self.assertRaisesRegex(ValueError,'icon'):
+                    self.build()
+
+    def test_empty_and_oversized_icon_rejected(self):
+        for data in (b'', b'x'*65537):
+            (self.src/'icon.svg').write_bytes(data)
+            with self.assertRaisesRegex(ValueError,'icon'):
+                self.build()
 
     def test_deterministic_and_preserves_all_bytes(self):
         path,first=self.build()

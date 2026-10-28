@@ -25,7 +25,7 @@ async function cleanup(current){if(!current)return;current.source?.port.postMess
 function stop(){++epoch;const old=run;run=null;metronome.state='off';beat(null);render();status('Stopped');void cleanup(old);}
 async function start(){
   if(!metronome.ready||disposed)return;
-  const version=++epoch,current={context:new AudioContext({sampleRate:48000})};run=current;metronome.state='starting';render();status('Starting…');
+  const version=++epoch,current={context:new AudioContext({sampleRate:48000,sinkId:{type:'none'}})};run=current;metronome.state='starting';render();status('Starting…');
   const stale=()=>version!==epoch||disposed;
   try{
     await current.context.resume();

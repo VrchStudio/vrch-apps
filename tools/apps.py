@@ -74,6 +74,9 @@ def source(app, root=ROOT):
         raise ValueError('App name must contain 1 to 48 characters.')
     if manifest.get('entry') not in files or not manifest['entry'].lower().endswith(('.html','.htm')):
         raise ValueError('App HTML entry is missing.')
+    icon=manifest.get('icon')
+    if not isinstance(icon,str) or icon not in files or Path(icon).suffix.lower() not in ('.svg','.png') or not 0<len(files[icon])<=65536:
+        raise ValueError('Every official App needs a packaged SVG or PNG icon (up to 64 KiB).')
     caps=manifest.get('capabilities')
     if not isinstance(caps,dict) or set(caps)-{'controls','audio_input','audio_output','video_input','imu_input','websocket'}:
         raise ValueError('Unsupported capabilities.')
