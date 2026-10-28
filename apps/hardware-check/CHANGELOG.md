@@ -2,7 +2,7 @@
 
 ## 1.6.2
 
-Add a crisp vector icon to the App header and browser tab, matching the vrch.io interface.
+Add a crisp vector App icon and a compact reset button, matching the vrch.io interface.
 
 ## 1.6.1
 

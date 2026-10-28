@@ -47,7 +47,7 @@
           },
           {
             "control": "Reset test",
-            "action": "Clear readings and recording; stop audio/camera."
+            "action": "Tap the reset icon to clear readings and recording; stop audio/camera."
           }
         ]
       },
