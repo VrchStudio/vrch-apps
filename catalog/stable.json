@@ -3,7 +3,7 @@
   "apps": {
     "f8f1c78b-6c03-4ed8-9d65-8237803d09e9": {
       "slug": "hardware-check",
-      "latest": "1.6.3",
+      "latest": "1.6.4",
       "versions": {
         "1.6.1": {
           "version": "1.6.1",
@@ -61,6 +61,25 @@
             "updateApi": 1
           },
           "notes": "- Show the App icon in Launcher, My Apps and Guide on supported hosts.\n- Show the version in the Hardware Check header."
+        },
+        "1.6.4": {
+          "version": "1.6.4",
+          "name": "Hardware Check",
+          "tag": "hardware-check-v1.6.4",
+          "sourceCommit": "6adda4808ca540c9a8d4c334ee6ab9934bb8360f",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/hardware-check-v1.6.4",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/hardware-check-v1.6.4/hardware-check-1.6.4.vrchapp",
+          "size": 39000577,
+          "sha256": "d1a9bf606c6297135b892ecc97276648f6e3eedf9dc67eccb39e023450765fce",
+          "packageDigest": "d1a9bf606c6297135b892ecc97276648f6e3eedf9dc67eccb39e023450765fce",
+          "revision": "c82e9b6b1b61a5b738a63630303a7f8d85602185d49a18076c10cb196ede5ba9",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Align the App icon beside the two-line name, version and status header."
         }
       }
     }
