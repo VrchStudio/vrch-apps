@@ -3,7 +3,7 @@
   "apps": {
     "f8f1c78b-6c03-4ed8-9d65-8237803d09e9": {
       "slug": "hardware-check",
-      "latest": "1.6.2",
+      "latest": "1.6.3",
       "versions": {
         "1.6.1": {
           "version": "1.6.1",
@@ -42,6 +42,25 @@
             "updateApi": 1
           },
           "notes": "Add a crisp vector App icon and a compact reset button, matching the vrch.io interface."
+        },
+        "1.6.3": {
+          "version": "1.6.3",
+          "name": "Hardware Check",
+          "tag": "hardware-check-v1.6.3",
+          "sourceCommit": "d70e576aa74a5ed1a302f94a0582ecd695f73cf9",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/hardware-check-v1.6.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/hardware-check-v1.6.3/hardware-check-1.6.3.vrchapp",
+          "size": 39000456,
+          "sha256": "db983d817ef2db1b7f406c64cba33aacefe836c74a05dc6a464fdb91da4e2451",
+          "packageDigest": "db983d817ef2db1b7f406c64cba33aacefe836c74a05dc6a464fdb91da4e2451",
+          "revision": "d852cfff83bae2f929dcd5a39fec971d4ee8b9f4faf235527f8c8f268750db65",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the App icon in Launcher, My Apps and Guide on supported hosts.\n- Show the version in the Hardware Check header."
         }
       }
     }
