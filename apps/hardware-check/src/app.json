@@ -13,7 +13,7 @@
   "name": "Hardware Check",
   "schema_version": 1,
   "sdk_version": 1,
-  "version": "1.6.3",
+  "version": "1.6.4",
   "guide": {
     "description": "Check controls, sound, touch, camera and motion.",
     "sections": [

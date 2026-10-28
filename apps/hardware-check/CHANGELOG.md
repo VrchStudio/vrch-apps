@@ -1,5 +1,9 @@
 # Hardware Check
 
+## 1.6.4
+
+- Align the App icon beside the two-line name, version and status header.
+
 ## 1.6.3
 
 - Show the App icon in Launcher, My Apps and Guide on supported hosts.
