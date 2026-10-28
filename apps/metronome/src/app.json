@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "id": "2f91a6d2-f0b3-49dc-84fb-f168d6d98592",
+  "name": "Metronome",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "capabilities": {
+    "controls": true,
+    "audio_input": false,
+    "audio_output": true,
+    "websocket": []
+  },
+  "guide": {
+    "description": "A performance metronome with an accented first beat, subdivisions, tap tempo and three sound textures. Timing runs on the audio thread.",
+    "sections": [
+      {
+        "title": "Turn encoders",
+        "controls": [
+          {
+            "control": "E1",
+            "action": "Tempo: 40–240 BPM."
+          },
+          {
+            "control": "E2",
+            "action": "Beats per bar: 1–8."
+          },
+          {
+            "control": "E3",
+            "action": "Subdivisions per beat: 1–4."
+          },
+          {
+            "control": "E4",
+            "action": "Sound: Click, Wood or Beep."
+          }
+        ]
+      },
+      {
+        "title": "Press keys",
+        "controls": [
+          {
+            "control": "K1",
+            "action": "Open Menu for Guide, audio routing, Reload or Exit."
+          },
+          {
+            "control": "K2",
+            "action": "Start or stop playback."
+          },
+          {
+            "control": "K3",
+            "action": "Tap repeatedly to set tempo. Taps also realign the beat."
+          },
+          {
+            "control": "K4",
+            "action": "Reset the beat position and tap history without resetting tempo or other parameters."
+          }
+        ]
+      },
+      {
+        "title": "Touch and audio",
+        "text": "On-screen tempo, Beats, Split, Sound, Start/Stop, Tap and Reset controls perform the same actions. Route sound and adjust its output level in Menu. In Preview, enable Listen to preview before starting."
+      },
+      {
+        "title": "Saved settings",
+        "text": "Tempo, beats, subdivision and timbre are saved automatically. Reopening retains these values and starts stopped."
+      }
+    ]
+  }
+}
