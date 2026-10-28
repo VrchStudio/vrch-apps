@@ -119,6 +119,43 @@ class Packages(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'identity'):
             apps.update_catalog(catalog,release)
 
+    def test_new_draft_uses_creation_receipt_when_list_is_stale(self):
+        package,release=self.build()
+        catalog={'schemaVersion':1,'apps':{}}
+        (self.root/'catalog').mkdir()
+        (self.root/'catalog/stable.json').write_text(json.dumps(catalog))
+        draft={'id':42,'draft':True,'tag_name':release['tag'],'target_commitish':'a'*40,'assets':[]}
+        calls=[]
+        def github(*args):
+            calls.append(args)
+            if args[0]=='api':
+                endpoint=args[1]
+                if '--method' in args:
+                    payload=json.loads(Path(args[args.index('--input')+1]).read_text())
+                    self.assertTrue(payload['draft'])
+                    self.assertEqual(payload['tag_name'],release['tag'])
+                    return json.dumps(draft)
+                if 'matching-refs' in endpoint or '?per_page=' in endpoint:
+                    return '[]'  # Listing deliberately never observes the new draft.
+                if '/releases/tags/' in endpoint:
+                    return json.dumps({**draft,'draft':False})
+            if args[:2]==('release','upload'):
+                file=Path(args[3]);draft['assets'].append({'name':file.name,'size':file.stat().st_size,
+                    'digest':'sha256:'+hashlib.sha256(file.read_bytes()).hexdigest()})
+            return ''
+        def command(*args,**kwargs):
+            if args[:2]==('git','rev-parse'):return 'a'*40
+            if args[:2]==('git','show'):return json.dumps(catalog)
+            return ''
+        with mock.patch.dict(os.environ,{'GITHUB_ACTIONS':'true','GITHUB_REPOSITORY':apps.REPOSITORY}), \
+             mock.patch.object(apps,'ROOT',self.root), mock.patch.object(apps,'build',return_value=(package,release)), \
+             mock.patch.object(apps,'gh',side_effect=github), mock.patch.object(apps,'command',side_effect=command), \
+             mock.patch('urllib.request.urlopen',side_effect=lambda *a,**k: package.open('rb')):
+            apps.publish('demo','1.0.0')
+        result=json.loads((self.root/'catalog/stable.json').read_text())
+        self.assertEqual(result['apps'][release['appId']]['latest'],'1.0.0')
+        self.assertEqual(sum('?per_page=' in str(c) for c in calls),1)
+
     def test_publish_requires_workflow(self):
         with mock.patch.dict(os.environ, {'GITHUB_ACTIONS':'false'}), self.assertRaisesRegex(ValueError,'workflow'):
             apps.publish('demo','1.0.0')

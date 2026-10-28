@@ -194,16 +194,17 @@ def publish(app,version):
         tags=gh('api',f'repos/{REPOSITORY}/git/matching-refs/tags/{tag}')
         if any(x['ref']=='refs/tags/'+tag for x in json.loads(tags)):
             raise ValueError('The release tag already exists without a matching Release.')
-        notes_file=package.parent/'notes.md'
-        notes_file.write_text(release['notes'],encoding='utf-8')
-        gh('release','create',tag,'--repo',REPOSITORY,'--target',commit,'--draft',
-           '--title',release['name']+' '+version,'--notes-file',str(notes_file))
-        # GitHub's by-tag endpoint only returns published releases.
-        existing=next(r for r in api(f'repos/{REPOSITORY}/releases?per_page=100') if r['tag_name']==tag)
+        request_file=package.parent/'create-release.json'
+        save_json(request_file,{'tag_name':tag,'target_commitish':commit,'draft':True,
+                                'name':release['name']+' '+version,'body':release['notes']})
+        # Use the creation receipt; the release list can briefly remain stale.
+        existing=json.loads(gh('api',f'repos/{REPOSITORY}/releases','--method','POST',
+                               '--input',str(request_file)))
     if existing['draft'] and existing['target_commitish']!=commit:
         if existing['assets']:
             raise ValueError('An existing draft with assets points to another source commit.')
-        gh('release','edit',tag,'--repo',REPOSITORY,'--target',commit)
+        gh('release','edit',tag,'--repo',REPOSITORY,'--target',commit,
+           '--notes',release['notes'],'--title',release['name']+' '+version)
     for file in (package,package.parent/'release.json'):
         digest='sha256:'+hashlib.sha256(file.read_bytes()).hexdigest()
         asset=next((a for a in existing['assets'] if a['name']==file.name),None)
