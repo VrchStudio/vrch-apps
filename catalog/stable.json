@@ -3,7 +3,7 @@
   "apps": {
     "f8f1c78b-6c03-4ed8-9d65-8237803d09e9": {
       "slug": "hardware-check",
-      "latest": "1.6.1",
+      "latest": "1.6.2",
       "versions": {
         "1.6.1": {
           "version": "1.6.1",
@@ -23,6 +23,25 @@
             "updateApi": 1
           },
           "notes": "The shared Hardware Check release for controls, audio, touch, camera, IMU and system information. This publishes the existing 1.6.1 package without changing its contents."
+        },
+        "1.6.2": {
+          "version": "1.6.2",
+          "name": "Hardware Check",
+          "tag": "hardware-check-v1.6.2",
+          "sourceCommit": "850f0955804a8be922047224fdcba83da4a0bcaa",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/hardware-check-v1.6.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/hardware-check-v1.6.2/hardware-check-1.6.2.vrchapp",
+          "size": 39000130,
+          "sha256": "3147c49a4f5c3be647f805d6eecdbcd379199af850cc03b16bbb3492fbb8ed2c",
+          "packageDigest": "3147c49a4f5c3be647f805d6eecdbcd379199af850cc03b16bbb3492fbb8ed2c",
+          "revision": "47d011d0189adf83b2311361fa079522ef7c25639201204df2f7323637dddc69",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "Add a crisp vector App icon and a compact reset button, matching the vrch.io interface."
         }
       }
     }
