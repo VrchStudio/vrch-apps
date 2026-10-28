@@ -85,7 +85,7 @@
     },
     "ce96ad6b-8e44-4661-83f4-823bd546aa19": {
       "slug": "magic-circle",
-      "latest": "1.0.1",
+      "latest": "1.0.2",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -124,6 +124,25 @@
             "updateApi": 1
           },
           "notes": "- Add a VRCH-style vector icon in Launcher, My Apps and Guide."
+        },
+        "1.0.2": {
+          "version": "1.0.2",
+          "name": "Magic Circle",
+          "tag": "magic-circle-v1.0.2",
+          "sourceCommit": "75b1651503bf6296c02b76bba08e8d468eda7722",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/magic-circle-v1.0.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/magic-circle-v1.0.2/magic-circle-1.0.2.vrchapp",
+          "size": 266027,
+          "sha256": "d79d6edc19b3ef4e5afeacfbfc5880420657cfdf9a2eb95d553093ac71a9bc3c",
+          "packageDigest": "d79d6edc19b3ef4e5afeacfbfc5880420657cfdf9a2eb95d553093ac71a9bc3c",
+          "revision": "e839879c333707949faed771903034bb8fd7c212599a846ca197015ef19ed8ac",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Fix sound startup on current device browsers."
         }
       }
     }
