@@ -4,8 +4,9 @@
   "data_schema_version": 1,
   "id": "cefa2063-8345-40c0-92b5-8f23ac73872c",
   "name": "Drum 808",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "entry": "index.html",
+  "icon": "assets/drum-808.svg",
   "capabilities": {
     "controls": true,
     "audio_input": false,
