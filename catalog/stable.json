@@ -1583,7 +1583,7 @@
     },
     "b66bcc41-dd33-428f-aa62-c1a7724b92f5": {
       "slug": "vibelive-synth",
-      "latest": "0.3.1",
+      "latest": "0.3.2",
       "versions": {
         "0.3.1": {
           "version": "0.3.1",
@@ -1603,6 +1603,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "0.3.2": {
+          "version": "0.3.2",
+          "name": "VibeLive Synth",
+          "tag": "vibelive-synth-v0.3.2",
+          "sourceCommit": "44b6e2fa242112fa9d84f39112e5cee33e40b5b1",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/vibelive-synth-v0.3.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/vibelive-synth-v0.3.2/vibelive-synth-0.3.2.vrchapp",
+          "size": 65093,
+          "sha256": "1c67850adb4e11fe305658b67900c5e6eadfa8f0196e6c998ce0c1e922de6e14",
+          "packageDigest": "1c67850adb4e11fe305658b67900c5e6eadfa8f0196e6c998ce0c1e922de6e14",
+          "revision": "d7caf8ed83c3b7754238307c27c16c7d3f2e19e2e6a01a2282ccf8416bf41c25",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add a VRCH-style vector synth icon.\n- Fix audio output initialization while preserving the saved vibe and Mac loop workflow."
         }
       },
       "guide": {
@@ -1741,7 +1760,8 @@
             "text": "A 120 BPM, 4-bar loop runs on the device clock. Each new render fades in on the next beat, or the next loop in shuffle. Takes go only to your Mac, as the base it rewrites. The last vibe you sent is saved; synth settings live on the Mac; the take and blend last until you close the App."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8cmVjdCB4PSI2IiB5PSI5IiB3aWR0aD0iNTIiIGhlaWdodD0iNDYiIHJ4PSIzIiBzdHJva2U9IiNlOGU4ZTMiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxwYXRoIGQ9Ik03IDM1aDUwTTE5IDM2djE4TTMyIDM2djE4TTQ1IDM2djE4IiBzdHJva2U9IiNhOGE4YTUiIHN0cm9rZS13aWR0aD0iMyIvPgogIDxwYXRoIGQ9Ik0xNSAyM2g1bDUtOSA5IDE3IDYtOGg5IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMy41Ii8+CiAgPHBhdGggZD0iTTE5IDM2djhNMzIgMzZ2OE00NSAzNnY4IiBzdHJva2U9IiNlOGU4ZTMiIHN0cm9rZS13aWR0aD0iNiIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiLz4KPC9zdmc+Cg=="
     }
   }
 }
