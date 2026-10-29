@@ -955,6 +955,94 @@
         ]
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPkZsdXggRlg8L3RpdGxlPgogIDxwYXRoIGQ9Ik03IDN2NW0wIDZ2MTVNMTYgM3YyNk0yNSAzdjNtMCA2djE3IiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik0zIDhoOHY2SDN6bTE4LTJoOHY2aC04eiIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJNMTIgMTloOHY2aC04eiIgZmlsbD0iI2ZmMTQ5MyIvPgo8L3N2Zz4K"
+    },
+    "94f420c4-fd6e-4b50-835e-8577322ed483": {
+      "slug": "shaker-shaker",
+      "latest": "0.1.0",
+      "versions": {
+        "0.1.0": {
+          "version": "0.1.0",
+          "name": "Shaker Shaker",
+          "tag": "shaker-shaker-v0.1.0",
+          "sourceCommit": "8f377cccf9027bbd17c64b5cd626687db6d89b2f",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/shaker-shaker-v0.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/shaker-shaker-v0.1.0/shaker-shaker-0.1.0.vrchapp",
+          "size": 272950,
+          "sha256": "005205a92800048b9a37fc7e35ec72b8ee04ab50cd72cbb3166b031c050c12cf",
+          "packageDigest": "005205a92800048b9a37fc7e35ec72b8ee04ab50cd72cbb3166b031c050c12cf",
+          "revision": "40bdeff8c4a3c09075a7566533ad45acdbfc7f6fd9a65619f7af5223aed7d3ed",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "Shake, tap and feel the grains come alive.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "Shake the device",
+                "action": "Play immediately with your last sound."
+              },
+              {
+                "control": "Tap the chamber",
+                "action": "Try a shake; enables sound if a touch is needed."
+              },
+              {
+                "control": "Tune",
+                "action": "Explore textures and shape your sound when ready."
+              }
+            ]
+          },
+          {
+            "title": "Physical controls",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Choose Seeds, Sand, Wood or Metal."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Set motion sensitivity."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Adjust the amount of grains."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Change chamber size and resonance."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Mute or unmute sound."
+              },
+              {
+                "control": "K3 · Hold",
+                "action": "Grip the shell to damp its sound; release to open it again."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Nudge the physical model once."
+              }
+            ]
+          },
+          {
+            "title": "Playing and sound",
+            "text": "Hold to grip damps the shell; release to let it ring. Mute silences the sound. Open Tune for Seeds, Sand, Wood or Metal, sensitivity, fill and body size; Done returns to playing. E1–E4 work while playing. Your texture and settings are remembered. The shared Menu controls audio output and level. Preview requires Listen to preview for sound."
+          },
+          {
+            "title": "Experimental model",
+            "text": "A bounded granular simulation uses real acceleration and angular velocity, friction, contacts and body resonances. It is a musical approximation, not a calibrated replica of a particular maraca. The device supplies motion; Preview offers an explicit tap test and requires Listen to preview. Missing motion quiets the live excitation, and closing the App releases the sensors and audio."
+          }
+        ]
+      }
     }
   }
 }
