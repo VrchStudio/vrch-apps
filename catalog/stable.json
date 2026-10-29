@@ -1332,7 +1332,7 @@
     },
     "95d295da-7cf2-40ec-934a-07818d892b68": {
       "slug": "body-vibes",
-      "latest": "0.5.1",
+      "latest": "0.5.2",
       "versions": {
         "0.5.1": {
           "version": "0.5.1",
@@ -1352,6 +1352,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "0.5.2": {
+          "version": "0.5.2",
+          "name": "BODY VIBES",
+          "tag": "body-vibes-v0.5.2",
+          "sourceCommit": "f3c837c43ad5f447114af19b276b1c3a3676d04e",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/body-vibes-v0.5.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/body-vibes-v0.5.2/body-vibes-0.5.2.vrchapp",
+          "size": 54965128,
+          "sha256": "d4f6c8c89b54bec89d46046bd67a98078d76543afdf6cb0c86fd494e871cf56e",
+          "packageDigest": "d4f6c8c89b54bec89d46046bd67a98078d76543afdf6cb0c86fd494e871cf56e",
+          "revision": "bc552c47688f8baeb366cfccde6b921395433b8feb57c254ab6b93af0e678e06",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add a VRCH-style vector body-motion icon for Launcher, My Apps and Guide.\n- Fix device audio initialization while retaining music and tone sensitivity."
         }
       },
       "guide": {
@@ -1459,7 +1478,8 @@
             ]
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPkJPRFkgVklCRVM8L3RpdGxlPgogIDxjaXJjbGUgY3g9IjE2IiBjeT0iNyIgcj0iMyIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJtNiAxMSA1IDVoMTBsNS01TTE2IDEydjEwbC02IDdtNi03IDYgNyIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNNSAxOGMtMiAyLTIgNSAwIDdtMjItN2MyIDIgMiA1IDAgNyIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cg=="
     }
   }
 }
