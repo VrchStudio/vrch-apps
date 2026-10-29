@@ -2,10 +2,11 @@
   "schema_version": 1,
   "id": "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31",
   "name": "PalmNotes Duo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "sdk_version": 1,
   "data_schema_version": 1,
   "entry": "index.html",
+  "icon": "assets/palmnotes-duo.svg",
   "capabilities": {
     "controls": true,
     "video_input": true,
