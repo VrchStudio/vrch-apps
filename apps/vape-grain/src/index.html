@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Vape Grain</title>
+<link rel="stylesheet" href="style.css">
+<script src="/apps/sdk/apps-v1.js"></script>
+<script src="dsp.js"></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<main class="app" id="app">
+  <header class="bar">
+    <span class="name">VAPE<b>GRAIN</b></span>
+    <button class="preset" id="preset" type="button" aria-label="Current preset">DRIFT</button>
+    <span class="state" id="state"><i></i><em>IDLE</em></span>
+    <span class="meter" aria-hidden="true"><i id="level"></i></span>
+  </header>
+
+  <section class="stage" id="stage">
+    <canvas id="canvas"></canvas>
+    <button class="start" id="start" type="button" hidden>START</button>
+    <div class="hint" id="hint">BREATHE, OR HOLD TO PLAY</div>
+  </section>
+
+  <section class="macros" id="macros" aria-label="Macro controls"></section>
+
+  <footer class="keys">
+    <button class="key" id="k2" type="button"><span>K2</span><b>PRESET</b></button>
+    <button class="key" id="k3" type="button"><span>K3 · HOLD</span><b>BREATHE</b></button>
+    <button class="key" id="k4" type="button"><span>K4 · HOLD</span><b>MUTE</b></button>
+  </footer>
+
+  <p class="notice" id="notice" role="status" hidden></p>
+</main>
+</body>
+</html>

@@ -19,6 +19,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [Shaker Shaker](apps/shaker-shaker): shake or tap a granular percussion instrument.
 
+- [Vape Grain](apps/vape-grain): shape granular instruments with breath and touch.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.
