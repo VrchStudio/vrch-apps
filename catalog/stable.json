@@ -1765,7 +1765,7 @@
     },
     "a591c7e9-3faa-4207-a1c2-2a88153ed934": {
       "slug": "shader-editor",
-      "latest": "0.1.0",
+      "latest": "0.1.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -1785,6 +1785,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "0.1.1": {
+          "version": "0.1.1",
+          "name": "Shader Editor",
+          "tag": "shader-editor-v0.1.1",
+          "sourceCommit": "e867f906af12cb811b472c6dda0ffc8fc3672e84",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/shader-editor-v0.1.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/shader-editor-v0.1.1/shader-editor-0.1.1.vrchapp",
+          "size": 43512459,
+          "sha256": "945fa4828fe05549f41362e0349964d98f69b8a37bd28a8f5ee240897c77bb62",
+          "packageDigest": "945fa4828fe05549f41362e0349964d98f69b8a37bd28a8f5ee240897c77bb62",
+          "revision": "e2034447c2511d5513374ea984be12502c2cd0bde91f4e6d9ce9c904c8c249b1",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add a VRCH-style vector shader icon.\n- Keep audio analysis on a silent output while preserving visual presets and saved workspaces."
         }
       },
       "guide": {
@@ -1807,7 +1826,8 @@
             "text": "Open the My Apps menu to Exit. Launch this App again to restore the last confirmed workspace. K1 remains reserved for the system menu."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8cGF0aCBkPSJNMTkgMTMgNSAzMmwxNCAxOU00NSAxM2wxNCAxOS0xNCAxOSIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjQiLz4KICA8cGF0aCBkPSJtMzIgMTAgMTIgMjItMTIgMjItMTItMjJaIiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMy41Ii8+CiAgPHBhdGggZD0iTTIwIDMyaDI0TTMyIDEwdjQ0IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K"
     }
   }
 }
