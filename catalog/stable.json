@@ -1329,6 +1329,137 @@
         ]
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPlBhbG1Ob3RlcyBEdW88L3RpdGxlPgogIDxwYXRoIGQ9Ik05IDI5IDMgMTljLTEtMiAxLTQgMy0ybDIgM1Y5YTIgMiAwIDAgMSA0IDB2Ny0xMWEyIDIgMCAwIDEgNCAwdjExLTlhMiAyIDAgMCAxIDQgMHYxMC01YTIgMiAwIDAgMSA0IDB2MTBjMCAzLTIgNS0zIDciIHN0cm9rZT0iI2RlZGVkZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE3IDI0VjIwbDUtMXY0IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik0xNCAyM2g0djNoLTR6bTUtMWg0djNoLTR6IiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo="
+    },
+    "95d295da-7cf2-40ec-934a-07818d892b68": {
+      "slug": "body-vibes",
+      "latest": "0.5.1",
+      "versions": {
+        "0.5.1": {
+          "version": "0.5.1",
+          "name": "BODY VIBES",
+          "tag": "body-vibes-v0.5.1",
+          "sourceCommit": "370cc2648b3cbd2c73c62f10e2ea298b051e122a",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/body-vibes-v0.5.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/body-vibes-v0.5.1/body-vibes-0.5.1.vrchapp",
+          "size": 54964584,
+          "sha256": "10abfa98e5b698da1c38c3f726f9bd344855c44340b2c06c5c2277f38524c337",
+          "packageDigest": "10abfa98e5b698da1c38c3f726f9bd344855c44340b2c06c5c2277f38524c337",
+          "revision": "a6f76775414ade16bc33d4405e9846419b843cbdeaf8352c8f8f0aff5be4c373",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "Mix bass and music with your hands, and shape the tone with your body.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "Right arm · Raise",
+                "action": "Hold briefly to bring in the music. Lift your hand to just below the top of your head for 100% volume."
+              },
+              {
+                "control": "Left arm · Raise",
+                "action": "Hold briefly to bring in the bass part. Just below the top of your head is 100% bass. Both arms can reach full volume together before you raise them overhead for vocals."
+              },
+              {
+                "control": "Body · Forward / back",
+                "action": "Stand naturally at your playing position and press K2 or tap CALIBRATE to set the middle tone immediately. Lean toward the camera for bright, away for dark. Reset after changing position. This also works with hands overhead. Keep your face visible; if it is hidden, the current tone is held."
+              },
+              {
+                "control": "Head · Toward either hand",
+                "action": "Keep your hands raised beside your head. Move your head toward your left hand for stronger bass and its reverb, or toward your right for stronger music and its reverb. Circle your head gently for a smooth stereo blend with trailing room sound. The colored links show each hand’s influence."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Adjust Bright / Dark sensitivity from 25% to 200%. Turn clockwise for more response, counterclockwise for less. Starts at 50%; your setting saves automatically. K2 calibration stays set."
+              },
+              {
+                "control": "Half Body",
+                "action": "Sit or stand facing the camera. Each arm can play independently when its own shoulder and hand are visible. The picture follows the camera rotation and Mirror setting in Menu → Device."
+              },
+              {
+                "control": "Both hands · Overhead",
+                "action": "Hold both hands clearly above the top of your head to switch to vocals. Once playing, vocals continue if your hands leave through the top of the picture while your head and shoulders stay visible. Bring either hand back below your head to stop vocals."
+              },
+              {
+                "control": "K2 · Press / CALIBRATE",
+                "action": "Immediately set your current position as the tone midpoint. Keep your face visible. Raising your arms does not reset or change the tone midpoint. Press again after changing position. The midpoint survives brief tracking loss; Reload starts a fresh session."
+              },
+              {
+                "control": "Lower the playing arm",
+                "action": "Each part fades in when raised and fades out when lowered. Switching to or from vocals crossfades the parts, with reverb trailing naturally. Song time pauses after the last part fades out; raising an arm resumes from there."
+              },
+              {
+                "control": "Leave view / hide a hand",
+                "action": "Brief tracking flicker keeps the playing part steady. If an arm stays hidden, its part fades out; the other arm keeps working. A returning arm resumes after brief confirmation."
+              },
+              {
+                "control": "E2–E4 / K3–K4",
+                "action": "No App actions. K1 opens the shared Menu, Guide and Exit."
+              }
+            ]
+          },
+          {
+            "title": "Sound indicators",
+            "controls": [
+              {
+                "control": "HOLD",
+                "action": "The gesture is being confirmed. Keep the playing arm steady briefly."
+              },
+              {
+                "control": "Percent / ON",
+                "action": "Shows the opened part and its volume. The meters follow actual sound; a quiet passage can have little meter activity."
+              },
+              {
+                "control": "Shared playback",
+                "action": "All parts share one position and keep their original pitch. No part restarts when you change gestures."
+              }
+            ]
+          },
+          {
+            "title": "Audio",
+            "controls": [
+              {
+                "control": "Updated ADE music",
+                "action": "Bass, music and vocals use the three supplied WAV stems from ade_music.zip, preserved as aligned lossless audio."
+              },
+              {
+                "control": "Full loop",
+                "action": "Starts at the beginning. At the end of the 1:28 section, all three parts loop together from the start."
+              },
+              {
+                "control": "Output + volume",
+                "action": "Choose output and master volume in the shared Menu."
+              }
+            ]
+          },
+          {
+            "title": "Saved settings",
+            "controls": [
+              {
+                "control": "New session",
+                "action": "Starts silent at 0:00. No camera footage or body data is saved."
+              },
+              {
+                "control": "Tone sensitivity",
+                "action": "Remembers your E1 sensitivity on this device. The calibrated position resets when you reopen; press K2 at your playing position."
+              }
+            ]
+          }
+        ]
+      }
     }
   }
 }
