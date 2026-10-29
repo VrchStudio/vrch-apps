@@ -491,7 +491,7 @@
     },
     "cefa2063-8345-40c0-92b5-8f23ac73872c": {
       "slug": "drum-808",
-      "latest": "1.0.0",
+      "latest": "1.0.1",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -511,6 +511,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "1.0.1": {
+          "version": "1.0.1",
+          "name": "Drum 808",
+          "tag": "drum-808-v1.0.1",
+          "sourceCommit": "c4e5acecb749eeaaf9b4b50f72279b460c97c21d",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/drum-808-v1.0.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/drum-808-v1.0.1/drum-808-1.0.1.vrchapp",
+          "size": 41332,
+          "sha256": "116d6a9a7eb1f30249b6fa975ece530a718fd95ab7ebdf133580b0c74bbd8a79",
+          "packageDigest": "116d6a9a7eb1f30249b6fa975ece530a718fd95ab7ebdf133580b0c74bbd8a79",
+          "revision": "e5b9a0d1d320914ec16336dc1c3484a6da7346f6ef0aad0b63c2f8fc1e6fba55",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add a VRCH-style vector drum-machine icon for Launcher, My Apps and Guide."
         }
       },
       "guide": {
@@ -624,7 +643,8 @@
             "text": "Patterns, tempo, swing, mutes and voice settings save automatically. Reopening keeps them and starts stopped."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPkRydW0gODA4PC90aXRsZT4KICA8cmVjdCB4PSIzIiB5PSI2IiB3aWR0aD0iMjYiIGhlaWdodD0iMjEiIHJ4PSIyIiBzdHJva2U9IiNkZWRlZGUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik00IDE4aDI0IiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPGNpcmNsZSBjeD0iOSIgY3k9IjEyIiByPSIyIiBzdHJva2U9IiNkZWRlZGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPGNpcmNsZSBjeD0iMTYiIGN5PSIxMiIgcj0iMiIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0yMiAxMGgzbS0zIDRoMyIgc3Ryb2tlPSIjODU4NTg1IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik02IDIxaDN2M0g2em02IDBoM3YzaC0zem02IDBoM3YzaC0zeiIgZmlsbD0iI2RlZGVkZSIvPgogIDxwYXRoIGQ9Ik0yNCAyMWgzdjNoLTN6IiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo="
     }
   }
 }
