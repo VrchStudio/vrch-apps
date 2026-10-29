@@ -1,0 +1,21 @@
+{
+ "defaults":{"tempo":120,"energy":0.5,"color":0.5,"mix":0.85,"enabled":true,"auto":true},
+ "controls":[{"id":"tempo","encoder":"E1","label":"TEMPO"},{"id":"energy","encoder":"E2","label":"ENERGY"},{"id":"color","encoder":"E3","label":"COLOR"},{"id":"mix","encoder":"E4","label":"MIX"}],
+ "pads":[
+  {"id":"sweep","bit":1,"name":"SWEEP","gesture":"↔ LOW / HIGH · ↕ RESONANCE","x":0.28,"y":0.4},
+  {"id":"roll","bit":2,"name":"ROLL","gesture":"↔ REPEAT RATE · ↕ TONE","x":0.5,"y":0.6},
+  {"id":"echo","bit":4,"name":"ECHO","gesture":"↔ TIME · ↕ FEEDBACK","x":0.6,"y":0.5},
+  {"id":"chop","bit":8,"name":"CHOP","gesture":"↔ CUT RATE · ↕ GATE WIDTH","x":0.5,"y":0.6}
+ ],
+ "notes":[{"name":"1/4","beats":1},{"name":"1/8","beats":0.5},{"name":"1/16","beats":0.25},{"name":"1/32","beats":0.125}],
+ "pattern":[
+  {"mask":0},{"mask":0},{"mask":0},{"mask":4,"threshold":0.15},
+  {"mask":0},{"mask":1,"threshold":0.3},{"mask":1,"threshold":0.3},{"mask":2,"threshold":0.5},
+  {"mask":0},{"mask":0},{"mask":4,"threshold":0.2},{"mask":4,"threshold":0.2},
+  {"mask":1,"threshold":0.4},{"mask":1,"threshold":0.4},{"mask":0},{"mask":2,"threshold":0.55},
+  {"mask":0},{"mask":0},{"mask":0},{"mask":4,"threshold":0.15},
+  {"mask":2,"threshold":0.6},{"mask":2,"threshold":0.6},{"mask":0},{"mask":4,"threshold":0.2},
+  {"mask":1,"threshold":0.4},{"mask":1,"threshold":0.4},{"mask":8,"threshold":0.55},{"mask":8,"threshold":0.55},
+  {"mask":1,"threshold":0.45},{"mask":2,"threshold":0.65},{"mask":2,"threshold":0.65},{"mask":8,"threshold":0.5}
+ ]
+}

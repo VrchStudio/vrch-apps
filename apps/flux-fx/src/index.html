@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flux FX</title><link rel="stylesheet" href="style.css"><script src="/apps/sdk/apps-v1.js"></script><script src="app.js" defer></script></head>
+<body><main class="deck">
+ <header><div class="brand"><h1>FLUX <b>FX</b></h1><span id="status">LIVE DJ DECK</span></div><button class="tag" id="audio" hidden>START</button><span class="mode" id="mode">AUTO DJ</span></header>
+ <section class="transport"><div class="clock"><div class="steps" id="steps" aria-label="32 beat automatic pattern"></div><div class="beat-info"><span id="position">BAR 1 / 8</span><span id="playing">CLEAN</span></div></div><button class="tag" id="tap">TAP</button></section>
+ <section class="pads" id="pads" aria-label="Touch performance pads"></section>
+ <section class="encoders" id="encoders" aria-label="Deck controls"></section>
+ <footer><button class="key" id="fx"><span>K2</span><b>FX ON</b></button><button class="key" id="automatic"><span>K3</span><b>AUTO ON</b></button><button class="key" id="fill"><span>K4 · HOLD</span><b>FILL</b></button></footer>
+ <div class="levels"><span>IN</span><i><em id="input-level"></em></i><span>OUT</span><i><em id="output-level"></em></i><span id="signal">QUIET</span></div>
+ <p id="notice" role="status" hidden></p>
+</main></body></html>

@@ -15,6 +15,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [Wavescape](apps/wavescape): play a two-layer wavetable synthesizer with a sequencer and arpeggiator.
 
+- [Flux FX](apps/flux-fx): perform live filter, roll, echo and chop effects over audio input.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.
