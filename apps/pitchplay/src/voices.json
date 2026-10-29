@@ -1,0 +1,160 @@
+{
+  "defaults": {
+    "voice": "deep",
+    "pitch": 0,
+    "size": 0,
+    "texture": 0,
+    "level": 85,
+    "bypass": false,
+    "controlsVersion": 3
+  },
+  "effects": {
+    "formant": 0,
+    "robot": 0,
+    "carrier": 140,
+    "roughness": 0,
+    "tremolo": 0,
+    "vibrato": 0,
+    "double": 0,
+    "tone": 0,
+    "body": 0,
+    "air": 0,
+    "breath": 0,
+    "articulation": 0,
+    "clarity": 1
+  },
+  "voices": [
+    {
+      "id": "deep",
+      "name": "Giant",
+      "icon": "giant",
+      "pitch": -3.5,
+      "formant": -2.1,
+      "body": 0.28,
+      "air": -0.056,
+      "texture": 0,
+      "formantMin": -12,
+      "formantMax": 12,
+      "pitchMin": -12,
+      "pitchMax": 4
+    },
+    {
+      "id": "bright",
+      "name": "Goblin",
+      "icon": "goblin",
+      "pitch": 19.2,
+      "formant": 4,
+      "body": -0.28,
+      "air": 0.144,
+      "articulation": 0.72,
+      "texture": 0,
+      "formantMin": -12,
+      "formantMax": 12,
+      "pitchMin": 0,
+      "pitchMax": 24
+    },
+    {
+      "id": "robot",
+      "name": "Robot",
+      "icon": "robot",
+      "pitch": 0,
+      "formant": 0,
+      "body": 0,
+      "air": 0,
+      "texture": 100,
+      "formantMin": -12,
+      "formantMax": 12,
+      "carrier": 140,
+      "carrierMin": 70,
+      "carrierMax": 280,
+      "robotMin": 0.3
+    }
+  ],
+  "parameters": [
+    {
+      "id": "pitch",
+      "label": "Pitch",
+      "control": "E1",
+      "min": -100,
+      "max": 100,
+      "step": 2,
+      "default": 0,
+      "neutral": "Preset",
+      "negative": "Lower",
+      "positive": "Higher",
+      "encoderStep": 4
+    },
+    {
+      "id": "size",
+      "label": "Size",
+      "control": "E2",
+      "min": -100,
+      "max": 100,
+      "step": 2,
+      "default": 0,
+      "neutral": "Preset",
+      "negative": "Larger",
+      "positive": "Smaller",
+      "encoderStep": 6
+    },
+    {
+      "id": "texture",
+      "label": "Texture",
+      "control": "E3",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "default": 0,
+      "neutral": "Soft",
+      "positive": "Hard",
+      "encoderStep": 8
+    },
+    {
+      "id": "level",
+      "label": "Output",
+      "control": "E4",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 85,
+      "encoderStep": 1
+    }
+  ],
+  "actions": {
+    "start": {
+      "text": "START",
+      "monitor": "Start",
+      "hint": "K2 \u00b7 AUDIO"
+    },
+    "demo": {
+      "text": "DEMO",
+      "monitor": "Demo",
+      "hint": "K2 \u00b7 PREVIEW"
+    },
+    "waiting": {
+      "text": "START",
+      "monitor": "Tap Start",
+      "hint": "Tap to enable audio."
+    },
+    "cancel": {
+      "text": "CANCEL",
+      "monitor": "Cancel",
+      "hint": "Starting audio\u2026"
+    },
+    "retry": {
+      "text": "RETRY",
+      "monitor": "Retry",
+      "hint": "Audio stopped."
+    },
+    "compare": {
+      "text": "HEAR ORIGINAL",
+      "monitor": "Hear original",
+      "hint": "K2 \u00b7 COMPARE"
+    },
+    "original": {
+      "text": "BACK TO VOICE",
+      "monitor": "Back to voice",
+      "hint": "K2 \u00b7 COMPARE"
+    }
+  }
+}

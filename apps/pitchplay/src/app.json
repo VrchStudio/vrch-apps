@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "id": "6842f0ea-418a-4295-92df-fc9c2f254b2d",
+  "name": "PitchPlay",
+  "version": "0.1.0",
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "entry": "index.html",
+  "capabilities": {
+    "controls": true,
+    "audio_input": true,
+    "audio_output": true
+  },
+  "guide": {
+    "description": "Choose Giant, Goblin or Robot. Play Pitch, Size and Texture, then compare with your original.",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          {
+            "control": "K3 / K4 or voice keys",
+            "action": "Choose a voice. Tap the selected name and icon to reset its three sound controls."
+          },
+          {
+            "control": "E1 / E2 / E3",
+            "action": "Pitch: lower or higher. Size: large or small vocal tract. Texture: soft or rough; electronic strength for Robot."
+          },
+          {
+            "control": "K2 / Hear Original",
+            "action": "Compare and return. Start, Cancel or Retry appears here before Live."
+          }
+        ]
+      },
+      {
+        "title": "Controls",
+        "controls": [
+          {
+            "control": "E1 · Turn / Press",
+            "action": "Change Pitch / return to the voice’s starting pitch. Robot changes its electronic carrier."
+          },
+          {
+            "control": "E2 · Turn / Press",
+            "action": "Change Size over a wide range / return to the voice’s starting size. Pitch stays independent."
+          },
+          {
+            "control": "E3 · Turn / Press",
+            "action": "Change Texture from soft to rough / return to the voice’s starting texture. Robot changes electronic strength."
+          },
+          {
+            "control": "E4 · Turn / Press",
+            "action": "Change Output / return to 85%, including during original comparison."
+          },
+          {
+            "control": "K3 / K4",
+            "action": "Previous / next voice. Returning recalls Pitch, Size and Texture for this launch."
+          },
+          {
+            "control": "K1 · Menu",
+            "action": "Shared Guide, audio routes, Device settings and Exit."
+          }
+        ]
+      },
+      {
+        "title": "Audio and saved settings",
+        "text": "Echo cancellation defaults ON in Menu → Device → Audio; your choice is remembered. Preview never captures a microphone: choose Listen to preview, then Demo. Voice, Pitch, Size, Texture, Output and comparison save automatically; other voices’ adjustments last for this launch. Original comparison shares timing and output volume. Goblin preserves high-band articulation during large pitch changes."
+      }
+    ]
+  }
+}

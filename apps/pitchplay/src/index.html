@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PitchPlay</title>
+  <link rel="stylesheet" href="controls.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="/apps/sdk/apps-v1.js"></script>
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <main class="instrument">
+    <header class="heading">
+      <h1>Pitch<span>Play</span></h1>
+      <span id="status" class="status" role="status">READY</span>
+      <button id="audio" class="tag" hidden>STOP</button>
+    </header>
+    <section class="voices">
+      <div class="section-heading"><span>K3 / K4 · VOICE</span></div>
+      <div id="voices" class="choice-grid" aria-label="Voice presets"></div>
+    </section>
+    <section class="parameter-grid" aria-label="Voice controls">
+      <div class="parameter-row">
+        <label for="pitch"></label><output id="pitch-value" for="pitch"></output>
+        <div class="range-control"><i class="range-origin" aria-hidden="true"></i><input id="pitch" class="ui-range" type="range" aria-label="Pitch"></div>
+      </div>
+      <div class="parameter-row">
+        <label for="size"></label><output id="size-value" for="size"></output>
+        <div class="range-control"><i class="range-origin" aria-hidden="true"></i><input id="size" class="ui-range" type="range" aria-label="Size"></div>
+      </div>
+      <div class="parameter-row">
+        <label for="texture"></label><output id="texture-value" for="texture"></output>
+        <div class="range-control"><input id="texture" class="ui-range" type="range" aria-label="Texture"></div>
+      </div>
+      <div class="parameter-row">
+        <label for="level"></label><output id="level-value" for="level"></output>
+        <div class="range-control"><input id="level" class="ui-range" type="range" aria-label="Level"></div>
+      </div>
+    </section>
+    <footer class="key-row">
+      <button id="primary" class="key key--action" disabled><span id="primary-hint">K2 · AUDIO</span><b>START</b></button>
+    </footer>
+    <div class="feedback-row">
+      <div id="levels" class="levels" aria-label="Audio levels"><span>IN</span><i><em id="in-level"></em></i><span>OUT</span><i><em id="out-level"></em></i></div>
+      <p id="notice" class="notice" role="status" hidden></p>
+    </div>
+  </main>
+</body>
+</html>

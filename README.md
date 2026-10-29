@@ -25,6 +25,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [BODY VIBES](apps/body-vibes): mix music with arms, body position and head movement.
 
+- [PitchPlay](apps/pitchplay): transform live voice with Giant, Goblin and Robot presets.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.
