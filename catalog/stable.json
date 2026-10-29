@@ -491,7 +491,7 @@
     },
     "cefa2063-8345-40c0-92b5-8f23ac73872c": {
       "slug": "drum-808",
-      "latest": "1.0.1",
+      "latest": "1.0.2",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -530,6 +530,25 @@
             "updateApi": 1
           },
           "notes": "- Add a VRCH-style vector drum-machine icon for Launcher, My Apps and Guide."
+        },
+        "1.0.2": {
+          "version": "1.0.2",
+          "name": "Drum 808",
+          "tag": "drum-808-v1.0.2",
+          "sourceCommit": "414fc9f28517715ea22294b2f882737e4ac40e94",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/drum-808-v1.0.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/drum-808-v1.0.2/drum-808-1.0.2.vrchapp",
+          "size": 41337,
+          "sha256": "c7bed2fdb103d2c1a0565f43e752d6b69955cdf93431687b78221f9f2d44a649",
+          "packageDigest": "c7bed2fdb103d2c1a0565f43e752d6b69955cdf93431687b78221f9f2d44a649",
+          "revision": "e1396039c545d22c1415a3a61ff00fdd8bcf12453f0ba60d8aa9c514af6d998b",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Fix audio startup on devices and avoid misleading Menu permission prompts."
         }
       },
       "guide": {
