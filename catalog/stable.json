@@ -1063,6 +1063,152 @@
         ]
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPlNoYWtlciBTaGFrZXI8L3RpdGxlPgogIDxnIHRyYW5zZm9ybT0icm90YXRlKDM1IDE2IDE2KSI+CiAgICA8cGF0aCBkPSJNMTMgMTl2MTBoNlYxOSIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjIiLz4KICAgIDxlbGxpcHNlIGN4PSIxNiIgY3k9IjExIiByeD0iNyIgcnk9IjkiIHN0cm9rZT0iI2RlZGVkZSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgICA8cGF0aCBkPSJNMTIgMTBoMm00LTNoMm0tNSA4aDIiIHN0cm9rZT0iIzg1ODU4NSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPC9nPgo8L3N2Zz4K"
+    },
+    "13c783df-6a9a-4a60-80b1-1754d8293291": {
+      "slug": "vape-grain",
+      "latest": "1.9.0",
+      "versions": {
+        "1.9.0": {
+          "version": "1.9.0",
+          "name": "Vape Grain",
+          "tag": "vape-grain-v1.9.0",
+          "sourceCommit": "3f56f86069757b8401d1e214f6a54264b452dc40",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/vape-grain-v1.9.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/vape-grain-v1.9.0/vape-grain-1.9.0.vrchapp",
+          "size": 81633,
+          "sha256": "a5934d5ef69665eddb91593346a345860aabdfb18a520988b443bcef66a111e2",
+          "packageDigest": "a5934d5ef69665eddb91593346a345860aabdfb18a520988b443bcef66a111e2",
+          "revision": "454901fa54181197195cc8f2716f17d5d3d830c2bb426ba1d3bec4213df7b679",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "A breath-played granular instrument driven directly by your exhale: ambient pads and shimmer, plus hyperpop and cloud rap voices.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "K3 · Hold",
+                "action": "Play a steady test breath for as long as you hold; on the device you can also breathe into the microphone."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Cycle the nine instruments: seven ambient, then two hyperpop / cloud rap."
+              },
+              {
+                "control": "Vape · Breathe",
+                "action": "The synth follows your breath exactly: louder, softer, longer or shorter."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "First macro: grain length, vowel or tape wow, depending on the instrument."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Second macro: grain density, motion depth or arpeggio level."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Third macro: filter tone or brightness."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Fourth macro: hall size and mix, shimmer or sidechain pump."
+              },
+              {
+                "control": "E1–E4 · Press",
+                "action": "Reset that macro to its default."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Next instrument."
+              },
+              {
+                "control": "K3 · Hold",
+                "action": "Play a steady breath while held, for testing without the microphone."
+              },
+              {
+                "control": "K4 · Hold",
+                "action": "Mute the output; release to let the tail return."
+              },
+              {
+                "control": "Screen · Hold",
+                "action": "Play a steady breath while touched."
+              },
+              {
+                "control": "K1 · Press",
+                "action": "System Menu: Guide, audio routing and gains, Exit."
+              }
+            ]
+          },
+          {
+            "title": "Ambient instruments",
+            "controls": [
+              {
+                "control": "DRIFT",
+                "action": "Warm detuned chord pad with long, half-reversed grains and a breathing filter."
+              },
+              {
+                "control": "GLASS",
+                "action": "Sparse glass partials into an octave-shimmer hall; E4 sets the shimmer."
+              },
+              {
+                "control": "PULSE",
+                "action": "Minor chord pulsing in eighths at 84 BPM; E2 sets how deep the motion pumps."
+              },
+              {
+                "control": "CHOIR",
+                "action": "Formant voice pad; E1 morphs the vowel A–E–I–O–U."
+              },
+              {
+                "control": "TIDE",
+                "action": "Deep sub chord with very long grains and a slow swell every four bars."
+              },
+              {
+                "control": "DUST",
+                "action": "Lo-fi maj7 haze with tape wow, grit and your breath in the grains."
+              },
+              {
+                "control": "AURORA",
+                "action": "Sixteenth-note shimmer arpeggio at 90 BPM; E2 sets its level."
+              }
+            ]
+          },
+          {
+            "title": "Hyperpop and cloud rap",
+            "controls": [
+              {
+                "control": "HYPER",
+                "action": "Detuned supersaw pluck at 160 BPM with wavefold; E4 sets the sidechain pump."
+              },
+              {
+                "control": "CLOUD",
+                "action": "Reversed maj7 haze with a gentle 135 BPM pump and a deep room."
+              }
+            ]
+          },
+          {
+            "title": "Sound and timing",
+            "text": "The synth has no envelope of its own: its level is the level of your exhale, so it swells, holds and stops exactly as you breathe. How long you breathe sets the echo and reverb tails, from short after a quick puff to about five times longer after a breath of four seconds or more. Short wobbles inside one exhale do not end it. If your input only shows a jump when a breath starts and another when it stops, the first jump switches a steady amplifier on and the opposite jump switches it off. Grains come from a synthetic chord bed plus the captured breath, then pass through drive, filter, chorus, echo and reverb. Motion, pump and arpeggios follow each instrument's own tempo (66–160 BPM), not the outside session; a new breath after silence restarts them on the downbeat. HYPER clips by design. Silence stays silent. The microphone is read raw, without noise suppression or echo cancellation, so keep the speaker away from it or use headphones; hold K4 if the sound starts feeding back."
+          },
+          {
+            "title": "Saved settings",
+            "text": "The instrument and all four macro positions save automatically and return on the next launch. Audio is released when the App exits."
+          }
+        ]
+      }
     }
   }
 }
