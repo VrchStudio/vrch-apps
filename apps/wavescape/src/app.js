@@ -286,7 +286,7 @@
     phase = 'starting';
     render();
     try {
-      e.ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+      e.ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive', sinkId: { type: 'none' } });
       if (!e.ctx.audioWorklet) throw Object.assign(new Error('no worklet'), { code: 'unsupported_environment' });
       await e.ctx.resume();
       if (e.ctx.state !== 'running') throw Object.assign(new Error('gesture'), { code: 'interaction_required' });
@@ -319,7 +319,7 @@
       notice(code === 'audio_device_unavailable' ? 'Choose an available OUT in the K1 Menu, then tap START.'
         : code === 'unsupported_environment' ? 'Audio is unavailable here. Launch on the device.'
           : code === 'interaction_required' ? 'Tap START to begin audio.'
-            : 'Audio did not start. Check OUT in the K1 Menu.', true);
+            : 'Audio did not start. Tap START to retry.', true);
     }
   }
   async function fail() { await stop(); phase = 'error'; render(); notice('Audio paused. Tap START to resume.', true); }

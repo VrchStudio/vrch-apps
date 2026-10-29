@@ -2,8 +2,9 @@
   "schema_version": 1,
   "id": "ebdf21dc-2abf-40af-af1d-20d032fe5862",
   "name": "Wavescape",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "entry": "index.html",
+  "icon": "assets/wavescape.svg",
   "sdk_version": 1,
   "data_schema_version": 1,
   "capabilities": {
