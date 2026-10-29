@@ -17,6 +17,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [Flux FX](apps/flux-fx): perform live filter, roll, echo and chop effects over audio input.
 
+- [Shaker Shaker](apps/shaker-shaker): shake or tap a granular percussion instrument.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.

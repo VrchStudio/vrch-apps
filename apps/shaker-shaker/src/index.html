@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shaker Shaker</title><link rel="stylesheet" href="style.css"><script src="/apps/sdk/apps-v1.js?v=20261011-apps-imu-a2"></script><script type="module" src="app.mjs"></script></head>
+<body><main>
+<section class="stage" aria-label="Shaker instrument">
+<canvas id="view" role="button" tabindex="0" aria-label="Tap to shake"></canvas>
+<header><h1>SHAKER<br>SHAKER<span aria-hidden="true">.</span></h1></header>
+<div class="invitation" aria-hidden="true"><span id="hint">Shake to play</span><span class="hint-detail" id="hintDetail">or tap anywhere</span></div>
+<div class="performance"><button id="sound" aria-label="Enable sound">Sound</button><button id="grip" aria-pressed="false" aria-label="Hold to grip" title="Hold to grip">Grip</button><button id="tune" aria-haspopup="dialog" aria-controls="settings">Tune <span aria-hidden="true">↗</span></button></div>
+<p id="notice" class="notice" role="status" hidden></p>
+</section>
+<dialog id="settings" aria-labelledby="settingsTitle">
+<div class="settings-header"><h2 id="settingsTitle">Make it yours</h2><button id="closeSettings" aria-label="Close Tune" type="button">Done</button></div>
+<section aria-labelledby="materialLabel"><h3 id="materialLabel">Texture</h3><nav id="materials" aria-label="Shaker material"></nav></section>
+<section class="parameters" aria-label="Physical controls">
+<label for="sensitivity">Sensitivity <output id="sensitivityValue"></output></label><input id="sensitivity" type="range" min="40" max="300" step="5" aria-label="Sensitivity">
+<label for="fill">Fill <output id="fillValue"></output></label><input id="fill" type="range" min="10" max="90" step="2" aria-label="Fill">
+<label for="body">Body size <output id="bodyValue"></output></label><input id="body" type="range" min="0" max="100" step="2" aria-label="Body size">
+</section>
+<div class="status"><span id="state">Starting</span><span id="rate"></span><span id="level">Settled</span></div>
+</dialog>
+</main></body></html>
