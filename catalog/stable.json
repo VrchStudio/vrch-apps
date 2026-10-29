@@ -1480,6 +1480,86 @@
         ]
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPkJPRFkgVklCRVM8L3RpdGxlPgogIDxjaXJjbGUgY3g9IjE2IiBjeT0iNyIgcj0iMyIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJtNiAxMSA1IDVoMTBsNS01TTE2IDEydjEwbC02IDdtNi03IDYgNyIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNNSAxOGMtMiAyLTIgNSAwIDdtMjItN2MyIDIgMiA1IDAgNyIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cg=="
+    },
+    "6842f0ea-418a-4295-92df-fc9c2f254b2d": {
+      "slug": "pitchplay",
+      "latest": "0.1.0",
+      "versions": {
+        "0.1.0": {
+          "version": "0.1.0",
+          "name": "PitchPlay",
+          "tag": "pitchplay-v0.1.0",
+          "sourceCommit": "b7f8bb732093fadffdfa095e6d579eb48955af72",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/pitchplay-v0.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/pitchplay-v0.1.0/pitchplay-0.1.0.vrchapp",
+          "size": 458802,
+          "sha256": "2c2d8dafaedd93aa5ff94edd7187716651da494579c4d6e3e7956b4ecc088b46",
+          "packageDigest": "2c2d8dafaedd93aa5ff94edd7187716651da494579c4d6e3e7956b4ecc088b46",
+          "revision": "3ad5565d456ff0878b3e7dc743650da0bcffdb44199acba195dffdaf9733d6b7",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "Choose Giant, Goblin or Robot. Play Pitch, Size and Texture, then compare with your original.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "K3 / K4 or voice keys",
+                "action": "Choose a voice. Tap the selected name and icon to reset its three sound controls."
+              },
+              {
+                "control": "E1 / E2 / E3",
+                "action": "Pitch: lower or higher. Size: large or small vocal tract. Texture: soft or rough; electronic strength for Robot."
+              },
+              {
+                "control": "K2 / Hear Original",
+                "action": "Compare and return. Start, Cancel or Retry appears here before Live."
+              }
+            ]
+          },
+          {
+            "title": "Controls",
+            "controls": [
+              {
+                "control": "E1 · Turn / Press",
+                "action": "Change Pitch / return to the voice’s starting pitch. Robot changes its electronic carrier."
+              },
+              {
+                "control": "E2 · Turn / Press",
+                "action": "Change Size over a wide range / return to the voice’s starting size. Pitch stays independent."
+              },
+              {
+                "control": "E3 · Turn / Press",
+                "action": "Change Texture from soft to rough / return to the voice’s starting texture. Robot changes electronic strength."
+              },
+              {
+                "control": "E4 · Turn / Press",
+                "action": "Change Output / return to 85%, including during original comparison."
+              },
+              {
+                "control": "K3 / K4",
+                "action": "Previous / next voice. Returning recalls Pitch, Size and Texture for this launch."
+              },
+              {
+                "control": "K1 · Menu",
+                "action": "Shared Guide, audio routes, Device settings and Exit."
+              }
+            ]
+          },
+          {
+            "title": "Audio and saved settings",
+            "text": "Echo cancellation defaults ON in Menu → Device → Audio; your choice is remembered. Preview never captures a microphone: choose Listen to preview, then Demo. Voice, Pitch, Size, Texture, Output and comparison save automatically; other voices’ adjustments last for this launch. Original comparison shares timing and output volume. Goblin preserves high-band articulation during large pitch changes."
+          }
+        ]
+      }
     }
   }
 }
