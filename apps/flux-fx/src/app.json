@@ -1,5 +1,5 @@
 {
- "schema_version":1,"id":"47178724-d446-4b53-b30b-77e9f7e7624a","name":"Flux FX","version":"1.0.0","entry":"index.html","sdk_version":1,"data_schema_version":1,
+ "schema_version":1,"id":"47178724-d446-4b53-b30b-77e9f7e7624a","name":"Flux FX","version":"1.0.1","entry":"index.html","icon":"assets/flux-fx.svg","sdk_version":1,"data_schema_version":1,
  "capabilities":{"controls":true,"audio_input":true,"audio_output":true,"websocket":[]},
  "guide":{"description":"Perform a live DJ set with beat repeats, filter sweeps, echo throws and rhythmic cuts over your real IN.","sections":[
   {"title":"Quick start","controls":[
