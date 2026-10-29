@@ -40,6 +40,16 @@ def gh(*args):
     return command('gh', *args)
 
 
+def legacy_baseline(root,app,manifest):
+    path=root/'apps'/app/'legacy-baseline.json'
+    if not path.exists():return None
+    value=read_json(path)
+    if value.get('version')!=manifest['version']:return None
+    if (value.get('appId')!=manifest['id'] or any(not isinstance(value.get(key),str) or not re.fullmatch('[0-9a-f]{64}',value[key]) for key in ('revision','packageDigest'))):
+        raise ValueError('Invalid original App baseline identity.')
+    return value
+
+
 def source(app, root=ROOT):
     if not SLUG.fullmatch(app):
         raise ValueError('Use a lowercase App directory name.')
@@ -75,9 +85,6 @@ def source(app, root=ROOT):
         raise ValueError('App name must contain 1 to 48 characters.')
     if manifest.get('entry') not in files or not manifest['entry'].lower().endswith(('.html','.htm')):
         raise ValueError('App HTML entry is missing.')
-    icon=manifest.get('icon')
-    if not isinstance(icon,str) or icon not in files or Path(icon).suffix.lower() not in ('.svg','.png') or not 0<len(files[icon])<=65536:
-        raise ValueError('Every official App needs a packaged SVG or PNG icon (up to 64 KiB).')
     caps=manifest.get('capabilities')
     if not isinstance(caps,dict) or set(caps)-{'controls','audio_input','audio_output','video_input','imu_input','websocket'}:
         raise ValueError('Unsupported capabilities.')
@@ -91,7 +98,15 @@ def source(app, root=ROOT):
     for name,data in records:
         encoded=name.encode('utf-8')
         revision.update(struct.pack('>I',len(encoded))+encoded+struct.pack('>Q',len(data))+hashlib.sha256(data).digest())
-    return manifest,records,revision.hexdigest()
+    digest=revision.hexdigest()
+    baseline=legacy_baseline(root,app,manifest)
+    icon=manifest.get('icon')
+    historical=baseline is not None and baseline['revision']==digest
+    if icon is None and historical:
+        pass  # Exact installed baseline only; the next/current release needs an icon.
+    elif not isinstance(icon,str) or icon not in files or Path(icon).suffix.lower() not in ('.svg','.png') or not 0<len(files[icon])<=65536:
+        raise ValueError('Every official App needs a packaged SVG or PNG icon (up to 64 KiB).')
+    return manifest,records,digest
 
 
 def build(app, root=ROOT, output=None, source_commit=None):
@@ -115,6 +130,9 @@ def build(app, root=ROOT, output=None, source_commit=None):
         if temporary.stat().st_size>MAX_PACKAGE:
             raise ValueError('Canonical package exceeds 128 MiB.')
         digest=hashlib.sha256(temporary.read_bytes()).hexdigest()
+        baseline=legacy_baseline(root,app,manifest)
+        if baseline and (baseline['revision']!=revision or baseline['packageDigest']!=digest):
+            raise ValueError('The original App baseline must match the installed package exactly.')
         temporary.replace(package)
     finally:
         temporary.unlink(missing_ok=True)
@@ -165,8 +183,9 @@ def catalog_metadata(catalog):
         latest=app['versions'][app['latest']]
         if manifest['id']!=identifier or manifest['version']!=app['latest'] or revision!=latest['revision']:
             continue
-        path=manifest['icon'];mime='image/svg+xml' if path.lower().endswith('.svg') else 'image/png'
-        app['icon']='data:'+mime+';base64,'+base64.b64encode(dict(records)[path]).decode('ascii')
+        if manifest.get('icon'):
+            path=manifest['icon'];mime='image/svg+xml' if path.lower().endswith('.svg') else 'image/png'
+            app['icon']='data:'+mime+';base64,'+base64.b64encode(dict(records)[path]).decode('ascii')
         if isinstance(manifest.get('guide'),dict):app['guide']=manifest['guide']
     return result
 

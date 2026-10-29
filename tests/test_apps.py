@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import struct
 from pathlib import Path
 import tempfile
 import unittest
@@ -46,6 +47,29 @@ class Packages(unittest.TestCase):
             (self.src/'icon.svg').write_bytes(data)
             with self.assertRaisesRegex(ValueError,'icon'):
                 self.build()
+
+    def test_legacy_baseline_only_allows_exact_original(self):
+        self.manifest.pop('icon')
+        (self.src/'app.json').write_text(json.dumps(self.manifest))
+        (self.src/'icon.svg').unlink()
+        records=[(p.name,p.read_bytes()) for p in sorted(self.src.iterdir())]
+        revision=hashlib.sha256()
+        package=self.root/'original.vrchapp'
+        with zipfile.ZipFile(package,'w',compression=zipfile.ZIP_STORED) as archive:
+            for name,data in records:
+                encoded=name.encode();revision.update(struct.pack('>I',len(encoded))+encoded+struct.pack('>Q',len(data))+hashlib.sha256(data).digest())
+                info=zipfile.ZipInfo(name,(1980,1,1,0,0,0));info.create_system=3;info.external_attr=0o100644<<16
+                archive.writestr(info,data)
+        baseline={'appId':self.manifest['id'],'version':'1.0.0','revision':revision.hexdigest(),'packageDigest':hashlib.sha256(package.read_bytes()).hexdigest()}
+        pin=self.root/'apps/demo/legacy-baseline.json';pin.write_text(json.dumps(baseline))
+        built,_=self.build();self.assertEqual(built.read_bytes(),package.read_bytes())
+        baseline['packageDigest']='0'*64;pin.write_text(json.dumps(baseline))
+        with self.assertRaisesRegex(ValueError,'baseline'):self.build()
+        baseline['packageDigest']=hashlib.sha256(package.read_bytes()).hexdigest();pin.write_text(json.dumps(baseline))
+        (self.src/'index.html').write_text('Edited original')
+        with self.assertRaises(ValueError):self.build()
+        self.manifest['version']='1.0.1';(self.src/'app.json').write_text(json.dumps(self.manifest))
+        with self.assertRaisesRegex(ValueError,'icon'):self.build()
 
     def test_deterministic_and_preserves_all_bytes(self):
         path,first=self.build()

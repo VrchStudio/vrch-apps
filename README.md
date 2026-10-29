@@ -10,6 +10,7 @@ Update notifications require a My Apps platform release with official update sup
 
 - [Hardware Check](apps/hardware-check): check controls, audio, touch, camera and motion.
 - [Metronome](apps/metronome): keep time with adjustable tempo, meter and subdivisions.
+- [Drum 808](apps/drum-808): program twelve synthesized drum voices on a 16-step sequencer.
 - [Magic Circle](apps/magic-circle): perform with audio-reactive geometry and synthesized sound.
 
 ## Develop
@@ -45,3 +46,5 @@ For a new App, add `apps/<slug>/src/app.json`, its code/resources and `CHANGELOG
 This repository contains the Apps and their build tools. The My Apps host and fixed `/apps/sdk/` resources are provided by VRCH devices. App publication is separate from platform/Runtime updates.
 
 Bundled third-party resources retain their own license notices. Public source availability does not replace those notices or grant an additional blanket license to all repository contents. No new blanket license has been selected for VRCH-owned code.
+
+An existing installed App without an icon may declare its original identity in `apps/<slug>/legacy-baseline.json` (`appId`, `version`, `revision`, `packageDigest`). Only that exact source and byte-identical package may be published as the original baseline. Any later version must provide an icon; the exception does not permit editing or replacing the original.

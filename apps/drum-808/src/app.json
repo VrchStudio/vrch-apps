@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "id": "cefa2063-8345-40c0-92b5-8f23ac73872c",
+  "name": "Drum 808",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "capabilities": {
+    "controls": true,
+    "audio_input": false,
+    "audio_output": true,
+    "websocket": []
+  },
+  "guide": {
+    "description": "A classic 808-style drum machine: twelve synthesized voices on a 16-step sequencer.",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          {"control": "K2 · Press", "action": "Start the preset beat; press again to stop."},
+          {"control": "K4 · Press", "action": "Next pattern, A–D. While playing, it switches at the end of the bar."},
+          {"control": "Step pad · Tap", "action": "Cycle the step for the selected voice: on, accent, off."}
+        ]
+      },
+      {
+        "title": "Common controls",
+        "controls": [
+          {"control": "E1 · Turn", "action": "Tempo, 40–240 BPM."},
+          {"control": "E1 · Press", "action": "Swing: Off, Light, Medium, Heavy."},
+          {"control": "E2 · Turn", "action": "Select a voice."},
+          {"control": "E2 · Press", "action": "Mute or unmute the selected voice."},
+          {"control": "E3 · Turn", "action": "Move the step cursor."},
+          {"control": "E3 · Press", "action": "Cycle the step under the cursor: on, accent, off."},
+          {"control": "E4 · Turn", "action": "Adjust the highlighted Level, Tune or Decay."},
+          {"control": "E4 · Press", "action": "Highlight Level, Tune or Decay."},
+          {"control": "K1 · Press", "action": "Open Menu for Guide, audio, Reload or Exit."},
+          {"control": "K2 · Press", "action": "Start or stop."},
+          {"control": "K3 · Press", "action": "Play the selected voice once."},
+          {"control": "K4 · Press", "action": "Next pattern."}
+        ]
+      },
+      {
+        "title": "Touch",
+        "controls": [
+          {"control": "Voice · Tap", "action": "Select it. Its light flashes when it plays."},
+          {"control": "Step pad · Tap", "action": "Cycle on, accent, off and move the cursor there."},
+          {"control": "A–D · Tap", "action": "Choose a pattern."},
+          {"control": "Swing · Tap", "action": "Cycle the swing amount."},
+          {"control": "Level, Tune, Decay · Tap", "action": "Highlight it for E4."},
+          {"control": "Start, Hit, Pattern · Tap", "action": "Same as K2, K3 and K4."}
+        ]
+      },
+      {
+        "title": "Audio",
+        "text": "Mono output peaking near −7 dBFS. Steps keep sample-accurate time on the audio thread. Route sound and set its level in Menu. In Preview, enable Listen to preview first."
+      },
+      {
+        "title": "Saved settings",
+        "text": "Patterns, tempo, swing, mutes and voice settings save automatically. Reopening keeps them and starts stopped."
+      }
+    ]
+  }
+}

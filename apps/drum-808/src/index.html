@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drum 808</title><link rel="stylesheet" href="style.css"><script src="/apps/sdk/apps-v1.js"></script><script defer src="app.js"></script></head>
+<body><main>
+<header><div class="brand"><strong>Drum 808</strong><span>Rhythm Composer</span></div><span id="status" role="status">Loading…</span></header>
+<section class="top">
+<div class="tempo"><output id="bpm">120</output><span>BPM<small>E1</small></span></div>
+<button id="swing" class="chip"><span>Swing <small>E1 press</small></span><strong>Off</strong></button>
+<div id="patterns" class="patterns" role="group" aria-label="Pattern"></div>
+</section>
+<section id="voices" class="voices" role="group" aria-label="Instruments"></section>
+<section class="detail">
+<div class="voice-name"><strong id="voiceName">Bass Drum</strong><span id="voiceState"></span></div>
+<div id="params" class="params" role="group" aria-label="Voice settings"></div>
+</section>
+<section id="steps" class="steps" role="group" aria-label="Steps"></section>
+<footer><button id="play" class="button primary">Start <small>K2</small></button><button id="hit" class="button">Hit <small>K3</small></button><button id="next" class="button">Pattern <small>K4</small></button></footer>
+</main></body></html>
