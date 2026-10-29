@@ -825,7 +825,7 @@
     },
     "47178724-d446-4b53-b30b-77e9f7e7624a": {
       "slug": "flux-fx",
-      "latest": "1.0.0",
+      "latest": "1.0.1",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -845,6 +845,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "1.0.1": {
+          "version": "1.0.1",
+          "name": "Flux FX",
+          "tag": "flux-fx-v1.0.1",
+          "sourceCommit": "2ab14bde8c391e67ff3d0b0548e1a8e8cdcb8e38",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/flux-fx-v1.0.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/flux-fx-v1.0.1/flux-fx-1.0.1.vrchapp",
+          "size": 1567685,
+          "sha256": "364152f34d5a0f7bf8b0408bdbb6592ee2019b86592da4fed63a1b721a03a531",
+          "packageDigest": "364152f34d5a0f7bf8b0408bdbb6592ee2019b86592da4fed63a1b721a03a531",
+          "revision": "53dd9efd7d44ffa7795e7de0dde6e56fb243c79a68f89651e5049e42cf1f99c9",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add a VRCH-style vector effects icon for Launcher, My Apps and Guide.\n- Fix device audio initialization while preserving saved deck settings."
         }
       },
       "guide": {
@@ -934,7 +953,8 @@
             "text": "Tempo, Energy, Color, Mix, Auto and FX state save automatically. Preview/device data are separate. Pads and Fill are momentary and never saved. Previous sound settings remain in App data. Changing audio routes reopens audio and clears held gestures. Reload restarts processing; Exit releases audio."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPkZsdXggRlg8L3RpdGxlPgogIDxwYXRoIGQ9Ik03IDN2NW0wIDZ2MTVNMTYgM3YyNk0yNSAzdjNtMCA2djE3IiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik0zIDhoOHY2SDN6bTE4LTJoOHY2aC04eiIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJNMTIgMTloOHY2aC04eiIgZmlsbD0iI2ZmMTQ5MyIvPgo8L3N2Zz4K"
     }
   }
 }
