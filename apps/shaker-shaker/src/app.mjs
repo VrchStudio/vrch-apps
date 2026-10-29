@@ -34,7 +34,7 @@ async function start(){
  if(disposed||node)return;if(initializing)return initializing;
  initializing=(async()=>{let opened,c;
   try{
-   c=new AudioContext({sampleRate:48000,latencyHint:'interactive'});context=c;c.onstatechange=audioState;void c.resume().catch(()=>{});
+   c=new AudioContext({sampleRate:48000,latencyHint:'interactive',sinkId:{type:'none'}});context=c;c.onstatechange=audioState;void c.resume().catch(()=>{});
    await c.audioWorklet.addModule(new URL('sound.mjs',import.meta.url));
    opened=await VrchApp.audio.openOutput({channels:1});
    const destination=await opened.createNode(c);
