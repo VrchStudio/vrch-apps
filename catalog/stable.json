@@ -1229,6 +1229,86 @@
         ]
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPlZhcGUgR3JhaW48L3RpdGxlPgogIDxwYXRoIGQ9Ik05IDI0SDI0YTYgNiAwIDAgMCAwLTEyaC0xYTggOCAwIDAgMC0xNS0yIDcgNyAwIDAgMCAxIDE0WiIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJNOCAxNmgzbTMgNGgzbTMtNGgzIiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMyIvPgogIDxwYXRoIGQ9Ik02IDI4aDRtMyAwaDQiIHN0cm9rZT0iIzg1ODU4NSIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPgo="
+    },
+    "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31": {
+      "slug": "palmnotes-duo",
+      "latest": "0.1.0",
+      "versions": {
+        "0.1.0": {
+          "version": "0.1.0",
+          "name": "PalmNotes Duo",
+          "tag": "palmnotes-duo-v0.1.0",
+          "sourceCommit": "d86c7491e22fd02e9a19cf55d9be300f55895eaa",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/palmnotes-duo-v0.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/palmnotes-duo-v0.1.0/palmnotes-duo-0.1.0.vrchapp",
+          "size": 28010238,
+          "sha256": "e42e291bca78e920629559ea27699252b6ca03310d442bb310f54264304e8489",
+          "packageDigest": "e42e291bca78e920629559ea27699252b6ca03310d442bb310f54264304e8489",
+          "revision": "6bca6ac7c189b3347bd0facd25f9f490ce8e8a6109ed5c23271bb96f8ceab3cd",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "One hand plays seven notes. The other chooses the octave.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "K2 · Press",
+                "action": "Start or stop the camera and sound."
+              },
+              {
+                "control": "Melody hand",
+                "action": "1–5 fingers: Do–Sol. Shaka: La. OK: Si."
+              },
+              {
+                "control": "Octave hand",
+                "action": "Fist: middle. Thumb up: high. Thumb down: low."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "K1 · Press",
+                "action": "Open Menu and Guide."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Start or stop."
+              },
+              {
+                "control": "E1 · Turn",
+                "action": "Adjust volume."
+              },
+              {
+                "control": "E2 · Turn / press",
+                "action": "Choose Soft, Bell, Pluck, Retro or Piano."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Exchange melody and octave hands."
+              }
+            ]
+          },
+          {
+            "title": "Playing",
+            "text": "Hold a note and change the octave hand to shift its octave. Hold the octave while changing notes. Release the melody hand to repeat a note. Point the octave thumb clearly up or down; other control-hand shapes stop sound."
+          },
+          {
+            "title": "Sound and settings",
+            "text": "Choose speaker or headphones in Menu. Tone, volume and hand roles save automatically. Preview offers short note auditions."
+          }
+        ]
+      }
     }
   }
 }
