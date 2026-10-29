@@ -44,7 +44,7 @@ async function start(){
     prompt('Make some room.','Allow camera and sound when asked.');
     camera=await sdk.camera.open({width:640,height:480,frameRate:24});if(closed||phase==='error'){await release();return;}camera.onError(fail);
     output=await sdk.audio.openOutput({channels:2});if(closed||phase==='error'){await release();return;}output.onError(fail);
-    ac=new AudioContext({sampleRate:48000,latencyHint:'interactive'});await ac.audioWorklet.addModule(new URL('player-worklet.js',import.meta.url));
+    ac=new AudioContext({sampleRate:48000,latencyHint:'interactive',sinkId:{type:'none'}});await ac.audioWorklet.addModule(new URL('player-worklet.js',import.meta.url));
     if(closed||phase==='error'){await release();return;}
     player=new AudioWorkletNode(ac,'body-stems',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2],processorOptions:{sound:config.sound,startSeconds:config.track.startSeconds}});
     let loadedResolve,loadedReject;const loaded=new Promise((resolve,reject)=>{loadedResolve=resolve;loadedReject=reject;});loaded.catch(()=>{});

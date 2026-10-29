@@ -4,8 +4,9 @@
   "data_schema_version": 1,
   "id": "95d295da-7cf2-40ec-934a-07818d892b68",
   "name": "BODY VIBES",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "entry": "index.html",
+  "icon": "assets/body-vibes.svg",
   "capabilities": {
     "controls": true,
     "video_input": true,

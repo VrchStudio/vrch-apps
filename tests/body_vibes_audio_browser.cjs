@@ -1,0 +1,30 @@
+// Actual packaged tracker/model/stems, Player, SDK and PCM output. OS camera/MIDI/audio are fixtures.
+// Synthetic voice commands exercise the unchanged DSP without treating camera test patterns as a person.
+const assert=require('node:assert/strict'),path=require('node:path'),{spawn}=require('node:child_process'),readline=require('node:readline'),{chromium}=require('playwright');
+(async()=>{
+ const pages=process.env.VRCH_PAGES_ROOT||path.resolve(__dirname,'../../vrch-web-viewer-pages'),source=process.env.APP_SOURCE||path.resolve(__dirname,'../apps/body-vibes/src');
+ const driver=spawn('python3',[path.join(pages,'tests/vrch_apps_player_browser_driver.py'),'--audio-only','--camera','--controls','--app-source='+source]);driver.stderr.on('data',d=>process.stderr.write(d));
+ const config=await new Promise((resolve,reject)=>{readline.createInterface({input:driver.stdout}).once('line',l=>resolve(JSON.parse(l)));driver.once('exit',c=>reject(Error('Driver '+c)));});
+ const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--autoplay-policy=no-user-gesture-required','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
+ try{
+  const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:480,height:480}});await context.grantPermissions(['camera','microphone'],{origin:new URL(config.url).origin});
+  await context.addInitScript(()=>{
+   if(location.pathname.startsWith('/apps/content/')){
+    window.sinkSwitches=0;AudioContext.prototype.setSinkId=async()=>{sinkSwitches++;throw new DOMException('Speaker selection refused','NotAllowedError');};
+    const N=AudioWorkletNode;window.AudioWorkletNode=class extends N{constructor(c,n,o){super(c,n,o);if(n==='body-stems'){window.stemNode=this;window.sendVoice=this.port.postMessage.bind(this.port);this.port.postMessage=(m,...a)=>{if(!window.stimulated||!['stop','voices'].includes(m.type))return sendVoice(m,...a);};}}};return;
+   }
+   const listeners=new Set(),input={id:'fixture-k4e4',name:'Vrch VibeCtrl K4E4 v0.1.0',manufacturer:'VRCH',state:'connected',type:'input',connection:'open',addEventListener(t,f){if(t==='midimessage')listeners.add(f);},removeEventListener(t,f){listeners.delete(f);},open:async function(){return this;}};
+   window.emit=(cc,v)=>{for(const f of listeners)f({target:input,data:new Uint8Array([0xb0,cc,v])});};Object.defineProperty(navigator,'requestMIDIAccess',{value:async()=>({inputs:new Map([[input.id,input]]),outputs:new Map(),addEventListener(){},removeEventListener(){}})});const query=navigator.permissions.query.bind(navigator.permissions);navigator.permissions.query=d=>d.name==='midi'?Promise.resolve({state:'granted',addEventListener(){}}):query(d);
+   window.peak=0;window.meters=[];const N=AudioWorkletNode;window.AudioWorkletNode=class extends N{constructor(c,n,o){super(c,n,o);if(o?.processorOptions?.mode==='playback'){const m=c.createAnalyser();this.connect(m);meters.push(m);}}};function sample(){for(const m of meters){const a=new Float32Array(m.fftSize);m.getFloatTimeDomainData(a);for(const v of a)peak=Math.max(peak,Math.abs(v));}requestAnimationFrame(sample);}requestAnimationFrame(sample);
+  });
+  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(config.url);
+  async function launch(){await page.getByRole('button',{name:'Launch',exact:true}).click();await page.waitForSelector('#mount iframe');const frame=page.frames().find(f=>f.url().includes('/r/'));await frame.waitForFunction(()=>!!globalThis.BodyVibesDiagnostics);const start=page.getByRole('dialog').getByRole('button',{name:'Start',exact:true});if(await start.count())await start.click();return frame;}
+  let frame=await launch();
+  if(process.env.EXPECT_BASELINE_FAILURE){await frame.waitForFunction(()=>BodyVibesDiagnostics.snapshot().phase==='error',null,{timeout:60000});assert.ok(await frame.evaluate(()=>sinkSwitches>0));console.log('PASS original BODY VIBES reproduces SDK sink-switch refusal');return;}
+  await frame.waitForFunction(()=>BodyVibesDiagnostics.snapshot().phase==='live'&&BodyVibesDiagnostics.snapshot().metrics.frames>2,null,{timeout:60000});assert.equal(await frame.evaluate(()=>sinkSwitches),0);
+  await frame.evaluate(()=>{window.stimulated=true;window.voiceTimer=setInterval(()=>sendVoice({type:'voices',bass:1,synth:1,vocal:0,brightness:.5,leaseMs:250}),40);});await page.waitForFunction(()=>peak>.003);await frame.waitForFunction(()=>BodyVibesDiagnostics.snapshot().audio.playing);const peak=await page.evaluate(()=>peak);
+  await frame.evaluate(()=>{clearInterval(voiceTimer);window.stimulated=false;sendVoice({type:'stop'});});await frame.waitForFunction(()=>!BodyVibesDiagnostics.snapshot().audio.playing);const position=await frame.evaluate(()=>BodyVibesDiagnostics.snapshot().audio.position);await page.waitForTimeout(250);assert.equal(await frame.evaluate(()=>BodyVibesDiagnostics.snapshot().audio.position),position);
+  await page.evaluate(()=>emit(20,1));let saved;for(let i=0;i<60;i++){saved=await frame.evaluate(()=>VrchApp.data.get('tone-sensitivity'));if(saved.value===55)break;await page.waitForTimeout(50);}assert.equal(saved.value,55);
+  await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'})));await page.getByRole('dialog').getByRole('button',{name:'Exit',exact:true}).click();await page.waitForSelector('#library:not([hidden])');frame=await launch();await frame.waitForFunction(()=>BodyVibesDiagnostics.snapshot().phase==='live',null,{timeout:60000});assert.equal((await frame.evaluate(()=>VrchApp.data.get('tone-sensitivity'))).value,55);assert.equal(await frame.evaluate(()=>BodyVibesDiagnostics.snapshot().gesture.toneSensitivity),.55);assert.deepEqual(errors,[]);console.log('PASS BODY VIBES real camera/model/stems/SDK PCM, fade-stop position, sensitivity save and reopen; peak='+peak);
+ }finally{await browser.close();driver.stdin.end();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

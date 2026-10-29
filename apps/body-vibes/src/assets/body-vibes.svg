@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <title>BODY VIBES</title>
+  <circle cx="16" cy="7" r="3" stroke="#dedede" stroke-width="2"/>
+  <path d="m6 11 5 5h10l5-5M16 12v10l-6 7m6-7 6 7" stroke="#dedede" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M5 18c-2 2-2 5 0 7m22-7c2 2 2 5 0 7" stroke="#ff1493" stroke-width="2"/>
+</svg>
