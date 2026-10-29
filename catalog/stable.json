@@ -664,6 +664,144 @@
         ]
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPkRydW0gODA4PC90aXRsZT4KICA8cmVjdCB4PSIzIiB5PSI2IiB3aWR0aD0iMjYiIGhlaWdodD0iMjEiIHJ4PSIyIiBzdHJva2U9IiNkZWRlZGUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik00IDE4aDI0IiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPGNpcmNsZSBjeD0iOSIgY3k9IjEyIiByPSIyIiBzdHJva2U9IiNkZWRlZGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPGNpcmNsZSBjeD0iMTYiIGN5PSIxMiIgcj0iMiIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0yMiAxMGgzbS0zIDRoMyIgc3Ryb2tlPSIjODU4NTg1IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik02IDIxaDN2M0g2em02IDBoM3YzaC0zem02IDBoM3YzaC0zeiIgZmlsbD0iI2RlZGVkZSIvPgogIDxwYXRoIGQ9Ik0yNCAyMWgzdjNoLTN6IiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo="
+    },
+    "ebdf21dc-2abf-40af-af1d-20d032fe5862": {
+      "slug": "wavescape",
+      "latest": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "version": "1.0.0",
+          "name": "Wavescape",
+          "tag": "wavescape-v1.0.0",
+          "sourceCommit": "057626423b62c2c4120d9ddfbb17e56e9471ceb7",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/wavescape-v1.0.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/wavescape-v1.0.0/wavescape-1.0.0.vrchapp",
+          "size": 88215,
+          "sha256": "f59df840e3055513cc4110550a3a0d9a5390aa855f0cd7943c2b779f4436865e",
+          "packageDigest": "f59df840e3055513cc4110550a3a0d9a5390aa855f0cd7943c2b779f4436865e",
+          "revision": "06293624b9c47033ceca6903a8efa1755bac7251fab4e822809443369a26f8be",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "A two-layer wavetable synthesizer with a 64-step sequencer and arpeggiator.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "K2 · Press",
+                "action": "Start or stop the patch's sequence."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Next of the twelve patches, each with its own pattern."
+              },
+              {
+                "control": "E1 · Turn",
+                "action": "On the OSC page, sweep the wavetable POSITION."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "E1–E4 · Turn",
+                "action": "Edit the four parameters shown on the current page."
+              },
+              {
+                "control": "E1–E4 · Press",
+                "action": "Return that parameter to the patch's factory value."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Sequencer start / stop."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Next page: LFO, OSC, MOD, FILTER, ENV, AMP, FX, SEQ, ARP."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Next patch."
+              },
+              {
+                "control": "Section tab · Tap",
+                "action": "Jump to that section; tap again for its second page."
+              },
+              {
+                "control": "Fader or knob · Drag",
+                "action": "Change it; tap a knob to step it."
+              },
+              {
+                "control": "Display · Tap",
+                "action": "Start audio if it stopped."
+              }
+            ]
+          },
+          {
+            "title": "NOTE and ARPEGGIO modes",
+            "controls": [
+              {
+                "control": "Buttons 1–13 · Hold",
+                "action": "Play C to C; in ARPEGGIO the held notes are arpeggiated."
+              },
+              {
+                "control": "Buttons 14 / 15 · Tap",
+                "action": "Octave down / up."
+              },
+              {
+                "control": "Button 16 · Tap",
+                "action": "Switch SOLO (mono with glide) and POLY."
+              },
+              {
+                "control": "HOLD · Tap",
+                "action": "Sustain notes, or latch the arpeggio."
+              }
+            ]
+          },
+          {
+            "title": "SEQ mode",
+            "controls": [
+              {
+                "control": "Step button · Tap",
+                "action": "Turn a step on or off (a new step takes the last note played)."
+              },
+              {
+                "control": "Step button · Hold",
+                "action": "Edit the step: notes (chords up to 8), gate, velocity, tie."
+              },
+              {
+                "control": "PAGE · Tap",
+                "action": "Show steps 17–32, 33–48, 49–64."
+              },
+              {
+                "control": "RND · Tap",
+                "action": "Fill the pattern with a random E minor line."
+              },
+              {
+                "control": "PATCH · Tap / Hold",
+                "action": "Next patch / restore this patch and pattern to factory."
+              }
+            ]
+          },
+          {
+            "title": "Sound",
+            "text": "Each voice blends two of sixteen wavetables at one POSITION, then a wave shaper, a filter (LPF, HPF, BPF at 12 or 24 dB, or VINTAGE), three envelopes (OSC, FILTER, AMP; ENV SELECT picks which the faders edit), one LFO, chorus, delay and reverb. Eight voices."
+          },
+          {
+            "title": "Saved settings",
+            "text": "Edits to all twelve patches and their patterns save automatically and return next time."
+          }
+        ]
+      }
     }
   }
 }
