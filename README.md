@@ -23,6 +23,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [PalmNotes Duo](apps/palmnotes-duo): play notes and octaves with two-hand gestures.
 
+- [BODY VIBES](apps/body-vibes): mix music with arms, body position and head movement.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.

@@ -1,0 +1,4 @@
+Current audio source: user-provided ade_music.zip, containing ade_bass.wav, ade_music.wav and ade_vocal.wav (44.1 kHz, stereo, 16-bit PCM, 3,870,720 aligned frames each).
+All three supplied stems are encoded bit-exactly as 16-bit FLAC. No additional stem separation, bass extraction, or per-stem gain processing was applied. The App applies a common output gain for mixing headroom. No third-party permission or license is asserted.
+MediaPipe Tasks Vision and Pose Lite: Google, Apache-2.0. See vendor/mediapipe/tasks-vision-1.0.1/LICENSE.
+Pose model source: https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task

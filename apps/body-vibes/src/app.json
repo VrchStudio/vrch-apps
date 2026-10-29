@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "id": "95d295da-7cf2-40ec-934a-07818d892b68",
+  "name": "BODY VIBES",
+  "version": "0.5.1",
+  "entry": "index.html",
+  "capabilities": {
+    "controls": true,
+    "video_input": true,
+    "audio_output": true
+  },
+  "guide": {
+    "description": "Mix bass and music with your hands, and shape the tone with your body.",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          {
+            "control": "Right arm \u00b7 Raise",
+            "action": "Hold briefly to bring in the music. Lift your hand to just below the top of your head for 100% volume."
+          },
+          {
+            "control": "Left arm \u00b7 Raise",
+            "action": "Hold briefly to bring in the bass part. Just below the top of your head is 100% bass. Both arms can reach full volume together before you raise them overhead for vocals."
+          },
+          {
+            "control": "Body \u00b7 Forward / back",
+            "action": "Stand naturally at your playing position and press K2 or tap CALIBRATE to set the middle tone immediately. Lean toward the camera for bright, away for dark. Reset after changing position. This also works with hands overhead. Keep your face visible; if it is hidden, the current tone is held."
+          },
+          {
+            "control": "Head \u00b7 Toward either hand",
+            "action": "Keep your hands raised beside your head. Move your head toward your left hand for stronger bass and its reverb, or toward your right for stronger music and its reverb. Circle your head gently for a smooth stereo blend with trailing room sound. The colored links show each hand\u2019s influence."
+          }
+        ]
+      },
+      {
+        "title": "Common controls",
+        "controls": [
+          {
+            "control": "E1 \u00b7 Turn",
+            "action": "Adjust Bright / Dark sensitivity from 25% to 200%. Turn clockwise for more response, counterclockwise for less. Starts at 50%; your setting saves automatically. K2 calibration stays set."
+          },
+          {
+            "control": "Half Body",
+            "action": "Sit or stand facing the camera. Each arm can play independently when its own shoulder and hand are visible. The picture follows the camera rotation and Mirror setting in Menu \u2192 Device."
+          },
+          {
+            "control": "Both hands \u00b7 Overhead",
+            "action": "Hold both hands clearly above the top of your head to switch to vocals. Once playing, vocals continue if your hands leave through the top of the picture while your head and shoulders stay visible. Bring either hand back below your head to stop vocals."
+          },
+          {
+            "control": "K2 \u00b7 Press / CALIBRATE",
+            "action": "Immediately set your current position as the tone midpoint. Keep your face visible. Raising your arms does not reset or change the tone midpoint. Press again after changing position. The midpoint survives brief tracking loss; Reload starts a fresh session."
+          },
+          {
+            "control": "Lower the playing arm",
+            "action": "Each part fades in when raised and fades out when lowered. Switching to or from vocals crossfades the parts, with reverb trailing naturally. Song time pauses after the last part fades out; raising an arm resumes from there."
+          },
+          {
+            "control": "Leave view / hide a hand",
+            "action": "Brief tracking flicker keeps the playing part steady. If an arm stays hidden, its part fades out; the other arm keeps working. A returning arm resumes after brief confirmation."
+          },
+          {
+            "control": "E2\u2013E4 / K3\u2013K4",
+            "action": "No App actions. K1 opens the shared Menu, Guide and Exit."
+          }
+        ]
+      },
+      {
+        "title": "Sound indicators",
+        "controls": [
+          {
+            "control": "HOLD",
+            "action": "The gesture is being confirmed. Keep the playing arm steady briefly."
+          },
+          {
+            "control": "Percent / ON",
+            "action": "Shows the opened part and its volume. The meters follow actual sound; a quiet passage can have little meter activity."
+          },
+          {
+            "control": "Shared playback",
+            "action": "All parts share one position and keep their original pitch. No part restarts when you change gestures."
+          }
+        ]
+      },
+      {
+        "title": "Audio",
+        "controls": [
+          {
+            "control": "Updated ADE music",
+            "action": "Bass, music and vocals use the three supplied WAV stems from ade_music.zip, preserved as aligned lossless audio."
+          },
+          {
+            "control": "Full loop",
+            "action": "Starts at the beginning. At the end of the 1:28 section, all three parts loop together from the start."
+          },
+          {
+            "control": "Output + volume",
+            "action": "Choose output and master volume in the shared Menu."
+          }
+        ]
+      },
+      {
+        "title": "Saved settings",
+        "controls": [
+          {
+            "control": "New session",
+            "action": "Starts silent at 0:00. No camera footage or body data is saved."
+          },
+          {
+            "control": "Tone sensitivity",
+            "action": "Remembers your E1 sensitivity on this device. The calibrated position resets when you reopen; press K2 at your playing position."
+          }
+        ]
+      }
+    ]
+  }
+}

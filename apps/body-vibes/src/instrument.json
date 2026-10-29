@@ -1,0 +1,82 @@
+{
+  "gestures": {
+    "visibility": 0.6,
+    "staleMs": 420,
+    "singleHoldMs": 240,
+    "vocalHoldMs": 240,
+    "neutralHoldMs": 180,
+    "smoothingMs": 65,
+    "stableSpeed": 1.4,
+    "raise": 0.16,
+    "release": -0.08,
+    "rest": -0.18,
+    "maxHeight": 1.65,
+    "overheadMargin": 0.12,
+    "leanRangeLog": 0.09,
+    "leanDeadzoneLog": 0.02,
+    "leanSmoothingMs": 130,
+    "trackingVisibility": 0.45,
+    "trackingGraceMs": 240,
+    "headTopOffset": 0.35,
+    "vocalTopEdge": 0.9,
+    "fullVolumeBelowHead": 0.12,
+    "focusNear": 0.35,
+    "focusFar": 1.35,
+    "focusSmoothingMs": 160,
+    "toneYawTolerance": 0.18
+  },
+  "sound": {
+    "attackSeconds": 0.025,
+    "releaseSeconds": 0.025,
+    "leaseSeconds": 0.42,
+    "masterGain": 0.5941374377984165,
+    "levelReferences": [
+      0.22154037654399872,
+      0.23989678919315338,
+      0.1597193032503128
+    ],
+    "focusBoost": 0.3,
+    "reverbSend": 0.65,
+    "reverbFeedback": 0.78,
+    "reverbDamping": 0.22,
+    "focusSeconds": 0.06,
+    "fadeInSeconds": 0.35,
+    "fadeOutSeconds": 0.5
+  },
+  "colors": {
+    "idle": "#aaa59e",
+    "bass": "#91d9cd",
+    "synth": "#ff1493",
+    "vocal": "#f1c66d"
+  },
+  "track": {
+    "title": "ADE",
+    "artist": "",
+    "startSeconds": 0,
+    "sources": [
+      {
+        "key": "bass",
+        "path": "assets/stems/bass.flac"
+      },
+      {
+        "key": "synth",
+        "path": "assets/stems/other.flac"
+      },
+      {
+        "key": "vocal",
+        "path": "assets/stems/vocals.flac"
+      }
+    ],
+    "durationSeconds": 87.77142857142857
+  },
+  "controls": {
+    "toneSensitivity": {
+      "control": "E1",
+      "label": "Tone sens.",
+      "min": 25,
+      "max": 200,
+      "step": 5,
+      "default": 50
+    }
+  }
+}

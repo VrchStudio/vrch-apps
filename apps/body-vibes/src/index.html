@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BODY VIBES</title>
+<link rel="stylesheet" href="style.css"><script src="/apps/sdk/apps-v1.js"></script></head>
+<body><main>
+<header><h1>BODY VIBES</h1><span id="tracking">HALF BODY</span></header>
+<canvas id="stage" aria-label="Mirrored live camera with body tracking and sound-reactive visuals"></canvas>
+<div id="prompt"><strong id="headline">Getting ready.</strong><span id="hint">Preparing your instrument…</span></div>
+<footer>
+<div class="voices" aria-label="Instrument activity">
+<section class="voice" id="bass"><div class="label">BASS <span>LEFT ARM</span></div><strong id="bass-value">OFF</strong><div class="meter"><i id="bass-meter"></i></div></section>
+<section class="voice" id="synth"><div class="label">MUSIC <span>RIGHT ARM</span></div><strong id="synth-value">OFF</strong><div class="meter"><i id="synth-meter"></i></div></section>
+<section class="voice" id="vocal"><div class="label">VOICE <span>BOTH ARMS</span></div><strong id="vocal-value">READY</strong><div class="meter"><i id="vocal-meter"></i></div></section>
+</div>
+<div class="tone" aria-label="Body-controlled tone"><span>TONE</span><span class="tone-end">DARK</span><div class="tone-rail"><i id="tone-position"></i></div><span class="tone-end">BRIGHT</span><strong id="tone-value">WARM</strong><button id="calibrate-tone" class="action" type="button" disabled title="Set the current position as the tone midpoint" aria-label="Calibrate tone midpoint">[ CALIBRATE ]</button></div>
+</footer>
+</main><script type="module" src="app.mjs"></script></body></html>
