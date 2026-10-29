@@ -167,7 +167,7 @@
     phase = 'starting';
     render();
     try {
-      e.ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+      e.ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive', sinkId: { type: 'none' } });
       if (!e.ctx.audioWorklet) throw Object.assign(new Error('no worklet'), { code: 'unsupported_environment' });
       await e.ctx.resume();
       if (e.ctx.state !== 'running') throw Object.assign(new Error('gesture'), { code: 'interaction_required' });
@@ -236,7 +236,7 @@
         code === 'permission_required' ? 'Allow audio input in Device Access, then Retry.'
           : code === 'audio_device_unavailable' ? 'Choose an available IN and OUT in the K1 Menu, then Retry.'
             : code === 'unsupported_environment' ? 'Audio is unavailable in this preview. Launch on the device.'
-              : 'Audio did not start. Check the input in the K1 Menu, then Retry.',
+              : 'Audio did not start. Choose Retry.',
         true
       );
     }
