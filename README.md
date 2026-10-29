@@ -13,6 +13,8 @@ Update notifications require a My Apps platform release with official update sup
 - [Drum 808](apps/drum-808): program twelve synthesized drum voices on a 16-step sequencer.
 - [Magic Circle](apps/magic-circle): perform with audio-reactive geometry and synthesized sound.
 
+- [Wavescape](apps/wavescape): play a two-layer wavetable synthesizer with a sequencer and arpeggiator.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.
