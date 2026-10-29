@@ -667,7 +667,7 @@
     },
     "ebdf21dc-2abf-40af-af1d-20d032fe5862": {
       "slug": "wavescape",
-      "latest": "1.0.0",
+      "latest": "1.0.1",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -687,6 +687,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "1.0.1": {
+          "version": "1.0.1",
+          "name": "Wavescape",
+          "tag": "wavescape-v1.0.1",
+          "sourceCommit": "fd0f587975a137f8708a8b95e3d5c7afded0d0e9",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/wavescape-v1.0.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/wavescape-v1.0.1/wavescape-1.0.1.vrchapp",
+          "size": 88809,
+          "sha256": "701ea44a0b9433533978b5cf1eba7f4e6cab40da1459ab0f1be0ceee3db24394",
+          "packageDigest": "701ea44a0b9433533978b5cf1eba7f4e6cab40da1459ab0f1be0ceee3db24394",
+          "revision": "eb42294ea557253a99231dfa3bd332703b74c9b9bb05496de139b5afe5a06d70",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add a VRCH-style vector wavetable icon for Launcher, My Apps and Guide.\n- Fix device audio startup while preserving saved patches and sequences."
         }
       },
       "guide": {
@@ -801,7 +820,8 @@
             "text": "Edits to all twelve patches and their patterns save automatically and return next time."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPldhdmVzY2FwZTwvdGl0bGU+CiAgPHBhdGggZD0iTTMgOFY0aDVtMTYgMGg1djRNMyAyNHY0aDVtMTYgMGg1di00IiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHBhdGggZD0iTTMgMTJjMy4yNSAwIDMuMjUtNiA2LjUtNnMzLjI1IDEyIDYuNSAxMiAzLjI1LTEyIDYuNS0xMiAzLjI1IDYgNi41IDYiIHN0cm9rZT0iI2RlZGVkZSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0iTTMgMjJjMy4yNSAwIDMuMjUtNCA2LjUtNHMzLjI1IDggNi41IDggMy4yNS04IDYuNS04IDMuMjUgNCA2LjUgNCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cg=="
     }
   }
 }
