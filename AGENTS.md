@@ -1,6 +1,7 @@
 # Working on VRCH Apps
 
 - Every official App must declare a packaged icon in app.json. Default to a transparent SVG with a neutral gray/white subject and Deep Pink (#ff1493) accent, legible in Launcher, My Apps and Guide. Keep the icon through updates.
+- Keep the packaged guide accurate; the official catalog publishes guide and icon metadata from the exact latest released source.
 - Keep each App's UUID stable. Update its version once per release and add short user-facing release notes.
 - Use `python3 tools/apps.py check/build <app>` and focused tests. Build only from `apps/<app>/src`; never include device data, credentials or local working files.
 - Preserve unknown App files and JSON fields. Keep packaged third-party license notices. Do not alter a published version's content.

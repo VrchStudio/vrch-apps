@@ -120,16 +120,19 @@ class Packages(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'different'):
             apps.published_metadata(catalog,retry)
 
-    def test_catalog_icons_preserve_immutable_releases(self):
+    def test_catalog_metadata_preserve_immutable_releases(self):
+        self.manifest['guide']={'description':'Play the demo.','sections':[{'title':'Quick start','controls':[{'control':'E1','action':'Start.'}]}]}
+        (self.src/'app.json').write_text(json.dumps(self.manifest))
         _,release=self.build()
         catalog=apps.update_catalog({'schemaVersion':1,'apps':{}},release)
         with mock.patch.object(apps,'ROOT',self.root):
-            result=apps.catalog_icons(catalog)
+            result=apps.catalog_metadata(catalog)
+        self.assertEqual(result['apps'][release['appId']]['guide'],self.manifest['guide'])
         self.assertTrue(result['apps'][release['appId']]['icon'].startswith('data:image/svg+xml;base64,'))
         self.assertEqual(result['apps'][release['appId']]['versions'],catalog['apps'][release['appId']]['versions'])
         (self.src/'index.html').write_text('Unpublished changes')
         with mock.patch.object(apps,'ROOT',self.root):
-            self.assertEqual(apps.catalog_icons(catalog),catalog)
+            self.assertEqual(apps.catalog_metadata(catalog),catalog)
 
     def test_catalog_rejects_downgrade(self):
         _,release=self.build()

@@ -157,7 +157,7 @@ def update_catalog(catalog, release):
     return result
 
 
-def catalog_icons(catalog):
+def catalog_metadata(catalog):
     """Generate presentation metadata only from the exact published source."""
     result=json.loads(json.dumps(catalog))
     for identifier,app in result['apps'].items():
@@ -167,6 +167,7 @@ def catalog_icons(catalog):
             continue
         path=manifest['icon'];mime='image/svg+xml' if path.lower().endswith('.svg') else 'image/png'
         app['icon']='data:'+mime+';base64,'+base64.b64encode(dict(records)[path]).decode('ascii')
+        if isinstance(manifest.get('guide'),dict):app['guide']=manifest['guide']
     return result
 
 
@@ -255,7 +256,7 @@ def publish(app,version):
     command('git','fetch','origin','main')
     command('git','checkout','-B','catalog-publish','origin/main')
     path=ROOT/'catalog/stable.json'
-    updated=catalog_icons(update_catalog(read_json(path),release))
+    updated=catalog_metadata(update_catalog(read_json(path),release))
     save_json(path,updated)
     if command('git','status','--porcelain','--','catalog/stable.json'):
         command('git','config','user.name','github-actions[bot]')
