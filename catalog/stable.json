@@ -1580,6 +1580,168 @@
         ]
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8cGF0aCBkPSJNMjUgMTJhNyA3IDAgMCAxIDE0IDB2MTlhNyA3IDAgMCAxLTE0IDBaIiBzdHJva2U9IiNlOGU4ZTMiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxwYXRoIGQ9Ik0xNyAyOHYzYTE1IDE1IDAgMCAwIDMwIDB2LTNNMzIgNDZ2MTFNMjQgNTdoMTYiIHN0cm9rZT0iI2E4YThhNSIgc3Ryb2tlLXdpZHRoPSI0Ii8+CiAgPHBhdGggZD0iTTQ4IDE3bDUtNSA1IDVNNTMgMTJ2MTNNNiAzN2w1IDUgNS01TTExIDI5djEzIiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMy41Ii8+Cjwvc3ZnPgo="
+    },
+    "b66bcc41-dd33-428f-aa62-c1a7724b92f5": {
+      "slug": "vibelive-synth",
+      "latest": "0.3.1",
+      "versions": {
+        "0.3.1": {
+          "version": "0.3.1",
+          "name": "VibeLive Synth",
+          "tag": "vibelive-synth-v0.3.1",
+          "sourceCommit": "e5ee2707e4b37f2619197edb9e038c6e026b7b96",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/vibelive-synth-v0.3.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/vibelive-synth-v0.3.1/vibelive-synth-0.3.1.vrchapp",
+          "size": 64438,
+          "sha256": "5683c8a3dd1c6d2c3d57d302e963a742b35c8a1b6ebe8bed7a244e9a05ec5961",
+          "packageDigest": "5683c8a3dd1c6d2c3d57d302e963a742b35c8a1b6ebe8bed7a244e9a05ec5961",
+          "revision": "86b679eb9ceb1d85c79091d9f3d5657b4ea5fd466c0c0f617db2b8e7b4996915",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "A Stable Audio loop synth: your MacBook renders, this device plays, steers and records the room.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "K3 · Press",
+                "action": "Ask the Mac for a new vibe."
+              },
+              {
+                "control": "K2 · Hold",
+                "action": "Record the room; release and the Mac rewrites it in."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Blend the recording with the loop."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Select a sound, 1–8."
+              },
+              {
+                "control": "E1 · Press",
+                "action": "Mute or unmute the selected sound."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Weight of the selected sound."
+              },
+              {
+                "control": "E2 · Press",
+                "action": "Selected sound back to 1.00."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Variation: stay close or evolve."
+              },
+              {
+                "control": "E3 · Press",
+                "action": "Variation back to 0.50."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Blend: loop only to take only, heard and rewritten."
+              },
+              {
+                "control": "E4 · Press",
+                "action": "Reroll the seed."
+              },
+              {
+                "control": "K2 · Hold",
+                "action": "Record up to one loop; release to rewrite it in."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Send the typed vibe, or the next preset."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Mute or unmute the output."
+              }
+            ]
+          },
+          {
+            "title": "Recording",
+            "text": "The microphone keeps sound only while you hold. A take lands where the playhead was, is levelled to the loop's loudness and loops in time; a new take replaces it, and holds under 0.15 s are ignored. On release the Mac renders a new loop from what you hear, the loop and take at the BLEND mix, and every later loop does the same; E3 Variation sets how far it strays. Echo cancellation is off unless set in Device > Audio, so a take also hears the speaker. The waveform shows the loop in orange and the take in teal, live while recording; STATUS shows the mic level."
+          },
+          {
+            "title": "Touch",
+            "controls": [
+              {
+                "control": "Sound row · Tap",
+                "action": "Select that sound."
+              },
+              {
+                "control": "Weight bar · Drag",
+                "action": "Set that sound's weight."
+              },
+              {
+                "control": "Waveform · Hold",
+                "action": "Record; release to stop."
+              },
+              {
+                "control": "BLEND · Drag",
+                "action": "Set the blend."
+              },
+              {
+                "control": "SHUF · Tap",
+                "action": "Shuffle: a new loop every 4 bars."
+              },
+              {
+                "control": "Vibe box · Tap",
+                "action": "Open the on-screen keyboard."
+              }
+            ]
+          },
+          {
+            "title": "Keyboard",
+            "controls": [
+              {
+                "control": "Suggestion · Tap",
+                "action": "Finish the word, or fill a preset vibe."
+              },
+              {
+                "control": "⇧ · Tap",
+                "action": "Capital next letter; tap twice for caps lock."
+              },
+              {
+                "control": "⌫ · Hold",
+                "action": "Keep deleting."
+              },
+              {
+                "control": "send ↵ · Tap",
+                "action": "Send the vibe and close the keyboard."
+              },
+              {
+                "control": "✕ or transport · Tap",
+                "action": "Close the keyboard."
+              }
+            ]
+          },
+          {
+            "title": "Mac link",
+            "text": "Start the MacBook with run_synth.py --vrch and relay channel 7; it does all AI rendering. MAC ● means linked. If the Mac goes away, the last loop keeps playing."
+          },
+          {
+            "title": "Audio and saved settings",
+            "text": "A 120 BPM, 4-bar loop runs on the device clock. Each new render fades in on the next beat, or the next loop in shuffle. Takes go only to your Mac, as the base it rewrites. The last vibe you sent is saved; synth settings live on the Mac; the take and blend last until you close the App."
+          }
+        ]
+      }
     }
   }
 }
