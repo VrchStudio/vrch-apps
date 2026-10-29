@@ -185,7 +185,7 @@
       });
     }
     async prepareAudio(session, live) {
-      const context = new AudioContext({sampleRate: 48000}); session.context = context;
+      const context = new AudioContext({sampleRate: 48000, sinkId: {type: 'none'}}); session.context = context;
       if (context.state !== 'running') {
         void context.resume();
         // Do not hold a pending media start behind an autoplay gesture.

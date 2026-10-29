@@ -4,7 +4,8 @@
   "data_schema_version": 1,
   "id": "a591c7e9-3faa-4207-a1c2-2a88153ed934",
   "name": "Shader Editor",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "icon": "assets/shader-editor.svg",
   "entry": "index.html",
   "capabilities": {
     "audio_input": true,
