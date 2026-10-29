@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "6842f0ea-418a-4295-92df-fc9c2f254b2d",
   "name": "PitchPlay",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "sdk_version": 1,
   "data_schema_version": 1,
   "entry": "index.html",
@@ -65,5 +65,6 @@
         "text": "Echo cancellation defaults ON in Menu → Device → Audio; your choice is remembered. Preview never captures a microphone: choose Listen to preview, then Demo. Voice, Pitch, Size, Texture, Output and comparison save automatically; other voices’ adjustments last for this launch. Original comparison shares timing and output volume. Goblin preserves high-band articulation during large pitch changes."
       }
     ]
-  }
+  },
+  "icon": "assets/pitchplay.svg"
 }

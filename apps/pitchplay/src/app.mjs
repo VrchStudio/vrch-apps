@@ -147,7 +147,7 @@ async function start() {
   const current = () => { if (closed || token !== epoch) throw Object.assign(new Error('Cancelled'), {cancelled: true}); };
   candidate = value; wantsAudio = true; phase = 'starting'; audioIssue = ''; render();
   try {
-    value.context = new AudioContext({sampleRate: 48000, latencyHint: 'interactive'});
+    value.context = new AudioContext({sampleRate: 48000, latencyHint: 'interactive', sinkId: {type: 'none'}});
     if (!value.context.audioWorklet) throw Object.assign(new Error(), {code: 'unsupported_environment'});
     const resumed = value.context.resume();
     if (value.context.state !== 'running') { phase = 'waiting'; render(); }
