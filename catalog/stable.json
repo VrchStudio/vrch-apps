@@ -1066,7 +1066,7 @@
     },
     "13c783df-6a9a-4a60-80b1-1754d8293291": {
       "slug": "vape-grain",
-      "latest": "1.9.0",
+      "latest": "1.9.1",
       "versions": {
         "1.9.0": {
           "version": "1.9.0",
@@ -1086,6 +1086,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "1.9.1": {
+          "version": "1.9.1",
+          "name": "Vape Grain",
+          "tag": "vape-grain-v1.9.1",
+          "sourceCommit": "00f55ecd4464455125cabc48bcb3a7a1a65d7283",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/vape-grain-v1.9.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/vape-grain-v1.9.1/vape-grain-1.9.1.vrchapp",
+          "size": 82126,
+          "sha256": "1800472b9c02b4d2f57d80503cac20a5a4427852d54446d06356840d70b9ca40",
+          "packageDigest": "1800472b9c02b4d2f57d80503cac20a5a4427852d54446d06356840d70b9ca40",
+          "revision": "acdf6c48a83e6af33c9e5164cb4cc7309c600f58221ff5d3c4bd79bc892879f3",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add a VRCH-style vector grain-cloud icon for Launcher, My Apps and Guide.\n- Fix device audio initialization while retaining instruments and macro settings."
         }
       },
       "guide": {
@@ -1208,7 +1227,8 @@
             "text": "The instrument and all four macro positions save automatically and return on the next launch. Audio is released when the App exits."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPlZhcGUgR3JhaW48L3RpdGxlPgogIDxwYXRoIGQ9Ik05IDI0SDI0YTYgNiAwIDAgMCAwLTEyaC0xYTggOCAwIDAgMC0xNS0yIDcgNyAwIDAgMCAxIDE0WiIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJNOCAxNmgzbTMgNGgzbTMtNGgzIiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMyIvPgogIDxwYXRoIGQ9Ik02IDI4aDRtMyAwaDQiIHN0cm9rZT0iIzg1ODU4NSIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPgo="
     }
   }
 }
