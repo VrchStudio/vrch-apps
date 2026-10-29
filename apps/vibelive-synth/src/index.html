@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VibeLive Synth</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main id="app">
+    <header class="top">
+      <div class="brand">vibelive <b>synth</b></div>
+      <div class="phrase" id="phrase">BAR 1/4 · BEAT 01/16</div>
+      <div class="chip off" id="link-chip">MAC …</div>
+    </header>
+
+    <section class="transport">
+      <div class="wave" id="wave-box">
+        <canvas id="wave"></canvas>
+        <span class="rec-badge hidden" id="rec-badge">● REC</span>
+      </div>
+    </section>
+
+    <section class="readout">
+      <div class="cell" id="cell-var"><i>VAR</i><b id="r-var">0.50</b></div>
+      <div class="cell" id="cell-seed"><i>SEED</i><b id="r-seed">0</b></div>
+      <div class="cell tap" id="cell-shuffle"><i>SHUF</i><b id="r-shuffle">off</b></div>
+      <div class="cell knob idle" id="cell-blend">
+        <svg class="dial" viewBox="0 0 24 24" aria-hidden="true">
+          <circle class="track" cx="12" cy="12" r="9" pathLength="100" transform="rotate(135 12 12)" />
+          <circle class="arc" id="blend-arc" cx="12" cy="12" r="9" pathLength="100" transform="rotate(135 12 12)" />
+        </svg>
+        <span><i>BLEND</i><b id="r-blend">0.50</b></span>
+      </div>
+      <div class="cell wide"><i>STATUS</i><b id="r-status">waiting for Mac</b></div>
+    </section>
+
+    <section class="bank" id="bank"></section>
+
+    <section class="vibe">
+      <input id="idea" type="text" maxlength="200" autocomplete="off" spellcheck="false"
+             inputmode="none" enterkeyhint="send"
+             placeholder="describe a vibe — rainy 3am tape synthwave" />
+      <button id="vibe-btn" type="button">vibe</button>
+    </section>
+
+    <section class="kb hidden" id="kb" aria-label="on-screen keyboard"></section>
+  </main>
+
+  <div class="overlay hidden" id="audio-gate">tap to start audio</div>
+  <div class="toast" id="toast"></div>
+  <script src="/apps/sdk/apps-v1.js"></script>
+  <script src="keyboard.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

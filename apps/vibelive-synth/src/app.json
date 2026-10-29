@@ -1,0 +1,77 @@
+{
+  "capabilities": {
+    "audio_input": true,
+    "audio_output": true,
+    "controls": true,
+    "websocket": [{"channel": 7, "format": "json"}]
+  },
+  "data_schema_version": 1,
+  "entry": "index.html",
+  "guide": {
+    "description": "A Stable Audio loop synth: your MacBook renders, this device plays, steers and records the room.",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          {"control": "K3 · Press", "action": "Ask the Mac for a new vibe."},
+          {"control": "K2 · Hold", "action": "Record the room; release and the Mac rewrites it in."},
+          {"control": "E4 · Turn", "action": "Blend the recording with the loop."}
+        ]
+      },
+      {
+        "title": "Common controls",
+        "controls": [
+          {"control": "E1 · Turn", "action": "Select a sound, 1–8."},
+          {"control": "E1 · Press", "action": "Mute or unmute the selected sound."},
+          {"control": "E2 · Turn", "action": "Weight of the selected sound."},
+          {"control": "E2 · Press", "action": "Selected sound back to 1.00."},
+          {"control": "E3 · Turn", "action": "Variation: stay close or evolve."},
+          {"control": "E3 · Press", "action": "Variation back to 0.50."},
+          {"control": "E4 · Turn", "action": "Blend: loop only to take only, heard and rewritten."},
+          {"control": "E4 · Press", "action": "Reroll the seed."},
+          {"control": "K2 · Hold", "action": "Record up to one loop; release to rewrite it in."},
+          {"control": "K3 · Press", "action": "Send the typed vibe, or the next preset."},
+          {"control": "K4 · Press", "action": "Mute or unmute the output."}
+        ]
+      },
+      {
+        "title": "Recording",
+        "text": "The microphone keeps sound only while you hold. A take lands where the playhead was, is levelled to the loop's loudness and loops in time; a new take replaces it, and holds under 0.15 s are ignored. On release the Mac renders a new loop from what you hear, the loop and take at the BLEND mix, and every later loop does the same; E3 Variation sets how far it strays. Echo cancellation is off unless set in Device > Audio, so a take also hears the speaker. The waveform shows the loop in orange and the take in teal, live while recording; STATUS shows the mic level."
+      },
+      {
+        "title": "Touch",
+        "controls": [
+          {"control": "Sound row · Tap", "action": "Select that sound."},
+          {"control": "Weight bar · Drag", "action": "Set that sound's weight."},
+          {"control": "Waveform · Hold", "action": "Record; release to stop."},
+          {"control": "BLEND · Drag", "action": "Set the blend."},
+          {"control": "SHUF · Tap", "action": "Shuffle: a new loop every 4 bars."},
+          {"control": "Vibe box · Tap", "action": "Open the on-screen keyboard."}
+        ]
+      },
+      {
+        "title": "Keyboard",
+        "controls": [
+          {"control": "Suggestion · Tap", "action": "Finish the word, or fill a preset vibe."},
+          {"control": "⇧ · Tap", "action": "Capital next letter; tap twice for caps lock."},
+          {"control": "⌫ · Hold", "action": "Keep deleting."},
+          {"control": "send ↵ · Tap", "action": "Send the vibe and close the keyboard."},
+          {"control": "✕ or transport · Tap", "action": "Close the keyboard."}
+        ]
+      },
+      {
+        "title": "Mac link",
+        "text": "Start the MacBook with run_synth.py --vrch and relay channel 7; it does all AI rendering. MAC ● means linked. If the Mac goes away, the last loop keeps playing."
+      },
+      {
+        "title": "Audio and saved settings",
+        "text": "A 120 BPM, 4-bar loop runs on the device clock. Each new render fades in on the next beat, or the next loop in shuffle. Takes go only to your Mac, as the base it rewrites. The last vibe you sent is saved; synth settings live on the Mac; the take and blend last until you close the App."
+      }
+    ]
+  },
+  "id": "b66bcc41-dd33-428f-aa62-c1a7724b92f5",
+  "name": "VibeLive Synth",
+  "schema_version": 1,
+  "sdk_version": 1,
+  "version": "0.3.1"
+}

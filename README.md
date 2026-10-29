@@ -27,6 +27,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [PitchPlay](apps/pitchplay): transform live voice with Giant, Goblin and Robot presets.
 
+- [VibeLive Synth](apps/vibelive-synth): play and blend AI music loops rendered by a connected Mac.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.

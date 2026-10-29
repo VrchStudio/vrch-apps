@@ -1,0 +1,167 @@
+/* VibeLive Synth device App — EP-style flat panel sized for 480x432 / 480x480. */
+:root {
+  --bg: #0d0e10;
+  --panel: #17191c;
+  --line: #2a2d32;
+  --ink: #e8e6e1;
+  --dim: #8b8f96;
+  --orange: #ff6a1a;
+  --teal: #29c7b6;
+  --red: #ff4d4d;
+  --row: 28px;
+  --wave-h: 40px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--ink);
+  -webkit-user-select: none; user-select: none;
+}
+#app {
+  height: 100%;
+  padding: 6px 8px 6px calc(8px + var(--inset-left, 0px));
+  display: flex; flex-direction: column; gap: 6px;
+}
+.tall #app { --row: 31px; --wave-h: 52px; gap: 8px; }
+
+.top { display: flex; align-items: center; gap: 8px; height: 22px; }
+.brand { font-size: 13px; letter-spacing: 0.04em; color: var(--dim); }
+.brand b { color: var(--ink); }
+.phrase { flex: 1; text-align: center; font-size: 11px; color: var(--dim); }
+.phrase b { color: var(--ink); }
+.chip {
+  font-size: 10px; padding: 2px 7px; border-radius: 9px;
+  border: 1px solid var(--teal); color: var(--teal);
+}
+.chip.off { border-color: var(--red); color: var(--red); }
+
+.transport { display: flex; flex-direction: column; gap: 4px; }
+/* Loop waveform: the canvas draws the loop, the take, the playhead and render progress. */
+.wave {
+  position: relative; height: var(--wave-h); border-radius: 5px; overflow: hidden;
+  background: var(--panel); border: 1px solid var(--line); touch-action: none;
+}
+.wave.rec { border-color: var(--red); }
+.wave canvas { display: block; width: 100%; height: 100%; }
+.rec-badge {
+  position: absolute; top: 2px; right: 6px; pointer-events: none;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: var(--red);
+}
+
+.readout { display: flex; gap: 6px; }
+.readout .cell {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 5px;
+  padding: 3px 7px; display: flex; flex-direction: column; min-width: 52px;
+}
+.readout .cell.wide { flex: 1; min-width: 0; }
+.readout i { font-style: normal; font-size: 9px; color: var(--dim); }
+.readout b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.readout .wide b { font-size: 12px; font-weight: 500; }
+.readout .cell.flash { border-color: var(--orange); }
+#r-shuffle.on { color: var(--teal); }
+.readout .cell.knob { flex-direction: row; align-items: center; gap: 5px; touch-action: none; }
+.readout .cell.knob span { display: flex; flex-direction: column; }
+.dial { width: 22px; height: 22px; flex: none; }
+.dial circle { fill: none; stroke-width: 3; stroke-linecap: round; }
+.dial .track { stroke: var(--line); stroke-dasharray: 75 100; }
+.dial .arc { stroke: var(--teal); stroke-dasharray: 37.5 100; }
+.readout .cell.knob.idle .arc { stroke: #4a4d52; }
+.readout .cell.knob.idle b { color: var(--dim); }
+
+.bank { flex: 1; display: flex; flex-direction: column; gap: 3px; min-height: 0; }
+.slot {
+  height: var(--row); display: flex; align-items: center; gap: 8px;
+  padding: 0 8px; border-radius: 5px; border: 1px solid transparent; background: var(--panel);
+}
+.slot .n { width: 12px; font-size: 10px; color: var(--dim); }
+.slot .name { width: 168px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot .w { flex: 1; height: 10px; position: relative; background: #24272b; border-radius: 5px; overflow: hidden; touch-action: none; }
+.slot .w i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--orange); border-radius: 5px; }
+.slot .v { width: 34px; text-align: right; font-size: 12px; color: var(--dim); }
+.slot.sel { border-color: var(--orange); }
+.slot.sel .v { color: var(--ink); }
+.slot.muted .w i { background: #4a4d52; }
+.slot.muted .name { color: var(--dim); text-decoration: line-through; }
+.slot.empty { opacity: 0.35; }
+.slot.empty .name { color: var(--dim); }
+
+.vibe { display: flex; gap: 6px; height: 30px; }
+.vibe input {
+  flex: 1; min-width: 0; background: var(--panel); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 5px; padding: 0 8px; font: inherit; font-size: 12px;
+  -webkit-user-select: text; user-select: text;
+}
+.vibe input:focus { outline: none; border-color: var(--orange); }
+.vibe button {
+  width: 64px; background: var(--orange); color: #111; border: 0; border-radius: 5px;
+  font: inherit; font-weight: 700; font-size: 12px;
+}
+.vibe button:disabled { background: #4a4d52; color: var(--dim); }
+
+/* ── on-screen keyboard (keyboard.js) ──
+   While open, the sound bank folds away and the keyboard takes all the height
+   left under the vibe box; rows share it equally, so keys grow when the
+   VibeCtrl bars are hidden (480x480) and shrink when they are shown. */
+#app.kb-open .bank { display: none; }
+#app.kb-open .vibe input { border-color: var(--orange); }
+.kb {
+  position: relative; flex: 1; min-height: 0;
+  display: flex; flex-direction: column; gap: 4px;
+  touch-action: none;
+}
+.kb.hidden { display: none; }
+.kb-suggest { display: flex; gap: 4px; height: 28px; flex: none; }
+/* The strip scrolls sideways (swipe), so chips keep their full text. */
+.kb-chips {
+  flex: 1; min-width: 0; display: flex; gap: 4px;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; touch-action: pan-x;
+}
+.kb-chips::-webkit-scrollbar { display: none; }
+.kb-chip, .kb-close {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  border-radius: 14px; padding: 0 10px; font: inherit; font-size: 12px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kb-chip { flex: none; max-width: 320px; }
+.kb-chip.preset { color: var(--teal); border-color: #1f5d57; }
+.kb-chip.down { background: #3a3e45; }
+.kb-close { flex: none; width: 34px; padding: 0; color: var(--dim); }
+.kb-rows { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 4px; }
+.kb-row { flex: 1; min-height: 30px; display: flex; gap: 4px; }
+.kb-gap { flex-basis: 0; }
+.kb-key {
+  flex-basis: 0; min-width: 0; border: 0; border-radius: 6px;
+  background: #2a2d32; color: var(--ink); font: inherit;
+  font-size: clamp(13px, 4.2vw, 21px); line-height: 1;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+  transition: background 60ms, transform 60ms;
+}
+.kb-key.fn { background: #1d2024; color: var(--dim); font-size: clamp(11px, 3vw, 15px); }
+.kb-key.shift, .kb-key.back { font-size: clamp(17px, 5.2vw, 25px); }
+.kb-key.enter { background: var(--orange); color: #111; font-weight: 700; }
+.kb-key.space { color: var(--dim); }
+.kb-key.shift.on { color: var(--orange); }
+.kb-key.shift.caps { background: var(--orange); color: #111; }
+.kb-key.down { background: #4a4f57; transform: translateY(1px); }
+.kb-key.enter.down { background: #ff8a4a; }
+.kb-pop {
+  position: absolute; z-index: 3; transform: translate(-50%, -100%);
+  min-width: 40px; padding: 6px 10px; border-radius: 8px;
+  background: #3a3e45; color: var(--ink); text-align: center;
+  font-size: clamp(20px, 6.4vw, 30px); pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.kb-pop.hidden { display: none; }
+
+.overlay {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.72); font-size: 18px; color: var(--orange); z-index: 5;
+}
+.hidden { display: none; }
+.toast {
+  position: fixed; left: 50%; bottom: 46px; transform: translateX(-50%);
+  background: #26292e; border: 1px solid var(--line); border-radius: 6px;
+  padding: 5px 10px; font-size: 11px; max-width: 90%; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
