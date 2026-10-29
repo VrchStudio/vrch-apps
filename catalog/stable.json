@@ -958,7 +958,7 @@
     },
     "94f420c4-fd6e-4b50-835e-8577322ed483": {
       "slug": "shaker-shaker",
-      "latest": "0.1.0",
+      "latest": "0.1.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -978,6 +978,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "0.1.1": {
+          "version": "0.1.1",
+          "name": "Shaker Shaker",
+          "tag": "shaker-shaker-v0.1.1",
+          "sourceCommit": "88554310313dd04f7b72dec18248b834812365d2",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/shaker-shaker-v0.1.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/shaker-shaker-v0.1.1/shaker-shaker-0.1.1.vrchapp",
+          "size": 273502,
+          "sha256": "3be0423a7976c84ff136185072ee26831d45fa67c5608409b1dfc4cc0dd22a7e",
+          "packageDigest": "3be0423a7976c84ff136185072ee26831d45fa67c5608409b1dfc4cc0dd22a7e",
+          "revision": "d9132a8f055aff30030e1056e8238d9dd47f5396d50884da95c56a52e62debf7",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add a VRCH-style vector shaker icon for Launcher, My Apps and Guide.\n- Fix device audio initialization while retaining sound settings."
         }
       },
       "guide": {
@@ -1042,7 +1061,8 @@
             "text": "A bounded granular simulation uses real acceleration and angular velocity, friction, contacts and body resonances. It is a musical approximation, not a calibrated replica of a particular maraca. The device supplies motion; Preview offers an explicit tap test and requires Listen to preview. Missing motion quiets the live excitation, and closing the App releases the sensors and audio."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPlNoYWtlciBTaGFrZXI8L3RpdGxlPgogIDxnIHRyYW5zZm9ybT0icm90YXRlKDM1IDE2IDE2KSI+CiAgICA8cGF0aCBkPSJNMTMgMTl2MTBoNlYxOSIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjIiLz4KICAgIDxlbGxpcHNlIGN4PSIxNiIgY3k9IjExIiByeD0iNyIgcnk9IjkiIHN0cm9rZT0iI2RlZGVkZSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgICA8cGF0aCBkPSJNMTIgMTBoMm00LTNoMm0tNSA4aDIiIHN0cm9rZT0iIzg1ODU4NSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPC9nPgo8L3N2Zz4K"
     }
   }
 }
