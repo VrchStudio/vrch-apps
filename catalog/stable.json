@@ -822,6 +822,119 @@
         ]
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPldhdmVzY2FwZTwvdGl0bGU+CiAgPHBhdGggZD0iTTMgOFY0aDVtMTYgMGg1djRNMyAyNHY0aDVtMTYgMGg1di00IiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHBhdGggZD0iTTMgMTJjMy4yNSAwIDMuMjUtNiA2LjUtNnMzLjI1IDEyIDYuNSAxMiAzLjI1LTEyIDYuNS0xMiAzLjI1IDYgNi41IDYiIHN0cm9rZT0iI2RlZGVkZSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0iTTMgMjJjMy4yNSAwIDMuMjUtNCA2LjUtNHMzLjI1IDggNi41IDggMy4yNS04IDYuNS04IDMuMjUgNCA2LjUgNCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cg=="
+    },
+    "47178724-d446-4b53-b30b-77e9f7e7624a": {
+      "slug": "flux-fx",
+      "latest": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "version": "1.0.0",
+          "name": "Flux FX",
+          "tag": "flux-fx-v1.0.0",
+          "sourceCommit": "53811b7b00196d9318c8dc160529886a961b4f61",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/flux-fx-v1.0.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/flux-fx-v1.0.0/flux-fx-1.0.0.vrchapp",
+          "size": 1567224,
+          "sha256": "20a176c834681c9b050f448db57605f9af8a29942f76fa85c71738cdd64ac558",
+          "packageDigest": "20a176c834681c9b050f448db57605f9af8a29942f76fa85c71738cdd64ac558",
+          "revision": "3cc1e90e8109781fd4b5faa2561010e93c20bc04d7679b06d64c897a7c90c119",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "Perform a live DJ set with beat repeats, filter sweeps, echo throws and rhythmic cuts over your real IN.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "E1 · Press / Tap",
+                "action": "Tap on the music's beat to align the deck. Set BPM with E1."
+              },
+              {
+                "control": "Pads · Hold + Drag",
+                "action": "Sweep, Roll, Echo or Chop. Combine pads with two fingers; release to return to Auto."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Toggle the automatic eight-bar FX pattern. E2 sets its energy."
+              }
+            ]
+          },
+          {
+            "title": "Deck controls",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Tempo: 70–180 BPM. Press taps and aligns the beat clock."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Energy: automatic effect density and intensity."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Color: filter resonance and echo tone."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Mix: dry IN to the performed effects."
+              },
+              {
+                "control": "E2–E4 · Press",
+                "action": "Unassigned."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Toggle FX / dry bypass. Start or retry if audio is stopped."
+              },
+              {
+                "control": "K4 · Hold",
+                "action": "Perform a fast Roll + Echo fill. Release or open Menu to end it."
+              },
+              {
+                "control": "K1 · Press",
+                "action": "System Menu, routing/gains, Guide, Reload and Exit."
+              }
+            ]
+          },
+          {
+            "title": "Touch performance",
+            "controls": [
+              {
+                "control": "Sweep",
+                "action": "Hold for a filter sweep. Drag left/right from low-pass to high-pass; up/down changes resonance."
+              },
+              {
+                "control": "Roll",
+                "action": "Repeat a captured slice of live input. Drag left/right for 1/4–1/32 notes; up/down changes its tone."
+              },
+              {
+                "control": "Echo",
+                "action": "Throw an echo. Drag left/right for beat time; up/down sets feedback."
+              },
+              {
+                "control": "Chop",
+                "action": "Cut the live sound rhythmically. Drag left/right for rate; up/down sets gate width."
+              }
+            ]
+          },
+          {
+            "title": "Beat and audio",
+            "text": "Auto follows the BPM you set or tap; it does not detect the song's beat automatically. All timing runs on the device audio clock. Clean steps keep the original music clear; there is no Drive boost. Device Launch processes the selected IN to OUT. K1 Menu owns routing and App gains. Preview is silent until you choose the bundled 120 BPM Demo and enable host Listen; no microphone capture or device audio mirror."
+          },
+          {
+            "title": "Saved settings",
+            "text": "Tempo, Energy, Color, Mix, Auto and FX state save automatically. Preview/device data are separate. Pads and Fill are momentary and never saved. Previous sound settings remain in App data. Changing audio routes reopens audio and clears held gestures. Reload restarts processing; Exit releases audio."
+          }
+        ]
+      }
     }
   }
 }
