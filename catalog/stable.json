@@ -82,7 +82,164 @@
           "notes": "- Align the App icon beside the two-line name, version and status header."
         }
       },
-      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPkhhcmR3YXJlIENoZWNrPC90aXRsZT4KICA8cGF0aCBkPSJNMTAgMnY1bTYtNXY1bTYtNXY1TTEwIDI1djVtNi01djVtNi01djVNMiAxMGg1bS01IDZoNW0tNSA2aDVtMTgtMTJoNW0tNSA2aDVtLTUgNmg1IiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxyZWN0IHg9IjciIHk9IjciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjEiIHN0cm9rZT0iI2YwZWVlOCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0ibTExIDE2IDQgNCA3LTgiIHN0cm9rZT0iI2ZmMTQ5MyIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0ic3F1YXJlIiBzdHJva2UtbGluZWpvaW49Im1pdGVyIi8+Cjwvc3ZnPgo="
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPkhhcmR3YXJlIENoZWNrPC90aXRsZT4KICA8cGF0aCBkPSJNMTAgMnY1bTYtNXY1bTYtNXY1TTEwIDI1djVtNi01djVtNi01djVNMiAxMGg1bS01IDZoNW0tNSA2aDVtMTgtMTJoNW0tNSA2aDVtLTUgNmg1IiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxyZWN0IHg9IjciIHk9IjciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjEiIHN0cm9rZT0iI2YwZWVlOCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0ibTExIDE2IDQgNCA3LTgiIHN0cm9rZT0iI2ZmMTQ5MyIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0ic3F1YXJlIiBzdHJva2UtbGluZWpvaW49Im1pdGVyIi8+Cjwvc3ZnPgo=",
+      "guide": {
+        "description": "Check controls, sound, touch, camera and motion.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "Controls · E1 turn",
+                "action": "Watch the count and direction."
+              },
+              {
+                "control": "Audio · Play music",
+                "action": "Listen to the test tune."
+              },
+              {
+                "control": "Camera · Tap",
+                "action": "See the camera; turn E1 to choose tracking."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "K1 · Press",
+                "action": "Open Menu and this guide."
+              },
+              {
+                "control": "Tabs · Tap",
+                "action": "Choose a test."
+              },
+              {
+                "control": "Reset test",
+                "action": "Tap the reset icon to clear readings and recording; stop audio/camera."
+              }
+            ]
+          },
+          {
+            "title": "Controls",
+            "controls": [
+              {
+                "control": "E1–E4 · Turn",
+                "action": "Check counts and direction."
+              },
+              {
+                "control": "E1–E4 / K2–K4 · Press",
+                "action": "Check press and release feedback."
+              },
+              {
+                "control": "Pressure keys · Press slowly",
+                "action": "Watch 0–100% and release back to zero. K1 still opens Menu; use Console Monitor for its full travel."
+              }
+            ]
+          },
+          {
+            "title": "Audio",
+            "controls": [
+              {
+                "control": "Record / Stop",
+                "action": "Capture up to 30 seconds, preserving both input channels."
+              },
+              {
+                "control": "Play recording / Stop playback",
+                "action": "Replay both channels through the selected output at the original level."
+              },
+              {
+                "control": "Play / Stop music",
+                "action": "Test sound output."
+              }
+            ]
+          },
+          {
+            "title": "Touch",
+            "controls": [
+              {
+                "control": "Pad · Touch / drag",
+                "action": "Watch contact positions."
+              }
+            ]
+          },
+          {
+            "title": "Camera",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Choose Off, Face, Body or Hand."
+              },
+              {
+                "control": "E1 · Press",
+                "action": "Start or retry tracking."
+              },
+              {
+                "control": "E2 · Turn / press",
+                "action": "Choose video + skeleton or skeleton only."
+              },
+              {
+                "control": "E3 · Turn / press",
+                "action": "Choose one or two hands; one is faster."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Stop or start the camera."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Rotate the view 90°."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Mirror the view."
+              }
+            ]
+          },
+          {
+            "title": "IMU",
+            "text": "Move the unit to watch its model and curves. Turn E1/E2 clockwise for more sensitivity.",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Adjust rotation sensitivity."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Adjust acceleration-curve sensitivity."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Stop or start detection."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Choose 10, 25 or 50 Hz."
+              },
+              {
+                "control": "K4 · Short press",
+                "action": "Reset the model and curves."
+              },
+              {
+                "control": "K4 · Hold",
+                "action": "Keep still to calibrate both sensitivities."
+              }
+            ]
+          },
+          {
+            "title": "System",
+            "text": "Tap the info icon beside Reset test. E2 chooses Device, Running or Battery; E1 scrolls; K2 refreshes."
+          },
+          {
+            "title": "Audio settings",
+            "text": "Choose audio ports and levels in Menu."
+          },
+          {
+            "title": "Recording",
+            "text": "The last recording stays in memory until a new take, Reset test or closing the App. It is not saved with readings."
+          }
+        ]
+      }
     },
     "ce96ad6b-8e44-4661-83f4-823bd546aa19": {
       "slug": "magic-circle",
@@ -146,7 +303,91 @@
           "notes": "- Fix sound startup on current device browsers."
         }
       },
-      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPk1hZ2ljIENpcmNsZTwvdGl0bGU+CiAgPHBhdGggZD0iTTE2IDF2NG0wIDIydjRNMSAxNmg0bTIyIDBoNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxMSIgc3Ryb2tlPSIjZjBlZWU4IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJtMTYgOSAyLjIgNC44TDIzIDE2bC00LjggMi4yTDE2IDIzbC0yLjItNC44TDkgMTZsNC44LTIuMloiIGZpbGw9IiNmZjE0OTMiLz4KPC9zdmc+Cg=="
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPk1hZ2ljIENpcmNsZTwvdGl0bGU+CiAgPHBhdGggZD0iTTE2IDF2NG0wIDIydjRNMSAxNmg0bTIyIDBoNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxMSIgc3Ryb2tlPSIjZjBlZWU4IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJtMTYgOSAyLjIgNC44TDIzIDE2bC00LjggMi4yTDE2IDIzbC0yLjItNC44TDkgMTZsNC44LTIuMloiIGZpbGw9IiNmZjE0OTMiLz4KPC9zdmc+Cg==",
+      "guide": {
+        "description": "A live, audio-reactive magic circle with eight evolving patterns, six palettes and three synthesized sound textures. Use K4E4 to perform while the canvas stays clear.",
+        "sections": [
+          {
+            "title": "Press actions",
+            "controls": [
+              {
+                "control": "K1",
+                "action": "Open the shared Menu, including Guide and audio routing."
+              },
+              {
+                "control": "E1 press",
+                "action": "Turn synthesized sound on or off."
+              },
+              {
+                "control": "E3 press",
+                "action": "Switch between Visual and Sound encoder layers. The monitor labels show the active layer."
+              },
+              {
+                "control": "E4 press",
+                "action": "Turn the audio-reactive input on or off; retry input after an error."
+              },
+              {
+                "control": "K2",
+                "action": "Next pattern: Orbit, Sigil, Lattice, Vortex, Eclipse, Bloom, Nova or Prism."
+              },
+              {
+                "control": "K3",
+                "action": "Next palette: Astral, Ember, Verdant, Ritual, Solar or Glacier."
+              },
+              {
+                "control": "K4 / screen tap",
+                "action": "Release an energy pulse. With SFX on, this also triggers an impact sound."
+              }
+            ]
+          },
+          {
+            "title": "Visual layer — turn encoders",
+            "controls": [
+              {
+                "control": "E1",
+                "action": "Rotation and animation speed."
+              },
+              {
+                "control": "E2",
+                "action": "Geometry point count, from 3 to 12."
+              },
+              {
+                "control": "E3",
+                "action": "Glow intensity."
+              },
+              {
+                "control": "E4",
+                "action": "Audio-input sensitivity."
+              }
+            ]
+          },
+          {
+            "title": "Sound layer — turn encoders",
+            "controls": [
+              {
+                "control": "E1",
+                "action": "Sound volume."
+              },
+              {
+                "control": "E2",
+                "action": "Base pitch, 55–440 Hz."
+              },
+              {
+                "control": "E3",
+                "action": "Timbre: Astral, Crystal or Void."
+              },
+              {
+                "control": "E4",
+                "action": "Space and stereo echo."
+              }
+            ]
+          },
+          {
+            "title": "Audio and saved settings",
+            "text": "Parameter values are saved automatically. Reopening starts on the Visual layer with SFX off; device audio input starts on. Choose input/output ports and their levels in Menu. Preview input is silent; enable Listen to preview before testing synthesized sound on the computer. Input-driven visual pulses do not retrigger impact sounds."
+          }
+        ]
+      }
     },
     "2f91a6d2-f0b3-49dc-84fb-f168d6d98592": {
       "slug": "metronome",
@@ -191,7 +432,62 @@
           "notes": "- Fix audio startup on current device browsers.\n- Add a VRCH-style vector icon in Launcher, My Apps and Guide."
         }
       },
-      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPk1ldHJvbm9tZTwvdGl0bGU+CiAgPHBhdGggZD0iTTEzIDNoNmw3IDI1SDZMMTMgM1oiIHN0cm9rZT0iI2RlZGVkZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTEwIDIzaDEyTTE2IDh2M20wIDN2MyIgc3Ryb2tlPSIjODU4NTg1IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Im0xNiAyNCA3LTE2IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJtMTguMiAxMy43IDUuNSAyLjQgMS42LTMuNy01LjUtMi40LTEuNiAzLjdaIiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo="
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPk1ldHJvbm9tZTwvdGl0bGU+CiAgPHBhdGggZD0iTTEzIDNoNmw3IDI1SDZMMTMgM1oiIHN0cm9rZT0iI2RlZGVkZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTEwIDIzaDEyTTE2IDh2M20wIDN2MyIgc3Ryb2tlPSIjODU4NTg1IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Im0xNiAyNCA3LTE2IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJtMTguMiAxMy43IDUuNSAyLjQgMS42LTMuNy01LjUtMi40LTEuNiAzLjdaIiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo=",
+      "guide": {
+        "description": "A performance metronome with an accented first beat, subdivisions, tap tempo and three sound textures. Timing runs on the audio thread.",
+        "sections": [
+          {
+            "title": "Turn encoders",
+            "controls": [
+              {
+                "control": "E1",
+                "action": "Tempo: 40–240 BPM."
+              },
+              {
+                "control": "E2",
+                "action": "Beats per bar: 1–8."
+              },
+              {
+                "control": "E3",
+                "action": "Subdivisions per beat: 1–4."
+              },
+              {
+                "control": "E4",
+                "action": "Sound: Click, Wood or Beep."
+              }
+            ]
+          },
+          {
+            "title": "Press keys",
+            "controls": [
+              {
+                "control": "K1",
+                "action": "Open Menu for Guide, audio routing, Reload or Exit."
+              },
+              {
+                "control": "K2",
+                "action": "Start or stop playback."
+              },
+              {
+                "control": "K3",
+                "action": "Tap repeatedly to set tempo. Taps also realign the beat."
+              },
+              {
+                "control": "K4",
+                "action": "Reset the beat position and tap history without resetting tempo or other parameters."
+              }
+            ]
+          },
+          {
+            "title": "Touch and audio",
+            "text": "On-screen tempo, Beats, Split, Sound, Start/Stop, Tap and Reset controls perform the same actions. Route sound and adjust its output level in Menu. In Preview, enable Listen to preview before starting."
+          },
+          {
+            "title": "Saved settings",
+            "text": "Tempo, beats, subdivision and timbre are saved automatically. Reopening retains these values and starts stopped."
+          }
+        ]
+      }
     }
   }
 }
