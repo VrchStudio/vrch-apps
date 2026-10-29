@@ -73,5 +73,6 @@
   "name": "VibeLive Synth",
   "schema_version": 1,
   "sdk_version": 1,
-  "version": "0.3.1"
+  "version": "0.3.2",
+  "icon": "assets/vibelive-synth.svg"
 }

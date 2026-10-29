@@ -130,7 +130,7 @@
   }
 
   async function initAudio() {
-    ctx = new AudioContext({sampleRate: SR, latencyHint: 'interactive'});
+    ctx = new AudioContext({sampleRate: SR, latencyHint: 'interactive', sinkId: {type: 'none'}});
     master = ctx.createGain();
     // Loop and take crossfade at equal power, so coincident peaks can sum past
     // full scale; this near brick-wall compressor keeps the real output clean.
