@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.image-procedural-composite",
+  "title": "Living Grid",
+  "description": "Keeps one image dominant while a thin moving grid and restrained light sweep sit above it.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec4 image = vrchSampleSource0(uv);\n  vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);\n  vec2 moving = uv * aspect * uParam_scale + vec2(vrchPhase_speed(), -vrchPhase_speed() * 0.37);\n  vec2 lineDistance = abs(fract(moving) - 0.5);\n  float gridDistance = min(lineDistance.x, lineDistance.y);\n  float grid = 1.0 - smoothstep(uParam_width, uParam_width + fwidth(gridDistance), gridDistance);\n  float sweep = pow(max(0.0, sin((uv.x + uv.y) * 4.0 - vrchPhase_speed() * 2.0)), 8.0);\n  float mask = grid * (.16 + sweep * (1.0 + uParam_sweep));\n  vec3 overlay = image.rgb + uParam_color.rgb * mask * uParam_brightness;\n  fragColor = vec4(mix(image.rgb, overlay, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.52,
+      "min": 0.0,
+      "max": 0.55,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the grid while the image remains dominant."
+    },
+    {
+      "key": "scale",
+      "label": "Grid Size",
+      "type": "float",
+      "default": 16.0,
+      "min": 8.0,
+      "max": 64.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Grid density."
+    },
+    {
+      "key": "width",
+      "label": "Line Width",
+      "type": "float",
+      "default": 0.023,
+      "min": 0.008,
+      "max": 0.1,
+      "step": 0.004,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Width of grid lines."
+    },
+    {
+      "key": "speed",
+      "label": "Motion",
+      "type": "float",
+      "default": 0.18,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Grid and sweep motion."
+    },
+    {
+      "key": "sweep",
+      "label": "Light Sweep",
+      "type": "float",
+      "default": 0.34,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the moving highlight."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "type": "float",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 0.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Brightness of the overlay."
+    },
+    {
+      "key": "color",
+      "label": "Grid Color",
+      "type": "color",
+      "default": [
+        0.12,
+        0.85,
+        1.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Procedural layer color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-grid-scale-v2",
+      "param_key": "scale",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "negative",
+      "attack_ms": 55,
+      "release_ms": 330,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-grid-speed-v2",
+      "param_key": "speed",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 70,
+      "release_ms": 370,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-grid-width-v2",
+      "param_key": "width",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-grid-sweep-v2",
+      "param_key": "sweep",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 10,
+      "release_ms": 240,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Blend",
+    "tags": [
+      "grid",
+      "overlay",
+      "composite",
+      "audio"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.image-procedural-composite.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "image-procedural-grid-v2-audio-v2",
+    "created_at": "2026-08-14T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "scale",
+      "width",
+      "speed"
+    ]
+  }
+}

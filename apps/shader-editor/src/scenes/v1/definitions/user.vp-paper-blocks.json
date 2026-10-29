@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-paper-blocks",
+  "title": "Flip Mosaic",
+  "description": "Two-sided image tiles with eight focused controls for musical flips, floating motion and surface reflections.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float softTurn(float t) {\n t=clamp(t,0.,1.);\n return t*t*t*(t*(t*6.-15.)+10.);\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord) {\n vec2 uv=fragCoord/iResolution.xy;\n vec4 original=vrchSampleSource0(uv);\n vec2 grid=iResolution.xy/min(iResolution.x,iResolution.y)*uParam_blocks;\n vec2 cell=floor(uv*grid),local=fract(uv*grid)-.5;\n vec2 textureSize=ceil(grid)*vec2(1.,2.);\n vec4 event=vrchSampleSignalTexture(0,(cell+.5)/textureSize);\n vec4 gesture=vrchSampleSignalTexture(0,(cell+vec2(.5,ceil(grid.y)+.5))/textureSize);\n float duration=gesture.x>0.?gesture.x:uParam_duration;\n float hold=gesture.x>0.?gesture.y:.04;\n float perspective=gesture.x>0.?gesture.z:.48;\n float age=iTime-event.x,halfTurn=duration*.5;\n bool turning=event.z>.5 && (gesture.w<.5 || uParam_note_response>0.) && uParam_density>0. && age>=0. && age<duration+hold;\n float turn=0.;\n if(turning) {\n  if(age<halfTurn)turn=3.14159265*softTurn(age/halfTurn);\n  else if(age<halfTurn+hold)turn=3.14159265;\n  else turn=3.14159265*(1.+softTurn((age-halfTurn-hold)/halfTurn));\n }\n bool restingBack=turning && age>=halfTurn && age<=halfTurn+hold;\n float face=restingBack?-1.:cos(turn),sine=restingBack?0.:sin(turn);\n bool horizontal=mod(event.y,2.)>.5;\n // Each tile has a stable phase; sustained music advances it continuously.\n float phase=vrchPhase_flow_speed();\n float identity=fract(sin(dot(cell,vec2(127.1,311.7)))*43758.5453);\n float drift=phase*.32+identity*6.2831853;\n vec2 offset=.026*uParam_float_amount*vec2(sin(drift),cos(drift*.73+identity*3.));\n float lift=uParam_float_amount*.5*(.5+.5*sin(drift*.81+1.));\n offset.y+=.035*lift;\n vec2 floating=(local-offset)/max(.8,1.-.20*lift);\n floating.y+=floating.x*.025*uParam_float_amount*sin(drift*.63);\n vec2 q=horizontal?floating.yx:floating;\n float projectedFace=face<0.?-max(abs(face),.004):max(abs(face),.004);\n float x=q.x/(projectedFace+q.x*sine*perspective);\n vec2 paper=vec2(x,q.y*(1.-x*sine*perspective));\n float aa=(grid.y/iResolution.y)/max(abs(face),.04);\n float edge=max(abs(paper.x),abs(paper.y));\n float inside=1.-smoothstep(.5-.008-aa*.5,.5-.008+aa*.5,edge);\n // Each face carries its full image region. Correct the back's orientation\n // so image B is readable when it faces the audience.\n vec2 imageLocal=vec2(paper.x*(face<0.?-1.:1.),paper.y);\n if(horizontal)imageLocal=imageLocal.yx;\n vec2 imageUv=(cell+.5+imageLocal)/grid;\n vec4 picture=face<0. && uVrchSource1Valid?vrchSampleSource1(imageUv):vrchSampleSource0(imageUv);\n float light=1.-.2*(1.-abs(face));\n // A softly shaded image remains under the turning face, avoiding a\n // black square flash when a whole batch crosses its thin edge.\n float reveal=turning?pow(abs(sin(turn)),2.):0.;\n vec3 backing=mix(vec3(.012),original.rgb*.72,reveal);\n vec3 result=mix(backing,picture.rgb*light,inside);\n float sweep=dot(imageLocal,normalize(vec2(.8,.6)))+.62*sin(phase*.47+identity*5.);\n float sheen=exp(-sweep*sweep/.025);\n float softEdge=pow(clamp(1.-2.*max(abs(paper.x),abs(paper.y)),0.,1.),.25);\n vec3 reflection=vec3(.94,.97,1.)*sheen*uParam_reflection*.18;\n result+=reflection*inside*softEdge*(.35+.65*abs(face));\n fragColor=vec4(mix(original.rgb,result,uParam_amount),mix(original.a,picture.a,uParam_amount));\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Blend with image A."
+    },
+    {
+      "key": "blocks",
+      "label": "Tile Count",
+      "type": "float",
+      "default": 6,
+      "min": 3,
+      "max": 18,
+      "step": 1,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Tiles along the shorter image side."
+    },
+    {
+      "key": "density",
+      "label": "Beat Tiles",
+      "type": "float",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Share of tiles selected by a strong accent."
+    },
+    {
+      "key": "duration",
+      "label": "Flip Time",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.08,
+      "max": 1.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Combined outward and return time in seconds. Higher values turn more slowly."
+    },
+    {
+      "key": "float_amount",
+      "label": "Tile Float",
+      "type": "float",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Stage",
+      "description": "Combined tile drift and rise/fall depth; responds to sound energy."
+    },
+    {
+      "key": "flow_speed",
+      "label": "Float Speed",
+      "type": "float",
+      "default": 0.24,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous travel of the floating motion and reflections."
+    },
+    {
+      "key": "reflection",
+      "label": "Reflections",
+      "type": "float",
+      "default": 0.28,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Stage",
+      "description": "Soft light moving across the tile surfaces."
+    },
+    {
+      "key": "note_response",
+      "label": "Note Response",
+      "type": "float",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Include softer instrumental attacks in tile turns."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.energy",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.beat",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.flip_tiles",
+      "type": "texture",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "beat-to-density",
+      "param_key": "density",
+      "signal_id": "audio.v2.beat",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.25,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 0,
+      "release_ms": 80,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-density",
+      "param_key": "density",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.24,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 0,
+      "release_ms": 100,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "energy-to-flow_speed",
+      "param_key": "flow_speed",
+      "signal_id": "audio.v2.energy",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1.5,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 180,
+      "release_ms": 850,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "energy-to-float_amount",
+      "param_key": "float_amount",
+      "signal_id": "audio.v2.energy",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.28,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 180,
+      "release_ms": 650,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "aesthetic-study",
+      "paper-blocks"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.study-paper-blocks",
+      "content_hash": "sha256:ffbc362153e225147f1c19f0e388b591db7778ab8190c78edf79a26c1ffa8258"
+    },
+    "prompt_summary": "Two-sided image tiles with eight focused controls for musical flips, floating motion and surface reflections.",
+    "created_at": "2026-09-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "blocks",
+      "duration",
+      "float_amount",
+      "amount"
+    ]
+  }
+}

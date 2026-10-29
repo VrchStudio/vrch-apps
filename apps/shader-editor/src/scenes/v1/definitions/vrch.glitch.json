@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.glitch",
+  "title": "Soft Glitch",
+  "description": "Time-based horizontal tears and block shifts with a restrained, light-safe default.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchGlitchHash(vec2 p) {\n  return fract(sin(dot(p, vec2(41.31, 289.17))) * 15731.743);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float timeStep = floor(vrchPhase_rate());\n  float row = floor(uv.y * uParam_blocks);\n  float randomValue = vrchGlitchHash(vec2(row, timeStep));\n  float tearActive = step(1.0 - clamp(uParam_intensity, 0.0, 0.72), randomValue);\n  float signedShift = (vrchGlitchHash(vec2(row + 19.0, timeStep)) - 0.5) * 2.0;\n  vec2 shiftedUv = uv + vec2(tearActive * signedShift * uParam_tear, 0.0);\n  vec4 image = vrchSampleSource0(shiftedUv);\n  vec2 colorOffset = vec2(tearActive * signedShift * uParam_color_shift, 0.0);\n  float red = vrchSampleSource0(shiftedUv + colorOffset).r;\n  float blue = vrchSampleSource0(shiftedUv - colorOffset).b;\n  vec3 color = vec3(red, image.g, blue);\n  float scanline = 0.985 + 0.015 * sin(uv.y * iResolution.y * 1.4);\n  fragColor = vec4(mix(image.rgb, color * scanline, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.72,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Overall glitch strength."
+    },
+    {
+      "key": "intensity",
+      "label": "Frequency",
+      "type": "float",
+      "default": 0.04,
+      "min": 0.0,
+      "max": 0.72,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "How often tears appear; capped for visual safety."
+    },
+    {
+      "key": "rate",
+      "label": "Motion",
+      "type": "float",
+      "default": 5.0,
+      "min": 0.1,
+      "max": 12.0,
+      "step": 0.1,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Rate of pattern changes."
+    },
+    {
+      "key": "blocks",
+      "label": "Bands",
+      "type": "float",
+      "default": 28.0,
+      "min": 6.0,
+      "max": 80.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Number of possible horizontal bands."
+    },
+    {
+      "key": "tear",
+      "label": "Tear",
+      "type": "float",
+      "default": 0.018,
+      "min": 0.0,
+      "max": 0.12,
+      "step": 0.002,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Horizontal displacement."
+    },
+    {
+      "key": "color_shift",
+      "label": "Color Split",
+      "type": "float",
+      "default": 0.003,
+      "min": 0.0,
+      "max": 0.03,
+      "step": 0.001,
+      "widget": "slider",
+      "group": "Color",
+      "description": "RGB separation inside shifted bands."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-glitch-tear-v2",
+      "param_key": "tear",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.12,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 30,
+      "release_ms": 150,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-glitch-rate-v2",
+      "param_key": "rate",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.035,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 60,
+      "release_ms": 240,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-glitch-color-v2",
+      "param_key": "color_shift",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.06,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 24,
+      "release_ms": 140,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-glitch-intensity-v2",
+      "param_key": "intensity",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 8,
+      "release_ms": 120,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "glitch",
+      "tear",
+      "digital",
+      "beat"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.glitch.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "glitch-v1-audio-v2",
+    "created_at": "2026-08-12T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "intensity",
+      "rate",
+      "blocks"
+    ]
+  }
+}

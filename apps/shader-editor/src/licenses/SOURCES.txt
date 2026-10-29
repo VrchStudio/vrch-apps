@@ -1,0 +1,6 @@
+three-LICENSE.txt
+https://raw.githubusercontent.com/mrdoob/three.js/r158/LICENSE
+font-awesome-LICENSE.txt
+https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/LICENSE.txt
+
+Original notices remain in the shared JS/CSS/font files. Font files are copied unchanged; unavailable legacy CSS font fallbacks are omitted during bundling.

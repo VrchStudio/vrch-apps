@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.bitmap",
+  "title": "Pixel Bitmap",
+  "description": "Reduces an image to a crisp low-resolution monochrome bitmap with stable ordered texture.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchBitmapThreshold(vec2 cell) {\n  vec2 local = mod(cell, 4.0);\n  return fract((local.x * 2.0 + local.y * 3.0 + local.x * local.y) * 0.25);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);\n  vec2 grid = uv * aspect * uParam_pixels;\n  vec2 cell = floor(grid);\n  vec2 sampleUv = (cell + 0.5) / (aspect * uParam_pixels);\n  vec4 image = vrchSampleSource0(sampleUv);\n  float luma = dot(image.rgb, vec3(0.2126, 0.7152, 0.0722));\n  float levels = max(2.0, uParam_levels);\n  float threshold = (vrchBitmapThreshold(cell) - 0.5) * uParam_dither / levels;\n  float quantized = floor(clamp(luma + threshold, 0.0, 1.0) * (levels - 1.0) + 0.5) / (levels - 1.0);\n  vec3 bitmapColor = mix(uParam_ink.rgb, uParam_paper.rgb, quantized);\n  fragColor = vec4(mix(image.rgb, bitmapColor, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.76,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the bitmap treatment."
+    },
+    {
+      "key": "pixels",
+      "label": "Pixel Detail",
+      "type": "float",
+      "default": 42.0,
+      "min": 8.0,
+      "max": 80.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Approximate number of pixels along the short side; higher values retain more image detail."
+    },
+    {
+      "key": "levels",
+      "label": "Tones",
+      "type": "float",
+      "default": 4.0,
+      "min": 2.0,
+      "max": 8.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Number of monochrome tone levels."
+    },
+    {
+      "key": "dither",
+      "label": "Dither",
+      "type": "float",
+      "default": 0.34,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Texture",
+      "description": "Amount of stable ordered dithering."
+    },
+    {
+      "key": "ink",
+      "label": "Dark",
+      "type": "color",
+      "default": [
+        0.06,
+        0.055,
+        0.05,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Dark bitmap color."
+    },
+    {
+      "key": "paper",
+      "label": "Light",
+      "type": "color",
+      "default": [
+        0.93,
+        0.86,
+        0.7,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Light bitmap color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-bitmap-pixels-v2",
+      "param_key": "pixels",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "negative",
+      "attack_ms": 50,
+      "release_ms": 300,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-bitmap-levels-v2",
+      "param_key": "levels",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-bitmap-dither-v2",
+      "param_key": "dither",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-bitmap-levels-v2",
+      "param_key": "levels",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.04,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "negative",
+      "attack_ms": 10,
+      "release_ms": 210,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "bitmap",
+      "pixel",
+      "monochrome",
+      "dither"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.bitmap.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "bitmap-v1-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "pixels",
+      "levels",
+      "dither"
+    ]
+  }
+}

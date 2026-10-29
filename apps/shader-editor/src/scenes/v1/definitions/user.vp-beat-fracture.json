@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-beat-fracture",
+  "title": "Beat Fracture",
+  "description": "Monochrome images fracture into negative exposures, RGB panels and cyan scans on musical attacks.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float hashCell(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat gray(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }\nvec3 toDisplay(vec3 c) { return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }\nvec3 toLinear(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }\nfloat tone(vec3 c) { return clamp((toDisplay(vec3(gray(c))).r - 0.5) * uParam_contrast + 0.48, 0.0, 1.0); }\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / max(iResolution.xy, vec2(1.0));\n  vec4 original = vrchSampleSource0(uv);\n  float pulse = smoothstep(0.22, 0.72, uParam_cut);\n  // The phrase only advances with accumulated cuts; silence cannot invent beats.\n  float phrase = vrchPhase_cut() * 4.0;\n  float mode = mod(floor(phrase), 4.0);\n  float seed = floor(phrase * 0.25);\n  float negativeMode = 1.0 - step(0.5, mode);\n  float colorMode = step(0.5, mode) * (1.0 - step(1.5, mode));\n  float scanMode = step(1.5, mode) * (1.0 - step(2.5, mode));\n  float tearMode = step(2.5, mode);\n  float row = floor(uv.y * 18.0);\n  float selected = step(0.74, hashCell(vec2(row, seed + 9.0)));\n  float direction = hashCell(vec2(row + 7.0, seed)) * 2.0 - 1.0;\n  float displacement = selected * direction * uParam_tear * (0.24 + 0.76 * pulse);\n  vec2 q = clamp(uv + vec2(displacement, 0.0), vec2(0.001), vec2(0.999));\n  float mono = tone(vrchSampleSource0(q).rgb);\n  vec3 c = vec3(mono);\n  // Four large unequal color panels preserve the underlying photograph.\n  float panel = step(0.63, uv.x) + 2.0 * step(0.29, uv.y);\n  float panelEdge = max(1.0 - smoothstep(0.0, 0.008, abs(uv.x - 0.63)), 1.0 - smoothstep(0.0, 0.006, abs(uv.y - 0.29)));\n  vec3 ink = panel < 0.5 ? vec3(0.03, 0.82, 0.92) : panel < 1.5 ? vec3(0.82, 0.03, 0.55) : panel < 2.5 ? vec3(0.40, 0.92, 0.03) : vec3(0.78, 0.02, 0.86);\n  float blockStrength = smoothstep(0.18, 0.78, uParam_color) * 0.42;\n  vec3 blocked = mix(vec3(mono), vec3(1.0 - mono), ink);\n  c = mix(c, ink * (0.10 + mono * 0.90), blockStrength);\n  float cutGate = smoothstep(0.30, 0.44, pulse);\n  c = mix(c, blocked, cutGate * colorMode);\n  c = mix(c, ink * (0.25 + mono * 0.65), panelEdge * uParam_color * 0.28);\n  // Crisp exposure changes avoid a lingering, detail-erasing grey crossfade.\n  float expose = cutGate * negativeMode;\n  float negative = 1.0 - mono;\n  c = mix(c, vec3(negative) * vec3(0.93, 0.97, 1.0), expose);\n  float aspect = iResolution.y / max(iResolution.x, 1.0);\n  vec2 split = vec2(uParam_split * aspect * (0.24 + selected * 0.76 + pulse * 0.8), 0.0);\n  float r = tone(vrchSampleSource0(clamp(q + split, vec2(0.001), vec2(0.999))).rgb);\n  float b = tone(vrchSampleSource0(clamp(q - split, vec2(0.001), vec2(0.999))).rgb);\n  vec3 separated = vec3(mix(r, 1.0 - r, expose), mix(mono, negative, expose), mix(b, 1.0 - b, expose));\n  float edges = clamp((abs(r - mono) + abs(b - mono)) * 3.0, 0.0, 1.0);\n  c = mix(c, separated, clamp(selected * 0.22 + edges * 0.72, 0.0, 0.85));\n  // A cyan displaced exposure crosses a bounded region of the source.\n  float scanWindow = smoothstep(0.14, 0.24, uv.x) * (1.0 - smoothstep(0.76, 0.84, uv.x));\n  float ghost = 1.0 - tone(vrchSampleSource0(clamp(q + vec2(0.035 * aspect, 0.0), vec2(0.001), vec2(0.999))).rgb);\n  float lines = 0.86 + 0.14 * sin(uv.y * min(iResolution.y, 720.0) * 2.0944);\n  c = mix(c, vec3(0.28, 0.88, 0.94) * pow(ghost, 1.5) * lines, pulse * scanMode * scanWindow * 0.84);\n  float dropout = selected * pulse * tearMode;\n  vec3 digital = mix(c * 0.28, vec3(0.12, 0.85, 0.86) * (0.3 + mono * 0.7), step(0.88, hashCell(vec2(row + 21.0, floor(uv.x * 35.0)))));\n  c = mix(c, digital, dropout * 0.85);\n  float grain = hashCell(floor(fragCoord * 0.65)) - 0.5;\n  c = c * (1.0 - uParam_texture * (0.025 + 0.025 * sin(uv.y * min(iResolution.y, 720.0) * 2.0944))) + grain * uParam_texture * 0.022;\n  fragColor = vec4(mix(original.rgb, toLinear(clamp(c, 0.0, 1.0)), uParam_amount), original.a);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "tear",
+      "label": "Slice Shift",
+      "type": "float",
+      "default": 0.018,
+      "min": 0,
+      "max": 0.16,
+      "step": 0.002,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Horizontal displacement of a few selected image strips."
+    },
+    {
+      "key": "color",
+      "label": "Color Blocks",
+      "type": "float",
+      "default": 0.18,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Cyan, magenta and acid-green exposures drawn from the source image."
+    },
+    {
+      "key": "split",
+      "label": "RGB Split",
+      "type": "float",
+      "default": 0.005,
+      "min": 0,
+      "max": 0.08,
+      "step": 0.001,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Separation of colored image edges."
+    },
+    {
+      "key": "cut",
+      "label": "Beat Cut",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Brief negative, color, scan and tear exposures; driven by musical attacks."
+    },
+    {
+      "key": "contrast",
+      "label": "Contrast",
+      "type": "float",
+      "default": 1.02,
+      "min": 0.7,
+      "max": 1.7,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Contrast of the monochrome photographic base."
+    },
+    {
+      "key": "texture",
+      "label": "Scan Texture",
+      "type": "float",
+      "default": 0.28,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Fine scan lines and photographic texture."
+    },
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.96,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Blend between the source and the finished treatment."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "beat-fracture-low",
+      "param_key": "tear",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.38,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 22,
+      "release_ms": 140,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "beat-fracture-mid",
+      "param_key": "color",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.72,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 32,
+      "release_ms": 165,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "beat-fracture-high",
+      "param_key": "split",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.55,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 12,
+      "release_ms": 95,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "beat-fracture-onset",
+      "param_key": "cut",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.98,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 6,
+      "release_ms": 65,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "glitch",
+      "monochrome",
+      "audio",
+      "stage"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": null,
+    "prompt_summary": "Original audio-reactive image treatment based on the user-provided negative/RGB/scan glitch reference.",
+    "created_at": "2026-09-11T00:40:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "tear",
+      "color",
+      "split",
+      "cut"
+    ]
+  }
+}

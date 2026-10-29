@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-luminous-tiles",
+  "title": "Luminous Tiles",
+  "description": "Colorful crystal mosaic with selectable shapes, colors drawn from the source, continuous shape morphing and crystal deformation, turning cuts, refracted colors and light driven directly by music.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "vec2 glassHash(vec2 p) {\n vec3 p3=fract(vec3(p.x,p.y,p.x)*.1031);\n p3+=dot(p3,p3.yzx+33.33);\n return fract((p3.xx+p3.yz)*p3.zy);\n}\n// Jitter, stagger, row spacing and rotation for eight morphable cuts.\nvec4 glassProfile(float shape) {\n if(shape<.5)return vec4(.75,0.,1.,0.);\n if(shape<1.5)return vec4(0.,.5,.8660254,0.);\n if(shape<2.5)return vec4(0.,0.,1.,0.);\n if(shape<3.5)return vec4(0.,0.,1.,.78539816);\n if(shape<4.5)return vec4(0.,.5,1.,0.);\n if(shape<5.5)return vec4(0.,.5,.8660254,.78539816);\n if(shape<6.5)return vec4(.16,0.,1.,0.);\n return vec4(.82,0.,1.,-.50);\n}\nfloat glassStretch(float shape) {\n if(shape<3.5)return 1.;\n if(shape<4.5)return .68;\n if(shape<5.5)return .70;\n if(shape<6.5)return 1.75;\n return 1.90;\n}\nvec2 glassSite(vec2 cell,vec4 profile) {\n vec2 random=glassHash(cell);\n vec2 site=vec2(cell.x+profile.y*mod(cell.y,2.),cell.y*profile.z)+(.5-profile.y)+(random-.5)*profile.x;\n float selected=smoothstep(.58,.94,glassHash(cell+19.7).x);\n return site+(random-.5)*((uParam_depth-.32)*.50+uParam_accent*selected*.32);\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord) {\n vec2 uv=fragCoord/iResolution.xy;\n vec4 original=vrchSampleSource0(uv);\n vec2 grid=iResolution.xy/min(iResolution.x,iResolution.y)*uParam_blocks;\n float shapeA=floor(uParam_shape),shapeB=min(7.,shapeA+1.);\n float shapeBlend=fract(uParam_shape);\n vec4 profile=mix(glassProfile(shapeA),glassProfile(shapeB),shapeBlend);\n float stretch=mix(glassStretch(shapeA),glassStretch(shapeB),shapeBlend);\n mat2 rotation=mat2(cos(profile.w),-sin(profile.w),sin(profile.w),cos(profile.w));\n mat2 basis=mat2(stretch,0.,0.,1./stretch)*rotation;\n mat2 inverseBasis=transpose(rotation)*mat2(1./stretch,0.,0.,stretch);\n vec2 p=basis*((uv-.5)*grid);\n vec2 cell=floor(vec2(p.x,p.y/profile.z));\n // One 3x3 search keeps the three nearest sites; the cut edge is the nearer\n // bisector to the second and third site.\n vec2 nearest=vec2(0.),second=vec2(0.),third=vec2(0.),owner=cell;\n float nearestDistance=100.,secondDistance=100.,thirdDistance=100.;\n for(int y=0;y<3;y++)for(int x=0;x<3;x++) {\n  vec2 candidate=cell+vec2(float(x-1),float(y-1));\n  vec2 delta=glassSite(candidate,profile)-p;\n  float distance=dot(delta,delta);\n  if(distance<nearestDistance){thirdDistance=secondDistance;third=second;secondDistance=nearestDistance;second=nearest;nearestDistance=distance;nearest=delta;owner=candidate;}\n  else if(distance<secondDistance){thirdDistance=secondDistance;third=second;secondDistance=distance;second=delta;}\n  else if(distance<thirdDistance){thirdDistance=distance;third=delta;}\n }\n float edgeDistance=100.;vec2 edgeNormal=vec2(1.,0.);\n vec2 between=second-nearest;\n if(dot(between,between)>.0001){edgeNormal=normalize(between);edgeDistance=dot(.5*(nearest+second),edgeNormal);}\n between=third-nearest;\n if(dot(between,between)>.0001){vec2 normal=normalize(between);float distance=dot(.5*(nearest+third),normal);if(distance<edgeDistance){edgeDistance=distance;edgeNormal=normal;}}\n vec2 local=-nearest,identity=glassHash(owner+19.7);\n float cellPixels=min(iResolution.x,iResolution.y)/uParam_blocks;\n float facetVisibility=smoothstep(3.,14.,cellPixels);\n float edgeVisibility=smoothstep(2.5,9.,cellPixels);\n float bevel=exp(-max(edgeDistance,0.)*20.);\n float aa=max(fwidth(edgeDistance),.001);\n float seam=1.-smoothstep(.003,.010+aa,edgeDistance);\n vec2 tilt=(identity-.5)*.28;\n vec2 bend=(local*.06+edgeNormal*bevel*.08+tilt*.15)*uParam_depth;\n vec2 imageUV=uv+(inverseBasis*bend)/grid;\n float selected=smoothstep(.58,.94,identity.x);\n float attack=uParam_accent*selected;\n float turn=(uParam_shine-.22)*1.65+(identity.x-.5)*attack*.90;\n vec2 crystalTilt=vec2(cos(turn+identity.y*6.28),sin(turn+identity.y*6.28));\n vec2 siteUV=uv+(inverseBasis*(nearest+crystalTilt*((uParam_shine-.22)*.48+attack*.20)))/grid;\n vec3 color=vrchSampleSource0(siteUV).rgb*.40;\n color+=(vrchSampleSource0(siteUV+vec2(.18,.12)/grid).rgb+vrchSampleSource0(siteUV+vec2(-.18,-.12)/grid).rgb+vrchSampleSource0(siteUV+vec2(-.12,.18)/grid).rgb+vrchSampleSource0(siteUV+vec2(.12,-.18)/grid).rgb)*.15;\n color=mix(color,vrchSampleSource0(imageUV).rgb,.02+uParam_depth*.06);\n float luminance=dot(color,vec3(.2126,.7152,.0722));\n color=max(vec3(.003),mix(vec3(luminance),color,1.25));\n color=pow(color,vec3(.94));\n // Stable triangular cut faces; music changes their light, never a time sweep.\n vec2 apex=(identity-.5)*((uParam_depth-.32)*.70+attack*.42);\n vec2 cutLocal=local-apex;\n float angle=atan(cutLocal.y,cutLocal.x)+turn;\n float cut=floor((angle+3.14159265)/2.0943951);\n float face=cos(cut*2.0943951+.65+identity.y*.3);\n float facetShade=1.+face*(.08+uParam_depth*.34)*(.30+.70*facetVisibility);\n float innerCut=pow(abs(sin((angle+3.14159265)*1.5)),.5);\n float litEdge=max(0.,dot(edgeNormal,normalize(vec2(-.6,.8))));\n vec3 lightColor=mix(color,vec3(1.,.96,.88),.12);\n vec3 result=color*facetShade*(.94+uParam_shine*(.22+.38*max(face,0.)));\n result+=lightColor*(bevel*(.06+litEdge*uParam_edges*.54)*edgeVisibility+attack*(.18+.28*max(face,0.)));\n result+=vec3(.18,.40,.65)*uParam_dispersion*bevel*litEdge*.20*edgeVisibility;\n result*=1.-(1.-innerCut)*uParam_depth*.05*facetVisibility;\n result=mix(result,color*.66+lightColor*(uParam_edges*.18+attack*.20),seam*.45*edgeVisibility);\n // Gentle highlight compression preserves color in bright glass.\n result/=1.+max(0.,max(result.r,max(result.g,result.b))-.75)*.16;\n fragColor=vec4(mix(original.rgb,result,uParam_amount),original.a);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Blend the glass with the original image."
+    },
+    {
+      "key": "shape",
+      "label": "Shape Type",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 7,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Morph the glass shape: 0 Crystal, 1 Hexagon, 2 Square, 3 Diamond, 4 Brick, 5 Lozenge, 6 Prism, 7 Shards."
+    },
+    {
+      "key": "blocks",
+      "label": "Tile Count",
+      "type": "float",
+      "default": 32,
+      "min": 4,
+      "max": 128,
+      "step": 1,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Approximate pieces along the shorter image side."
+    },
+    {
+      "key": "depth",
+      "label": "Crystal Depth",
+      "type": "float",
+      "default": 0.32,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Depth of the cut faces and their refracted color."
+    },
+    {
+      "key": "shine",
+      "label": "Facet Turn",
+      "type": "float",
+      "default": 0.22,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Turn the crystal cuts and refract their colors with mid frequencies."
+    },
+    {
+      "key": "edges",
+      "label": "Edge Light",
+      "type": "float",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Fine highlights along glass edges, responding to high frequencies."
+    },
+    {
+      "key": "dispersion",
+      "label": "Color Split",
+      "type": "float",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Subtle separation of colors at refracting edges."
+    },
+    {
+      "key": "accent",
+      "label": "Crystal Pulse",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Local cell expansion, cut movement and light responding to musical attacks."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-depth",
+      "param_key": "depth",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.45,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 90,
+      "release_ms": 600,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-shine",
+      "param_key": "shine",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.6,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 120,
+      "release_ms": 500,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-edges",
+      "param_key": "edges",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.35,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 50,
+      "release_ms": 320,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-accent",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.85,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 25,
+      "release_ms": 360,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1.0
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "aesthetic-study",
+      "luminous-tiles"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.study-luminous-tiles",
+      "content_hash": "sha256:2be0d96979f3915eac90ec5ca9e0f8defbbb6597f078664a896926e4036d1ac1"
+    },
+    "prompt_summary": "Colorful crystal mosaic with selectable shapes, colors drawn from the source, continuous shape morphing and crystal deformation, turning cuts, refracted colors and light driven directly by music.",
+    "created_at": "2026-09-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "shape",
+      "blocks",
+      "depth",
+      "amount"
+    ]
+  }
+}

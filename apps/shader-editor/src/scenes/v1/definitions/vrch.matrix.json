@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.matrix",
+  "title": "Matrix",
+  "description": "Audience portraits reconstructed as emerald terminal characters, falling code and music-driven digital scans.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float matrixSeed(vec2 p) {\n  vec3 q = fract(vec3(p.xyx) * 0.1031);\n  q += dot(q, q.yzx + 33.33);\n  return fract((q.x + q.y) * q.z);\n}\n\nfloat matrixCharacter(vec2 local, float seed) {\n  int glyph = int(floor(seed * 16.0));\n  int bits = 0;\n  // Compact terminal digits and angular code marks, four by six pixels.\n  if (glyph == 0) bits = 6920598;\n  else if (glyph == 1) bits = 7480932;\n  else if (glyph == 2) bits = 15868007;\n  else if (glyph == 3) bits = 7881863;\n  else if (glyph == 4) bits = 8972441;\n  else if (glyph == 5) bits = 7884575;\n  else if (glyph == 6) bits = 6920118;\n  else if (glyph == 7) bits = 2236975;\n  else if (glyph == 8) bits = 6928022;\n  else if (glyph == 9) bits = 7883158;\n  else if (glyph == 10) bits = 11863279;\n  else if (glyph == 11) bits = 2240239;\n  else if (glyph == 12) bits = 4879970;\n  else if (glyph == 13) bits = 3159631;\n  else if (glyph == 14) bits = 10025887;\n  else bits = 11756895;\n  vec2 pixel = local * vec2(6.0, 8.0) - 1.0;\n  vec2 cell = floor(pixel);\n  int index = int(clamp(cell.y, 0.0, 5.0)) * 4 + int(clamp(cell.x, 0.0, 3.0));\n  float bit = float((bits >> index) & 1);\n  vec2 inset = abs(fract(pixel) - 0.5);\n  vec2 aa = max(fwidth(pixel), vec2(0.04));\n  vec2 stroke = 1.0 - smoothstep(vec2(0.49) - aa * 0.45, vec2(0.49) + aa * 0.45, inset);\n  float inside = step(0.0, cell.x) * step(cell.x, 3.0) * step(0.0, cell.y) * step(cell.y, 5.0);\n  return bit * stroke.x * stroke.y * inside;\n}\n\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 resolution = max(iResolution.xy, vec2(1.0));\n  vec2 uv = fragCoord / resolution;\n  float rows = uParam_density * min(1.0, resolution.y / 360.0);\n  vec2 grid = vec2(rows * resolution.x / resolution.y * 1.32, rows);\n  float column = floor(uv.x * grid.x);\n  float seed = matrixSeed(vec2(column, 11.0));\n  float velocity = mix(0.65, 1.28, seed);\n  float phase = vrchPhase_speed();\n  float travel = phase * rows * 0.24 * velocity;\n  vec2 codePosition = vec2(uv.x * grid.x, uv.y * grid.y + travel);\n  vec2 codeCell = floor(codePosition);\n  vec2 local = fract(codePosition);\n  float glyph = matrixCharacter(local, matrixSeed(codeCell + 7.0));\n\n  float section = floor(uv.y * 7.0);\n  float cut = matrixSeed(vec2(floor(column / 3.0), section + 19.0));\n  float activeCut = smoothstep(0.58, 0.9, cut) * uParam_rupture;\n  float displacedX = (cut - 0.5) * activeCut * 0.22;\n  float displacedY = (seed - 0.5) * activeCut * 0.065;\n  vec2 cellUv = vec2((codeCell.x + 0.5) / grid.x, (codeCell.y + 0.5 - travel) / grid.y) + vec2(displacedX, displacedY);\n  cellUv = (cellUv - 0.5) * (1.0 - 0.3 * (uParam_presence - 0.45)) + 0.5;\n  vec4 original = vrchSampleSource0(uv);\n  vec3 cellColor = vrchSampleSource0(cellUv).rgb;\n  float luminance = dot(cellColor, vec3(0.2126, 0.7152, 0.0722));\n  float tone = pow(clamp(luminance, 0.0, 1.0), 0.68);\n  float subject = smoothstep(0.025, 0.78, tone);\n\n  float headDistance = fract(uv.y + phase * velocity * 0.21 + seed);\n  float length = mix(0.12, 0.62, uParam_rain);\n  float trail = 1.0 - smoothstep(0.0, length, headDistance);\n  float head = 1.0 - smoothstep(0.008, 0.042, headDistance);\n  float columns = smoothstep(0.23, 0.76, matrixSeed(vec2(column, 47.0)));\n  float rainfall = trail * columns * uParam_rain;\n  float scanY = 0.5 + 0.27 * sin(phase * 0.72);\n  float scan = (1.0 - smoothstep(0.025, 0.095, abs(uv.y - scanY))) * uParam_scan;\n  float resolved = mix(0.4, 1.3, uParam_presence);\n  float codeLight = glyph * (subject * resolved + rainfall * (0.055 + 0.26 * subject));\n  float glow = (0.006 + subject * 0.032) * (0.7 + uParam_presence);\n  vec3 emerald = uParam_tint.rgb;\n  vec3 headColor = mix(emerald, vec3(0.7, 1.0, 0.79), 0.55 + 0.4 * uParam_glow);\n  vec3 portrait = emerald * (codeLight + glow);\n  portrait += headColor * glyph * (head * columns * uParam_rain * 0.58 + scan * subject * 0.9) * (0.35 + 0.65 * uParam_glow);\n  float glint = smoothstep(0.42, 0.76, subject) * smoothstep(0.42, 0.78, matrixSeed(codeCell + 31.0));\n  portrait += vec3(0.48, 1.0, 0.66) * glyph * glint * uParam_glow * 0.9;\n  portrait += emerald * glyph * subject * activeCut * 0.18;\n  vec3 treated = clamp(portrait, 0.0, 1.0);\n  fragColor = vec4(mix(original.rgb, treated, uParam_amount), original.a);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "presence",
+      "label": "Presence",
+      "type": "float",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Audience",
+      "description": "How strongly the audience resolves and expands within the code field."
+    },
+    {
+      "key": "rain",
+      "label": "Code Rain",
+      "type": "float",
+      "default": 0.48,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Code",
+      "description": "Density and length of falling code trails."
+    },
+    {
+      "key": "rupture",
+      "label": "Displace",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Local column offsets split and reassemble the audience."
+    },
+    {
+      "key": "scan",
+      "label": "Scan",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "A bright scan region resolves the audience through the code."
+    },
+    {
+      "key": "density",
+      "label": "Code Detail",
+      "type": "float",
+      "default": 44,
+      "min": 20,
+      "max": 76,
+      "step": 1,
+      "widget": "slider",
+      "group": "Code",
+      "description": "More rows produce smaller, finer characters."
+    },
+    {
+      "key": "speed",
+      "label": "Pace",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.05,
+      "max": 1.4,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous downward travel of the character columns."
+    },
+    {
+      "key": "glow",
+      "label": "Highlights",
+      "type": "float",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Pale green character highlights in the audience, column heads and scan regions."
+    },
+    {
+      "key": "tint",
+      "label": "Code Color",
+      "type": "color",
+      "default": [
+        0.015,
+        0.76,
+        0.115,
+        1
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Color of the audience code field."
+    },
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Overall reconstruction of the input image into code."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "matrix-low",
+      "param_key": "presence",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.5,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 22,
+      "release_ms": 150,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "matrix-mid",
+      "param_key": "rupture",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.65,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 32,
+      "release_ms": 175,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "matrix-high",
+      "param_key": "glow",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.52,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 12,
+      "release_ms": 100,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "matrix-onset",
+      "param_key": "scan",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.98,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 6,
+      "release_ms": 85,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "matrix",
+      "code-rain",
+      "terminal",
+      "emerald",
+      "cyber"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.matrix.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "matrix-v2-audio-v2",
+    "created_at": "2026-09-12T00:00:00Z",
+    "prompt_summary": "Bundled Matrix revision: approved audience reconstruction and independent musical actions."
+  },
+  "ui": {
+    "simple_parameters": [
+      "presence",
+      "rain",
+      "rupture",
+      "scan"
+    ]
+  }
+}

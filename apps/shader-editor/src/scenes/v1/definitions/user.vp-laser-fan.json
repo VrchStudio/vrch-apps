@@ -1,0 +1,449 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-laser-fan",
+  "title": "Laser Fan",
+  "description": "Two stage projectors fan single-colour laser beams through drifting haze. Music opens, sways and strobes the fans; each projector aims at the hand on its side of Source B.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "// Drifting stage smoke: smooth layered waves, no hashing, so it has no edges.\nfloat smoke(vec2 p,float t){\n vec2 q=p*vec2(1.6,2.2)+vec2(.2*sin(t*.05),-t*.08);\n float n=0.0,amp=.5;\n mat2 turn=mat2(.8,-.6,.6,.8);\n for(int i=0;i<4;i++){\n  q+=.35*vec2(sin(q.y*1.3+t*.07),cos(q.x*1.1-t*.05));\n  n+=amp*(.5+.5*sin(q.x*1.7+1.3*sin(q.y*1.2)));\n  q=turn*q*1.9;amp*=.5;\n }\n return n/.9375;\n}\n// Beam directions do not depend on the pixel: the frame stage computes them once.\nvec3 fan(vec2 p,vec2 o,int first,float count,float t,float side,float pix){\n vec3 acc=vec3(0.0);\n vec2 v=p-o;\n for(int i=0;i<12;i++){\n  float fi=float(i);\n  if(fi>=count)break;\n  vec2 d=vrchFrameData(first+i).xy;\n  float along=dot(v,d);\n  if(along<=-.02)continue;\n  float start=smoothstep(-.02,.03,along);\n  along=max(along,0.0);\n  float perp=abs(v.x*d.y-v.y*d.x);\n  float w=max(pix*.55,.0004+along*.0007);\n  float fade=(.25+.75*exp(-along*1.1))*start;\n  acc.x+=exp(-perp*perp/(w*w))*fade;\n  acc.y+=exp(-perp/(.006+along*.01))*fade;\n  float g=max(sin(along*38.0-t*9.0+fi*2.9+side),0.0),g2=g*g,g4=g2*g2,g8=g4*g4,g16=g8*g8;\n  acc.z+=exp(-perp*perp/(w*w))*uParam_sparkle*(g16*g8*g4)*fade;\n }\n return acc;\n}\nfloat beamCount(){return clamp(floor(uParam_beams+.5),1.0,12.0);}\n// Centre angle of the left (side 0) or right (side 1) fan: an automatic scan,\n// or toward the hand on that side.\nfloat fanCenter(int side,float t){\n float aspect=iResolution.x/iResolution.y;\n vec2 oL=vec2(-.33*aspect,-.40),oR=vec2(.33*aspect,-.40);\n float autoL=1.5708-.36-.30*sin(t*.61),autoR=1.5708+.36+.30*sin(t*.61+.9);\n vec2 hA=vec2((uParam_left_x-.5)*aspect,uParam_left_y-.5),hB=vec2((uParam_right_x-.5)*aspect,uParam_right_y-.5);\n float pA=smoothstep(.02,.2,uParam_left_y),pB=smoothstep(.02,.2,uParam_right_y);\n bool swapHands=hA.x>hB.x;\n vec2 hL=swapHands?hB:hA,hR=swapHands?hA:hB;\n float pL=(swapHands?pB:pA)*uParam_aim,pR=(swapHands?pA:pB)*uParam_aim;\n return side==0?mix(autoL,atan(hL.y-oL.y,hL.x-oL.x),pL):mix(autoR,atan(hR.y-oR.y,hR.x-oR.x),pR);\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord){\n vec2 p=(fragCoord-.5*iResolution.xy)/iResolution.y;\n float aspect=iResolution.x/iResolution.y,pix=1.0/iResolution.y;\n float t=vrchPhase_speed();\n float strike=smoothstep(0.0,.85,uParam_accent);\n float s=smoke(p,t);\n float density=mix(.7,.06+1.6*s*s*s,uParam_haze);\n float count=beamCount();\n vec2 oL=vec2(-.33*aspect,-.40),oR=vec2(.33*aspect,-.40);\n vec3 beams=fan(p,oL,0,count,t,0.0,pix)+fan(p,oR,12,count,t,2.3,pix);\n vec2 dl=p-oL,dr=p-oR;\n float flare=exp(-length(dl)*55.0)+exp(-length(dr)*55.0);\n float bloom=exp(-length(dl)*9.0)+exp(-length(dr)*9.0);\n float streak=exp(-abs(dl.y)*160.0-abs(dl.x)*4.0)+exp(-abs(dr.y)*160.0-abs(dr.x)*4.0);\n float power=(.55+uParam_glow*1.0)*(1.0+1.4*strike);\n vec3 ink=uParam_color.rgb;\n vec3 c=ink*(beams.x*(.25+1.0*density)+beams.y*density*.22)*power;\n c+=mix(ink,vec3(1.0),.6)*(beams.z*1.5+flare*1.2)+ink*(bloom*.10*density+streak*.06)*power;\n fragColor=vec4(1.0-exp(-c*1.3),1.0);\n}\n"
+  },
+  "frame": {
+    "entry_point": "vrchFrame",
+    "source": "// Texel i < 12: beam i of the left fan; texel 12 + i: beam i of the right fan.\nvoid vrchFrame(in int texel,out vec4 value){\n float t=vrchPhase_speed();\n float strike=smoothstep(0.0,.85,uParam_accent);\n float count=beamCount();\n float spread=(.18+uParam_spread*.9)*(1.0+.35*strike);\n float wobble=uParam_bend+uParam_motion*.8;\n int side=texel/12;\n float fi=float(texel-12*side),sideShift=side==0?0.0:2.3;\n float k=count>1.0?fi/(count-1.0)-.5:0.0;\n float a=fanCenter(side,t)+k*spread+wobble*.09*sin(t*1.3+fi*1.7+sideShift);\n value=vec4(cos(a),sin(a),0.0,0.0);\n}\n",
+    "texels": 24
+  },
+  "parameters": [
+    {
+      "key": "beams",
+      "label": "Beams",
+      "type": "float",
+      "default": 5,
+      "min": 1,
+      "max": 12,
+      "widget": "slider",
+      "group": "Beams",
+      "description": "Beams per projector.",
+      "step": 1
+    },
+    {
+      "key": "spread",
+      "label": "Fan Width",
+      "type": "float",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Beams",
+      "description": "How wide each fan opens."
+    },
+    {
+      "key": "bend",
+      "label": "Wave",
+      "type": "float",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Sideways sway of the beams."
+    },
+    {
+      "key": "sparkle",
+      "label": "Sparkle",
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Bright points racing along the beams."
+    },
+    {
+      "key": "accent",
+      "label": "Strobe",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Flash and snap of the fans on musical attacks."
+    },
+    {
+      "key": "haze",
+      "label": "Haze",
+      "type": "float",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Stage smoke that makes the beams visible."
+    },
+    {
+      "key": "speed",
+      "label": "Scan Speed",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.05,
+      "max": 1.5,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "How fast the projectors scan."
+    },
+    {
+      "key": "color",
+      "label": "Laser Color",
+      "type": "color",
+      "default": [
+        0.08,
+        1.0,
+        0.32,
+        1
+      ],
+      "widget": "color",
+      "group": "Light",
+      "description": "Colour of every beam."
+    },
+    {
+      "key": "glow",
+      "label": "Glow",
+      "type": "float",
+      "default": 0.6,
+      "min": 0.1,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Beam brightness."
+    },
+    {
+      "key": "aim",
+      "label": "Hand Aim",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "How strongly each projector follows the hand on its side."
+    },
+    {
+      "key": "left_x",
+      "label": "Left Hand X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked left hand position."
+    },
+    {
+      "key": "left_y",
+      "label": "Left Hand Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked left hand height."
+    },
+    {
+      "key": "right_x",
+      "label": "Right Hand X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked right hand position."
+    },
+    {
+      "key": "right_y",
+      "label": "Right Hand Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked right hand height."
+    },
+    {
+      "key": "motion",
+      "label": "Hand Motion",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked hand speed."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.left_hand_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.left_hand_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.right_hand_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.right_hand_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_speed",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-low-to-spread",
+      "param_key": "spread",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.35,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 40,
+      "release_ms": 260,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-mid-to-bend",
+      "param_key": "bend",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.45,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 60,
+      "release_ms": 320,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-high-to-sparkle",
+      "param_key": "sparkle",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.7,
+      "input_min": 0,
+      "input_max": 0.45,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 15,
+      "release_ms": 140,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-onset-to-accent",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.95,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 6,
+      "release_ms": 280,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-left-hand-x",
+      "param_key": "left_x",
+      "signal_id": "tracking.pose.left_hand_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 110,
+      "release_ms": 110,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-left-hand-y",
+      "param_key": "left_y",
+      "signal_id": "tracking.pose.left_hand_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 220,
+      "release_ms": 700,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-right-hand-x",
+      "param_key": "right_x",
+      "signal_id": "tracking.pose.right_hand_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 110,
+      "release_ms": 110,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-right-hand-y",
+      "param_key": "right_y",
+      "signal_id": "tracking.pose.right_hand_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 220,
+      "release_ms": 700,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-hands-motion",
+      "param_key": "motion",
+      "signal_id": "tracking.pose.hands_speed",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 0.35,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 120,
+      "release_ms": 900,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "laser-fan",
+      "stage",
+      "body"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": null,
+    "prompt_summary": "A concert laser fan from the stage floor: beams open with the bass, bend with the melody, sparkle with treble and fire along their length on attacks.",
+    "created_at": "2026-09-26T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "beams",
+      "spread",
+      "haze",
+      "color"
+    ]
+  },
+  "analysis_requirements": [
+    {
+      "kind": "pose",
+      "source_input": 1,
+      "topology": "vrch.pose-landmarks@1",
+      "history_ms": 600
+    }
+  ]
+}

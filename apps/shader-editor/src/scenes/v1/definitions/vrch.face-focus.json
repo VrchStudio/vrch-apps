@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.face-focus",
+  "title": "Face Focus",
+  "description": "Keeps the tracked face clear while softly treating the surrounding image.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / max(iResolution.xy, vec2(1.0));\n  vec4 source = vrchSampleSource0(uv);\n  float confidence = vrchReadSignal(0);\n  vec2 center = vec2(vrchReadSignal(1), vrchReadSignal(2));\n  float aspect = iResolution.x / max(iResolution.y, 1.0);\n  vec2 delta = (uv - center) * vec2(aspect, 1.0);\n  float face = 1.0 - smoothstep(uParam_face_size * 0.72, uParam_face_size, length(delta));\n  vec2 px = vec2(uParam_softness) / max(iResolution.xy, vec2(1.0));\n  vec3 blur = source.rgb;\n  blur += vrchSampleSource0(uv + vec2(px.x, 0.0)).rgb;\n  blur += vrchSampleSource0(uv - vec2(px.x, 0.0)).rgb;\n  blur += vrchSampleSource0(uv + vec2(0.0, px.y)).rgb;\n  blur += vrchSampleSource0(uv - vec2(0.0, px.y)).rgb;\n  blur *= 0.2;\n  float luma = dot(blur, vec3(0.2126, 0.7152, 0.0722));\n  vec3 treated = mix(blur, vec3(luma) * uParam_background_tint.rgb, uParam_desaturate);\n  treated *= 1.0 - uParam_dim;\n  float effectAmount = clamp(uParam_amount * confidence, 0.0, 1.0);\n  vec3 color = mix(source.rgb, treated, effectAmount * (1.0 - face));\n  float contour = vrchSampleSignalTexture(0, uv).a * uParam_contour * confidence;\n  color += uParam_contour_color.rgb * contour * 0.35;\n  fragColor = vec4(color, source.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.82,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the treatment outside the tracked face."
+    },
+    {
+      "key": "face_size",
+      "label": "Face Area",
+      "type": "float",
+      "default": 0.28,
+      "min": 0.12,
+      "max": 0.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Size of the clear area around the tracked face."
+    },
+    {
+      "key": "softness",
+      "label": "Blur",
+      "type": "float",
+      "default": 9.0,
+      "min": 0.0,
+      "max": 24.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Softness of the surrounding image."
+    },
+    {
+      "key": "desaturate",
+      "label": "Desaturate",
+      "type": "float",
+      "default": 0.72,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Colour",
+      "description": "Colour removed from the surrounding image."
+    },
+    {
+      "key": "dim",
+      "label": "Background Dim",
+      "type": "float",
+      "default": 0.22,
+      "min": 0.0,
+      "max": 0.75,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Colour",
+      "description": "Darkness applied outside the tracked face."
+    },
+    {
+      "key": "background_tint",
+      "label": "Background Tint",
+      "type": "color",
+      "default": [
+        0.82,
+        0.92,
+        1.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Colour",
+      "description": "Tint used in the treated background."
+    },
+    {
+      "key": "contour",
+      "label": "Contour",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Brightness of the tracked face contour."
+    },
+    {
+      "key": "contour_color",
+      "label": "Contour Colour",
+      "type": "color",
+      "default": [
+        0.15,
+        0.82,
+        1.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Colour",
+      "description": "Colour of the tracked face contour."
+    }
+  ],
+  "signals": [
+    {
+      "id": "tracking.face.confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.face.center_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.face.center_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.face.speed",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.face-overlay",
+      "type": "texture",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.face-landmarks",
+      "type": "texture",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [],
+  "analysis_requirements": [
+    {
+      "kind": "face",
+      "source_input": 0,
+      "topology": "vrch.face-landmarks@1",
+      "history_ms": 600
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "camera",
+      "face",
+      "tracking",
+      "focus",
+      "portrait"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.face-tracker.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "phase4-face-focus-v1",
+    "created_at": "2026-08-23T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "face_size",
+      "softness",
+      "desaturate"
+    ]
+  }
+}

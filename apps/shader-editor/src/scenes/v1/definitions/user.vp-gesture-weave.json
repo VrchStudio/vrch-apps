@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-gesture-weave",
+  "title": "Gesture Weave",
+  "description": "Original luminous silk ribbons, with separate Source B hand control and musical spread, twist, highlights and accents.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float musicalAccent(float value) {\n return clamp(value,0.0,1.0);\n}\n\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord) {\n vec2 p=(2.0*fragCoord-iResolution.xy)/iResolution.y;\n float aspect=iResolution.x/iResolution.y, phase=vrchPhase_speed();\n float hit=musicalAccent(uParam_accent), influence=uParam_presence;\n vec2 center=clamp(vec2(uParam_hand_x,uParam_hand_y)/max(influence,.001),vec2(0.0),vec2(1.0));\n vec2 hand=(center*2.0-1.0)*vec2(aspect,1.0);\n float pull=exp(-pow(abs((p.x-hand.x)/.95),2.0))*hand.y*influence*.65;\n vec3 color=vec3(.003,.005,.014);\n float envelope=exp(-pow(abs(p.x/(aspect*.96+.2)),6.0));\n // Strand-independent terms: two wave families, one twist and one fan width.\n float sx=p.x-hand.x*influence*.65;\n float waveA=.29*sin(sx*1.45+phase*.44),waveB=.29*sin(sx*1.45+phase*.44+2.25);\n float twist=uParam_twist*sin(p.x*1.65-phase*.35);\n float fanWidth=uParam_width*.57*(.8+.42*cos(p.x*1.1+phase*.22))*cos(twist);\n // Per-strand angles advance by fixed steps; rotate their (cos, sin) pairs.\n float a0=p.x*1.4+phase*.44-.25,b0=p.x*1.1-phase*.55;\n vec2 tilt=vec2(cos(a0),sin(a0)),tiltStep=vec2(cos(.05),sin(.05));\n vec2 shine=vec2(cos(b0),sin(b0)),shineStep=vec2(cos(.36),sin(.36));\n for(int i=0;i<11;i++) {\n  float index=float(i), f=index/10.0, side=f-.5;\n  float wave=index>5.5?waveB:waveA;\n  float strand=mod(index,6.0)/5.0-.5;\n  float center=wave+strand*fanWidth+pull+side*influence*hand.x*.18;\n  float slope=.44*tilt.x;\n  float d=(p.y-center)*inversesqrt(1.0+slope*slope);\n  float thickness=.013+.012*(1.0-abs(side)*1.2);\n  float u=d/thickness,v=u/4.3;\n  float silk=exp(-u*u);\n  float haze=exp(-v*v);\n  float lit=.5+.5*shine.x;\n  float face=.48+.52*lit*lit*lit;\n  tilt=vec2(tilt.x*tiltStep.x-tilt.y*tiltStep.y,tilt.y*tiltStep.x+tilt.x*tiltStep.y);\n  shine=vec2(shine.x*shineStep.x-shine.y*shineStep.y,shine.y*shineStep.x+shine.x*shineStep.y);\n  vec3 hue=mix(vec3(.014,.40,.49),vec3(.58,.11,.085),smoothstep(.2,.85,f));\n  hue=mix(hue,uParam_tint.rgb,.28);\n  color+=hue*silk*envelope*(.58+uParam_light*face+hit*face*.7);\n  color+=hue*haze*envelope*.038*uParam_light;\n }\n float aura=exp(-pow(abs(p.y-.10*sin(p.x+phase*.2)),2.0)/.25)*envelope;\n color+=vec3(.007,.006,.025)*aura;\n fragColor=vec4(1.0-exp(-color*1.35),1.0);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "width",
+      "label": "Ribbon Spread",
+      "type": "float",
+      "default": 0.67,
+      "min": 0.25,
+      "max": 1.4,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Width of the woven ribbon fan."
+    },
+    {
+      "key": "twist",
+      "label": "Twist",
+      "type": "float",
+      "default": 0.78,
+      "min": 0.1,
+      "max": 1.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Amount of crossing and turning along the ribbons."
+    },
+    {
+      "key": "light",
+      "label": "Silk Light",
+      "type": "float",
+      "default": 0.8,
+      "min": 0.25,
+      "max": 1.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Directional silk highlights on the strands."
+    },
+    {
+      "key": "tint",
+      "label": "Silk Color",
+      "type": "color",
+      "default": [
+        0.22,
+        0.12,
+        0.66,
+        1
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Silk Color of the composition."
+    },
+    {
+      "key": "speed",
+      "label": "Flow",
+      "type": "float",
+      "default": 0.52,
+      "min": 0.05,
+      "max": 1.3,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous flow through the weave."
+    },
+    {
+      "key": "accent",
+      "label": "Accent",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "A musical highlight along the facing strands."
+    },
+    {
+      "key": "hand_x",
+      "label": "Horizontal Pull",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Horizontal hand position steers the woven fan."
+    },
+    {
+      "key": "hand_y",
+      "label": "Vertical Pull",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Vertical hand position lifts and lowers the ribbons."
+    },
+    {
+      "key": "presence",
+      "label": "Hand Influence",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Hand presence fades gesture influence in and out."
+    }
+  ],
+  "signals": [
+    {
+      "id": "tracking.pose.hands_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.pose.hands_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.pose.hands_confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "tracking-pose-hands_x-to-hand_x",
+      "param_key": "hand_x",
+      "signal_id": "tracking.pose.hands_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 180,
+      "release_ms": 320,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "tracking-pose-hands_y-to-hand_y",
+      "param_key": "hand_y",
+      "signal_id": "tracking.pose.hands_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 180,
+      "release_ms": 320,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "tracking-pose-hands_confidence-to-presence",
+      "param_key": "presence",
+      "signal_id": "tracking.pose.hands_confidence",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0.05,
+      "input_max": 0.2,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 180,
+      "release_ms": 320,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-low-to-width",
+      "param_key": "width",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.24,
+      "input_min": 0.02,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 70,
+      "release_ms": 380,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-mid-to-twist",
+      "param_key": "twist",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.3,
+      "input_min": 0.02,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 85,
+      "release_ms": 420,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-high-to-light",
+      "param_key": "light",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.3,
+      "input_min": 0.02,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 25,
+      "release_ms": 190,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-onset-to-accent",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.6,
+      "input_min": 0.02,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 10,
+      "release_ms": 220,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "gesture-weave",
+      "stage"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.vp-gesture-weave",
+      "content_hash": "sha256:a4e3c1fc8f27ee822abaaf152b7b82b04de9e51966787b02e8d4a8c46c9d7097"
+    },
+    "prompt_summary": "Original luminous silk ribbons, with separate Source B hand control and musical spread, twist, highlights and accents.",
+    "created_at": "2026-09-11T18:25:55Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "width",
+      "twist",
+      "light",
+      "tint"
+    ]
+  },
+  "analysis_requirements": [
+    {
+      "kind": "pose",
+      "source_input": 1,
+      "topology": "vrch.pose-landmarks@1",
+      "history_ms": 600
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.rotating-pyramid",
+  "title": "Rotating Pyramid",
+  "description": "A shader-generated three-dimensional pyramid with soft light, glow and audio response.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 0,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchPyramidSdf(vec3 p) {\n  p.y += 0.12;\n  float body = max(max(abs(p.x), abs(p.z)) + p.y * 0.72 - 0.48, -p.y - 0.52);\n  return max(body, p.y - 0.58);\n}\nvec3 vrchPyramidNormal(vec3 p) {\n  vec2 e = vec2(0.0015, 0.0);\n  return normalize(vec3(\n    vrchPyramidSdf(p + e.xyy) - vrchPyramidSdf(p - e.xyy),\n    vrchPyramidSdf(p + e.yxy) - vrchPyramidSdf(p - e.yxy),\n    vrchPyramidSdf(p + e.yyx) - vrchPyramidSdf(p - e.yyx)\n  ));\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec2 p = (uv - 0.5) * vec2(iResolution.x / iResolution.y, 1.0);\n  float low = vrchReadSignal(0);\n  float beat = vrchReadSignal(1);\n  float angle = iTime * uParam_rotation_speed;\n  mat2 rotation = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));\n  vec3 rayOrigin = vec3(0.0, 0.05, uParam_camera_distance);\n  vec3 rayDirection = normalize(vec3(p, -1.65));\n  float distanceTravelled = 0.0;\n  float hitDistance = 1.0;\n  vec3 objectPoint = vec3(0.0);\n  for (int i = 0; i < 48; i++) {\n    vec3 worldPoint = rayOrigin + rayDirection * distanceTravelled;\n    objectPoint = worldPoint;\n    objectPoint.xz = rotation * objectPoint.xz;\n    objectPoint /= uParam_scale + low * 0.08;\n    hitDistance = vrchPyramidSdf(objectPoint) * (uParam_scale + low * 0.08);\n    distanceTravelled += hitDistance;\n  }\n  vec3 background = mix(vec3(0.008, 0.012, 0.028), vec3(0.035, 0.055, 0.11), 1.0 - uv.y);\n  float hit = 1.0 - step(0.008, abs(hitDistance));\n  vec3 normal = vrchPyramidNormal(objectPoint);\n  vec3 lightDirection = normalize(vec3(-0.45, 0.7, 0.55));\n  float diffuse = 0.18 + max(0.0, dot(normal, lightDirection)) * uParam_light;\n  float rim = pow(1.0 - max(0.0, dot(normal, -rayDirection)), 3.0);\n  vec3 surface = uParam_surface_color.rgb * diffuse + uParam_glow * (rim + beat * 0.25) * vec3(0.2, 0.75, 1.0);\n  float halo = exp(-9.0 * abs(hitDistance)) * uParam_glow * 0.08;\n  vec3 color = mix(background + halo * vec3(0.12, 0.5, 1.0), surface, hit);\n  fragColor = vec4(color, 1.0);\n}"
+  },
+  "parameters": [
+    {
+      "key": "rotation_speed",
+      "label": "Rotation",
+      "type": "float",
+      "default": 0.38,
+      "min": -1.5,
+      "max": 1.5,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Pyramid rotation speed and direction."
+    },
+    {
+      "key": "scale",
+      "label": "Size",
+      "type": "float",
+      "default": 0.92,
+      "min": 0.45,
+      "max": 1.4,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Pyramid size."
+    },
+    {
+      "key": "camera_distance",
+      "label": "Distance",
+      "type": "float",
+      "default": 2.6,
+      "min": 1.8,
+      "max": 4.0,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Virtual camera distance."
+    },
+    {
+      "key": "light",
+      "label": "Light",
+      "type": "float",
+      "default": 0.9,
+      "min": 0.1,
+      "max": 1.8,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Side light intensity."
+    },
+    {
+      "key": "glow",
+      "label": "Glow",
+      "type": "float",
+      "default": 0.42,
+      "min": 0.0,
+      "max": 1.2,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Edge and beat glow."
+    },
+    {
+      "key": "surface_color",
+      "label": "Surface",
+      "type": "color",
+      "default": [
+        0.18,
+        0.42,
+        0.88,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Pyramid surface color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.beat",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-scale-v2",
+      "param_key": "scale",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 35,
+      "release_ms": 200,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "beat-to-glow-v2",
+      "param_key": "glow",
+      "signal_id": "audio.v2.beat",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.2,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 12,
+      "release_ms": 220,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "high",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "3d",
+      "pyramid",
+      "light",
+      "audio"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.rotating-pyramid.png",
+    "roles": [
+      "experience-example",
+      "engineering-fixture"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "sdf-pyramid-v1",
+    "created_at": "2026-08-12T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "scale",
+      "rotation_speed",
+      "camera_distance",
+      "light"
+    ]
+  }
+}

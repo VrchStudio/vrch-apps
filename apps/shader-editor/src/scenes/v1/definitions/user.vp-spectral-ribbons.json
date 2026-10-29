@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-spectral-ribbons",
+  "title": "Spectral Ribbons",
+  "description": "Fine lines draw the live music spectrum, bass left and treble right, from two shared end points. Older spectra arc back and fade; attacks leave bright receding lines; raised hands deepen the arc.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "// Spectral Ribbons (depth): each line is one recent spectrum, bass on the\n// left and treble on the right. A line rises where a band is louder than\n// that spectrum's average and dips where it is quieter. Every line starts and\n// ends at the same two points; between them time runs into the screen, so\n// older spectra arc back, shrink and fade. Attacks leave a bright line that\n// recedes with its spectrum. Raised hands deepen the arc and move its crest.\nconst float PI=3.14159265;\nconst float ROWS=15.0;\nvec4 spectrumTexel(float x,float row){\n return vrchSampleSignalTexture(0,vec2(x,(row+.5)/ROWS));\n}\n// One spectrum line. Only its height, slope, level and accent come from the row\n// fetch; age and scale are recomputed from its index to keep few values live.\nvoid spectrumLine(inout vec3 c,float k,float frac,float L,float D,float py,float y,float slope,float h,float cell,vec4 pick,float pix,float soft,float inside,float night){\n if(k>=L)return;\n float a=(k+frac)/L;\n float s=1.0/(1.0+D*a);\n float dist=abs(py-y)/length(vec2(slope,pix));\n float w=uParam_weight*.5*(.55+.45*s);\n // An accent widens a line by at most 1.9x: read it only for lines that can reach this pixel.\n if(w*1.9+.5*soft-dist<=0.0)return;\n float beat=dot(spectrumTexel(cell,14.0),pick)*uParam_accent;\n w*=1.0+.9*beat;\n float cover=clamp((w+.5*soft-dist)/soft,0.0,1.0);\n if(cover<=0.0)return;\n float alpha=cover*inside*uParam_ink*smoothstep(0.0,1.5,k+frac)*pow(1.0-a,1.8);\n alpha=min(1.0,alpha*(1.0+1.5*beat));\n vec3 hue=a<.5?mix(uParam_color_a.rgb,uParam_color_c.rgb,a*2.0):mix(uParam_color_c.rgb,uParam_color_b.rgb,a*2.0-1.0);\n hue=mix(hue,uParam_color_a.rgb,.5*smoothstep(.12,.45,abs(h)));\n hue=mix(hue,pow(max(hue,vec3(0.0)),vec3(.45)),night);\n hue=mix(hue,mix(vec3(1.0),hue,.35+.65*(1.0-night)),.75*beat);\n c=mix(c,hue,alpha);\n}\n// All rows of lines, oldest first. mainImage calls it with a constant line count\n// for the default, so the compiler folds each row's ages, and with the parameter\n// otherwise; both calls draw the same pixels.\nvec3 ribbonRows(vec3 c,float L,float py,float tx,float uc,float rise,float amp,float frac,float rest,float soft,float hb,float edge,float D,float far,float pix,float inside,float night){\n int rowCount=int(ceil(L/4.0));\n for(int i=0;i<12;i++){\n  if(i>=rowCount)break;\n  float row=float(rowCount-1-i);\n  vec4 k4=row*4.0+vec4(0.0,1.0,2.0,3.0);\n  vec4 age=(k4+frac)/L;\n  // The row test needs only its youngest and oldest line; the middle two follow once it passes.\n  vec2 sxw=1.0/(1.0+D*age.xw);\n  vec2 bxw=rise*(1.0-sxw)/(1.0-far);\n  float reach=min(hb*amp*sxw.x,.2)+edge;\n  if(py<bxw.x-reach||py>bxw.y+reach)continue;\n  vec4 s4=vec4(sxw.x,1.0/(1.0+D*age.yz),sxw.y);\n  vec4 base=vec4(bxw.x,rise*(1.0-s4.yz)/(1.0-far),bxw.y);\n  float cell=(row+.5)/128.0;\n  vec4 h4=spectrumTexel(tx,row)-spectrumTexel(cell,13.0);\n  if(rest>0.0)h4+=rest*.16*sin(2.0*PI*(1.4*uc-.12*iTime)-age*7.0)*sin(PI*uc);\n  vec4 lift=h4*amp*s4;\n  lift*=inversesqrt(1.0+lift*lift/(.2*.2));\n  vec4 y4=base+lift;\n  vec4 d4=clamp(dFdx(y4),vec4(-6.0*pix),vec4(6.0*pix));\n  // None of these four lines can cover a pixel farther than edge.\n  if(all(greaterThan(abs(py-y4),vec4(edge))))continue;\n  float k0=row*4.0;\n  // One rolled loop over the four lines (its count comes from a parameter) keeps\n  // a single copy of the line shading and fewer values live.\n  int lineCount=int(min(L,4.0)+.5);\n  for(int n=0;n<4;n++){\n   if(n>=lineCount)break;\n   int j=3-n;\n   vec4 pick=vec4(equal(ivec4(0,1,2,3),ivec4(j)));\n   spectrumLine(c,k0+float(j),frac,L,D,py,dot(y4,pick),dot(d4,pick),dot(h4,pick),cell,pick,pix,soft,inside,night);\n  }\n }\n return c;\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord){\n vec2 uv=fragCoord/iResolution.xy;\n float margin=.06;\n float u=(uv.x-margin)/(1.0-2.0*margin);\n float uc=clamp(u,0.0,1.0);\n float tx=(uc*127.0+.5)/128.0;\n float pix=1.0/iResolution.y;\n float du=1.0/(iResolution.x*(1.0-2.0*margin));\n float inside=clamp(u/du+.5,0.0,1.0)*clamp((1.0-u)/du+.5,0.0,1.0);\n float L=clamp(floor(uParam_lines+.5),16.0,48.0);\n float D=1.0+5.0*uParam_perspective;\n float far=1.0/(1.0+D);\n float origin=-.12;\n float py=uv.y-.5-origin;\n // Hands: their height deepens the arc, their centre moves its crest.\n float body=uParam_presence*uParam_steer;\n float crest=clamp(mix(.5,uParam_hand_x,.8*body),.22,.78);\n float w01=uc<crest?.5*uc/crest:.5+.5*(uc-crest)/(1.0-crest);\n float env=pow(sin(PI*w01),.7);\n float taper=smoothstep(0.0,.08,u)*smoothstep(1.0,.92,u);\n float rise=.5*uParam_depth*env*(1.0+.9*body*smoothstep(.3,.9,uParam_hand_y));\n float amp=.95*uParam_height*taper;\n vec3 c=uParam_background.rgb;\n float night=1.0-smoothstep(.02,.4,dot(c,vec3(.2126,.7152,.0722)));\n vec4 top=spectrumTexel(tx,12.0);\n float frac=top.g;\n // Between songs a slow swell keeps flowing back through the lines.\n float rest=1.0-smoothstep(.03,.15,top.b);\n float soft=1.0+.6*uParam_smooth;\n // Exact skip bounds: |level - mean| never exceeds this column's maximum or\n // the largest mean, the soft limit caps a lift at 0.2, and a line can only\n // cover pixels within its widest stroke over the steepest clamped slope.\n float hb=max(top.r,top.b)+.16*rest;\n float edge=((uParam_weight*.95+.5*soft)*6.1+2.0)*pix;\n float reachMax=min(hb*amp,.2)+edge;\n bool covered=u>-du&&u<1.0+du&&py>-reachMax&&py<rise+reachMax;\n if(covered){\n  if(L==32.0)c=ribbonRows(c,32.0,py,tx,uc,rise,amp,frac,rest,soft,hb,edge,D,far,pix,inside,night);\n  else c=ribbonRows(c,L,py,tx,uc,rise,amp,frac,rest,soft,hb,edge,D,far,pix,inside,night);\n }\n fragColor=vec4(c,1.0);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "height",
+      "label": "Height",
+      "type": "float",
+      "default": 0.8,
+      "min": 0.1,
+      "max": 1,
+      "widget": "slider",
+      "group": "Ribbon",
+      "description": "How far louder and quieter bands lift and drop each line."
+    },
+    {
+      "key": "depth",
+      "label": "Depth",
+      "type": "float",
+      "default": 0.6,
+      "min": 0.15,
+      "max": 1,
+      "widget": "slider",
+      "group": "Ribbon",
+      "description": "How far older spectra arc back between the two end points."
+    },
+    {
+      "key": "perspective",
+      "label": "Perspective",
+      "type": "float",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Ribbon",
+      "description": "How strongly older spectra shrink into the distance."
+    },
+    {
+      "key": "lines",
+      "label": "Lines",
+      "type": "float",
+      "default": 32,
+      "min": 16,
+      "max": 48,
+      "step": 1,
+      "widget": "slider",
+      "group": "Ribbon",
+      "description": "How many recent spectra are drawn."
+    },
+    {
+      "key": "smooth",
+      "label": "Smoothness",
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Response",
+      "description": "Softens the spectrum across frequency and time."
+    },
+    {
+      "key": "accent",
+      "label": "Beat Lines",
+      "type": "float",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Response",
+      "description": "Brightness of the line left by each attack as it recedes."
+    },
+    {
+      "key": "weight",
+      "label": "Line Weight",
+      "type": "float",
+      "default": 2,
+      "min": 0.5,
+      "max": 3,
+      "widget": "slider",
+      "group": "Line",
+      "description": "Line thickness in pixels."
+    },
+    {
+      "key": "ink",
+      "label": "Opacity",
+      "type": "float",
+      "default": 0.85,
+      "min": 0.2,
+      "max": 1,
+      "widget": "slider",
+      "group": "Line",
+      "description": "Strength of every line."
+    },
+    {
+      "key": "color_a",
+      "label": "Newest Color",
+      "type": "color",
+      "default": [
+        0.08,
+        0.3,
+        0.4,
+        1
+      ],
+      "widget": "color",
+      "group": "Line",
+      "description": "Colour of the newest lines and the strongest peaks."
+    },
+    {
+      "key": "color_c",
+      "label": "Middle Color",
+      "type": "color",
+      "default": [
+        0.26,
+        0.16,
+        0.42,
+        1
+      ],
+      "widget": "color",
+      "group": "Line",
+      "description": "Colour of lines midway through the history."
+    },
+    {
+      "key": "color_b",
+      "label": "Oldest Color",
+      "type": "color",
+      "default": [
+        0.8,
+        0.32,
+        0.3,
+        1
+      ],
+      "widget": "color",
+      "group": "Line",
+      "description": "Colour of the oldest lines."
+    },
+    {
+      "key": "background",
+      "label": "Background",
+      "type": "color",
+      "default": [
+        0.002,
+        0.002,
+        0.003,
+        1
+      ],
+      "widget": "color",
+      "group": "Line",
+      "description": "Colour behind the ribbon. Lines brighten automatically over dark colours."
+    },
+    {
+      "key": "steer",
+      "label": "Body Steering",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "How much raised hands deepen the arc and move its crest."
+    },
+    {
+      "key": "hand_x",
+      "label": "Hands X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked hands position."
+    },
+    {
+      "key": "hand_y",
+      "label": "Hands Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked hands height."
+    },
+    {
+      "key": "presence",
+      "label": "Hands Presence",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked hands presence."
+    }
+  ],
+  "ui": {
+    "simple_parameters": [
+      "height",
+      "depth",
+      "color_a",
+      "background"
+    ]
+  },
+  "signals": [
+    {
+      "id": "audio.v2.spectrum",
+      "type": "texture",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "pose-hands-x",
+      "param_key": "hand_x",
+      "signal_id": "tracking.pose.hands_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 200,
+      "release_ms": 600,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-hands-y",
+      "param_key": "hand_y",
+      "signal_id": "tracking.pose.hands_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 200,
+      "release_ms": 600,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-hands",
+      "param_key": "presence",
+      "signal_id": "tracking.pose.hands_confidence",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 0.6,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 200,
+      "release_ms": 600,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1.0
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "spectrum",
+      "lines",
+      "audio",
+      "body"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": null,
+    "prompt_summary": "Layered fine lines drawn from the real audio spectrum, with time running into depth between two shared end points.",
+    "created_at": "2026-10-01T00:00:00Z"
+  },
+  "analysis_requirements": [
+    {
+      "kind": "pose",
+      "source_input": 1,
+      "topology": "vrch.pose-landmarks@1",
+      "history_ms": 600
+    }
+  ]
+}

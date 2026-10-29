@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "id": "a591c7e9-3faa-4207-a1c2-2a88153ed934",
+  "name": "Shader Editor",
+  "version": "0.1.0",
+  "entry": "index.html",
+  "capabilities": {
+    "audio_input": true,
+    "video_input": true,
+    "websocket": [
+      {
+        "channel": 1,
+        "format": "audio"
+      },
+      {
+        "channel": 1,
+        "format": "image"
+      },
+      {
+        "channel": 2,
+        "format": "audio"
+      },
+      {
+        "channel": 2,
+        "format": "image"
+      },
+      {
+        "channel": 3,
+        "format": "audio"
+      },
+      {
+        "channel": 3,
+        "format": "image"
+      },
+      {
+        "channel": 4,
+        "format": "audio"
+      },
+      {
+        "channel": 4,
+        "format": "image"
+      },
+      {
+        "channel": 5,
+        "format": "audio"
+      },
+      {
+        "channel": 5,
+        "format": "image"
+      },
+      {
+        "channel": 6,
+        "format": "audio"
+      },
+      {
+        "channel": 6,
+        "format": "image"
+      },
+      {
+        "channel": 7,
+        "format": "audio"
+      },
+      {
+        "channel": 7,
+        "format": "image"
+      },
+      {
+        "channel": 8,
+        "format": "audio"
+      },
+      {
+        "channel": 8,
+        "format": "image"
+      }
+    ]
+  },
+  "guide": {
+    "description": "Choose a visual, adjust its parameters and save your own variations. Your workspace is saved automatically.",
+    "sections": [
+      {
+        "title": "Edit a visual",
+        "text": "Choose opens the visual library. Edit This opens a preset; adjust Parameters below the preview. Advanced shows all available controls and the shader source."
+      },
+      {
+        "title": "Keep your work",
+        "text": "Draft saved means your current workspace will reopen here. Save Visual adds a reusable version to My Visuals; Update Visual replaces that saved version. If a save is not confirmed, keep the App open and use Check Save."
+      },
+      {
+        "title": "Sources and tracking",
+        "text": "Includes all 63 visuals with hand, face and body tracking. Choose local camera/audio inputs or image/audio WebSocket channels below the preview. The tracking kind is shown beside the image input it uses. Local inputs run on the device; maker Preview uses silent audio and isolated channels. AI creation and applying to a Viewer are not included."
+      },
+      {
+        "title": "Leave and return",
+        "text": "Open the My Apps menu to Exit. Launch this App again to restore the last confirmed workspace. K1 remains reserved for the system menu."
+      }
+    ]
+  }
+}

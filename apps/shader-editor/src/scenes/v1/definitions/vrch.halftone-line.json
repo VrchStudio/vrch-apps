@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.halftone-line",
+  "title": "Halftone Lines",
+  "description": "Expresses continuous image tone through clean, angle-adjustable print lines.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec4 image = vrchSampleSource0(uv);\n  float luma = dot(image.rgb, vec3(0.2126, 0.7152, 0.0722));\n  vec2 point = (uv - 0.5) * vec2(iResolution.x / iResolution.y, 1.0);\n  float angle = uParam_angle * 6.28318530718;\n  float cs = cos(angle);\n  float sn = sin(angle);\n  vec2 rotated = vec2(point.x * cs - point.y * sn, point.x * sn + point.y * cs);\n  float phaseTravel = vrchPhase_motion();\n  float phase = abs(fract(rotated.y * uParam_spacing - phaseTravel) - 0.5) * 2.0;\n  float tonalWidth = clamp(uParam_width + (1.0 - luma) * uParam_contrast, 0.04, 0.94);\n  float antialias = max(fwidth(phase) * 1.25, 0.002);\n  float inkMask = 1.0 - smoothstep(tonalWidth - antialias, tonalWidth + antialias, phase);\n  vec3 printed = mix(uParam_paper.rgb, uParam_ink.rgb, inkMask);\n  fragColor = vec4(mix(image.rgb, printed, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.84,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the line print treatment."
+    },
+    {
+      "key": "spacing",
+      "label": "Line Size",
+      "type": "float",
+      "default": 38.0,
+      "min": 14.0,
+      "max": 180.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Line density normalized to the short side."
+    },
+    {
+      "key": "width",
+      "label": "Line Width",
+      "type": "float",
+      "default": 0.065,
+      "min": 0.02,
+      "max": 0.6,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Minimum printed line width."
+    },
+    {
+      "key": "contrast",
+      "label": "Contrast",
+      "type": "float",
+      "default": 0.72,
+      "min": 0.0,
+      "max": 0.92,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "How strongly source tone widens the lines."
+    },
+    {
+      "key": "angle",
+      "label": "Direction",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Layout",
+      "description": "Direction of the line screen."
+    },
+    {
+      "key": "motion",
+      "label": "Line Motion",
+      "type": "float",
+      "default": 0.12,
+      "min": 0.0,
+      "max": 0.6,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Steady travel speed of the line screen."
+    },
+    {
+      "key": "ink",
+      "label": "Ink",
+      "type": "color",
+      "default": [
+        0.31,
+        0.028,
+        0.024,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Printed line color."
+    },
+    {
+      "key": "paper",
+      "label": "Paper",
+      "type": "color",
+      "default": [
+        0.96,
+        0.9,
+        0.76,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Background paper color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-line-width-v2",
+      "param_key": "width",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.04,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 45,
+      "release_ms": 260,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-line-motion-v2",
+      "param_key": "motion",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 60,
+      "release_ms": 320,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-line-spacing-v2",
+      "param_key": "spacing",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-line-angle-v2",
+      "param_key": "angle",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.04,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 10,
+      "release_ms": 240,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "print",
+      "lines",
+      "screen",
+      "graphic"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.halftone-line.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "halftone-line-v2-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "spacing",
+      "width",
+      "contrast"
+    ]
+  }
+}

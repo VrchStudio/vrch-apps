@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.procedural-field",
+  "title": "Flowing Light",
+  "description": "A calm, layered field of liquid light that works without an image source.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 0,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchFieldHash(vec2 p) {\n  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);\n}\nfloat vrchFieldNoise(vec2 p) {\n  vec2 i = floor(p);\n  vec2 f = fract(p);\n  f = f * f * (3.0 - 2.0 * f);\n  float a = vrchFieldHash(i);\n  float b = vrchFieldHash(i + vec2(1.0, 0.0));\n  float c = vrchFieldHash(i + vec2(0.0, 1.0));\n  float d = vrchFieldHash(i + vec2(1.0, 1.0));\n  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);\n}\nfloat vrchFieldFbm(vec2 p) {\n  float value = 0.0;\n  float weight = 0.5;\n  for (int i = 0; i < 5; i++) {\n    value += weight * vrchFieldNoise(p);\n    p = mat2(1.62, -1.17, 1.17, 1.62) * p + 0.17;\n    weight *= 0.5;\n  }\n  return value;\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec2 p = (uv - 0.5) * vec2(iResolution.x / iResolution.y, 1.0) * uParam_scale;\n  float time = vrchPhase_speed();\n  float first = vrchFieldFbm(p + vec2(time * 0.14, -time * 0.09));\n  float second = vrchFieldFbm(p * 1.7 - vec2(time * 0.08, time * 0.12) + first);\n  float light = smoothstep(0.18, 0.92, mix(first, second, uParam_complexity));\n  light = clamp(light, 0.0, 1.0);\n  vec3 color = mix(uParam_color_a.rgb, uParam_color_b.rgb, light);\n  color += uParam_glow * pow(light, 3.0) * uParam_color_b.rgb;\n  fragColor = vec4(color, 1.0);\n}"
+  },
+  "parameters": [
+    {
+      "key": "scale",
+      "label": "Scale",
+      "type": "float",
+      "default": 3.2,
+      "min": 0.8,
+      "max": 8.0,
+      "step": 0.1,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Size of the flowing structures."
+    },
+    {
+      "key": "speed",
+      "label": "Motion",
+      "type": "float",
+      "default": 0.42,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Flow speed."
+    },
+    {
+      "key": "complexity",
+      "label": "Detail",
+      "type": "float",
+      "default": 0.62,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Layered texture detail."
+    },
+    {
+      "key": "glow",
+      "label": "Glow",
+      "type": "float",
+      "default": 0.28,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Brightness around the light forms."
+    },
+    {
+      "key": "color_a",
+      "label": "Shadow",
+      "type": "color",
+      "default": [
+        0.015,
+        0.025,
+        0.08,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Dark field color."
+    },
+    {
+      "key": "color_b",
+      "label": "Light",
+      "type": "color",
+      "default": [
+        0.1,
+        0.72,
+        1.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Bright field color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-field-scale-v2",
+      "param_key": "scale",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.06,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "negative",
+      "attack_ms": 55,
+      "release_ms": 330,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-field-complexity-v2",
+      "param_key": "complexity",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 70,
+      "release_ms": 370,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-field-glow-v2",
+      "param_key": "glow",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-field-speed-v2",
+      "param_key": "speed",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.05,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 10,
+      "release_ms": 260,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "liquid",
+      "light",
+      "ambient",
+      "audio"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.procedural-field.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "field-v1-audio-v2",
+    "created_at": "2026-08-12T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "scale",
+      "speed",
+      "complexity",
+      "glow"
+    ]
+  }
+}

@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-matrix-rain",
+  "title": "Code Rain",
+  "description": "Layered emerald code rain with crisp luminous heads, deep falling trails and restrained musical surges.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 0,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float musicalAccent(float value) {\n float activity=vrchReadSignal(0)+vrchReadSignal(1)+vrchReadSignal(2);\n float crisp=smoothstep(.02,.18,vrchReadSignal(2));\n return smoothstep(.005,.25,value)*mix(1.0,.12+.88*crisp,step(.001,activity));\n}\n\nfloat codeHash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }\nfloat codeGlyph(vec2 uv,vec2 cell) {\n vec2 g=uv*vec2(3.0,5.0), index=floor(g), local=fract(g)-.5;\n float seed=codeHash(cell);\n float bit=step(.49,codeHash(index+cell*7.31));\n // Stable vertical stems and sparse crossbars read as glyphs at small output sizes.\n bit=max(bit*.75,step(abs(index.x-1.0),.1)*step(.25,seed));\n float mark=1.0-smoothstep(.23,.39,max(abs(local.x),abs(local.y)));\n vec2 inset=smoothstep(vec2(.06),vec2(.16),uv)*(1.0-smoothstep(vec2(.83),vec2(.94),uv));\n return bit*mark*inset.x*inset.y;\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord) {\n vec2 uv=fragCoord/iResolution.xy;float aspect=iResolution.x/iResolution.y;\n float phase=vrchPhase_speed(), hit=musicalAccent(uParam_accent);\n vec3 color=vec3(.0015,.007,.0045);\n float deep=exp(-pow(abs((uv.x-.5)*1.3),2.0));\n color+=uParam_tint.rgb*.012*deep;\n for(int layer=0;layer<3;layer++) {\n  float z=float(layer), cells=uParam_density*(.75+z*.50);\n  vec2 grid=vec2(cells*aspect*.68,cells);\n  vec2 g=uv*grid+vec2(z*8.31,0.0), id=floor(g), local=fract(g);\n  float seed=codeHash(vec2(id.x,z*17.0));\n  float velocity=.17+seed*.25+z*.06;\n  float head=1.22-fract(phase*velocity+seed)*1.60;\n  float behind=uv.y-head;\n  float length=.25+uParam_trail*.73;\n  float trail=step(0.0,behind)*exp(-max(behind,0.0)*4.8/length)*(1.0-smoothstep(length*.72,length,behind));\n  float top=exp(-pow(abs(behind/(.75/cells)),2.0));\n  float columnOn=smoothstep(.28+z*.12,.40+z*.12,codeHash(vec2(id.x+71.0,z+5.0)));\n  float glyph=codeGlyph(local,id+vec2(z*32.0,0.0));\n  float ambient=.005+uParam_depth*.018;\n  float light=(ambient+trail*(.90+uParam_depth*.7)+top*2.4)*columnOn;\n  vec3 green=uParam_tint.rgb/(1.0+z*1.35);\n  vec3 headColor=mix(green,vec3(.75,1.0,.84),top*.82);\n  color+=headColor*glyph*light*(.58+uParam_glow*.55)*(1.0+hit*top*.65);\n  float beam=exp(-pow(abs((local.x-.5)*3.8),2.0))*trail*columnOn;\n  color+=green*beam*(.016+uParam_glow*.018);\n }\n float vignette=1.0-.24*pow(length((uv-.5)*vec2(.9,1.0)),1.5);\n color*=vignette;\n fragColor=vec4(1.0-exp(-color*1.12),1.0);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "density",
+      "label": "Code Density",
+      "type": "float",
+      "default": 20,
+      "min": 12,
+      "max": 40,
+      "step": 1,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Density of the three fixed glyph layers."
+    },
+    {
+      "key": "trail",
+      "label": "Trail Length",
+      "type": "float",
+      "default": 0.58,
+      "min": 0.15,
+      "max": 0.9,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Reach of the falling emerald trails."
+    },
+    {
+      "key": "depth",
+      "label": "Layer Depth",
+      "type": "float",
+      "default": 0.62,
+      "min": 0.15,
+      "max": 0.95,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Separation and visibility of the distant code."
+    },
+    {
+      "key": "tint",
+      "label": "Code Color",
+      "type": "color",
+      "default": [
+        0.018,
+        0.94,
+        0.25,
+        1
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Code Color of the composition."
+    },
+    {
+      "key": "glow",
+      "label": "Light",
+      "type": "float",
+      "default": 0.85,
+      "min": 0.15,
+      "max": 1.4,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Luminous heads and soft light behind each column."
+    },
+    {
+      "key": "speed",
+      "label": "Rain Speed",
+      "type": "float",
+      "default": 0.55,
+      "min": 0.08,
+      "max": 1.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous downward flow."
+    },
+    {
+      "key": "accent",
+      "label": "Surge",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "A local brightening at the moving column heads."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-low-to-trail",
+      "param_key": "trail",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-mid-to-depth",
+      "param_key": "depth",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.12,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-high-to-glow",
+      "param_key": "glow",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-onset-to-accent",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.16,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 20,
+      "release_ms": 260,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "matrix-rain",
+      "stage"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "vrch.matrix",
+      "content_hash": "sha256:ad0f837ba411872f38793cd2b5ab37655adc2d08de750cd32e7db0b25dbf6b51"
+    },
+    "prompt_summary": "Layered emerald code rain with crisp luminous heads, deep falling trails and restrained musical surges.",
+    "created_at": "2026-09-08T21:15:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "density",
+      "trail",
+      "depth",
+      "tint"
+    ]
+  }
+}

@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.hand-window",
+  "title": "Hand Window",
+  "description": "Uses both hands' thumb and index fingertips to open an audio-reactive coloured-glass window in Source A, revealing Source B below.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 2,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchHandWindowCross(vec2 a, vec2 b) {\n  return a.x * b.y - a.y * b.x;\n}\nvec4 vrchHandWindowLandmark(float pointIndex, float rowCenter) {\n  return vrchSampleSignalTexture(1, vec2((pointIndex + 0.5) / 32.0, rowCenter));\n}\nfloat vrchHandWindowEdgeDistance(vec2 point, vec2 startPoint, vec2 endPoint) {\n  vec2 edge = endPoint - startPoint;\n  return vrchHandWindowCross(edge, point - startPoint) / max(length(edge), 0.0001);\n}\nvec4 vrchHandWindowGlass(vec2 uv, float effect) {\n  vec2 resolution = max(iResolution.xy, vec2(1.0));\n  vec2 pixel = vec2(1.0) / resolution;\n  float phase = iTime * 0.268;\n  vec2 surface = vec2(\n    sin(uv.y * 17.0 + phase) + cos((uv.x + uv.y) * 11.0 - phase * 0.7),\n    cos(uv.x * 15.0 - phase * 0.8) + sin((uv.x - uv.y) * 13.0 + phase)\n  ) * 0.5;\n  vec2 refractedUv = clamp(uv + surface * pixel * effect * 7.0, vec2(0.0), vec2(1.0));\n  vec4 centerSample = vrchSampleSource1(refractedUv);\n  vec3 glass = centerSample.rgb;\n  vec2 spread = pixel * (1.0 + effect * 5.0);\n\n  if (effect >= 0.12) {\n    vec3 sampleMinus = vrchSampleSource1(clamp(refractedUv - spread, vec2(0.0), vec2(1.0))).rgb;\n    vec3 samplePlus = vrchSampleSource1(clamp(refractedUv + spread, vec2(0.0), vec2(1.0))).rgb;\n    vec3 dispersed = vec3(samplePlus.r, centerSample.g, sampleMinus.b);\n    float threeSampleMix = smoothstep(0.12, 0.30, effect);\n    glass = mix(glass, dispersed, threeSampleMix * (0.08 + effect * 0.18));\n\n    if (effect >= 0.45) {\n      vec2 perpendicular = vec2(-spread.y, spread.x);\n      vec3 sampleLeft = vrchSampleSource1(clamp(refractedUv - perpendicular, vec2(0.0), vec2(1.0))).rgb;\n      vec3 sampleRight = vrchSampleSource1(clamp(refractedUv + perpendicular, vec2(0.0), vec2(1.0))).rgb;\n      vec3 frostFive = (centerSample.rgb + sampleMinus + samplePlus + sampleLeft + sampleRight) * 0.2;\n      float fiveSampleMix = smoothstep(0.45, 0.62, effect);\n      glass = mix(glass, frostFive, fiveSampleMix * effect * 0.22);\n\n      if (effect >= 0.78) {\n        vec2 diagonal = vec2(spread.x, -spread.y) * 1.45;\n        vec3 sampleDiagonalA = vrchSampleSource1(clamp(refractedUv - diagonal, vec2(0.0), vec2(1.0))).rgb;\n        vec3 sampleDiagonalB = vrchSampleSource1(clamp(refractedUv + diagonal, vec2(0.0), vec2(1.0))).rgb;\n        vec3 frostSeven = (frostFive * 5.0 + sampleDiagonalA + sampleDiagonalB) * 0.142857;\n        float sevenSampleMix = smoothstep(0.78, 0.92, effect);\n        glass = mix(glass, frostSeven, sevenSampleMix * effect * 0.28);\n      }\n    }\n  }\n  return vec4(glass, centerSample.a);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / max(iResolution.xy, vec2(1.0));\n  vec4 sourceA = vrchSampleSource0(uv);\n\n  vec4 leftThumb = vrchHandWindowLandmark(4.0, 0.25);\n  vec4 leftIndex = vrchHandWindowLandmark(8.0, 0.25);\n  vec4 rightThumb = vrchHandWindowLandmark(4.0, 0.75);\n  vec4 rightIndex = vrchHandWindowLandmark(8.0, 0.75);\n  float pointConfidence = min(min(leftThumb.a, leftIndex.a), min(rightThumb.a, rightIndex.a));\n  float trackingReady = step(0.001, pointConfidence) * step(0.001, vrchReadSignal(0));\n\n  vec2 center = (leftThumb.xy + leftIndex.xy + rightThumb.xy + rightIndex.xy) * 0.25;\n  vec2 p0 = center + (leftThumb.xy - center) * uParam_window_size;\n  vec2 p1 = center + (leftIndex.xy - center) * uParam_window_size;\n  vec2 p2 = center + (rightThumb.xy - center) * uParam_window_size;\n  vec2 p3 = center + (rightIndex.xy - center) * uParam_window_size;\n  float a0 = atan(p0.y - center.y, p0.x - center.x);\n  float a1 = atan(p1.y - center.y, p1.x - center.x);\n  float a2 = atan(p2.y - center.y, p2.x - center.x);\n  float a3 = atan(p3.y - center.y, p3.x - center.x);\n  if (a0 > a1) { float ta = a0; a0 = a1; a1 = ta; vec2 tp = p0; p0 = p1; p1 = tp; }\n  if (a2 > a3) { float ta = a2; a2 = a3; a3 = ta; vec2 tp = p2; p2 = p3; p3 = tp; }\n  if (a0 > a2) { float ta = a0; a0 = a2; a2 = ta; vec2 tp = p0; p0 = p2; p2 = tp; }\n  if (a1 > a3) { float ta = a1; a1 = a3; a3 = ta; vec2 tp = p1; p1 = p3; p3 = tp; }\n  if (a1 > a2) { float ta = a1; a1 = a2; a2 = ta; vec2 tp = p1; p1 = p2; p2 = tp; }\n\n  float twiceArea = vrchHandWindowCross(p0, p1) + vrchHandWindowCross(p1, p2) + vrchHandWindowCross(p2, p3) + vrchHandWindowCross(p3, p0);\n  float orientation = twiceArea < 0.0 ? -1.0 : 1.0;\n  float edgeDistance = min(min(vrchHandWindowEdgeDistance(uv, p0, p1), vrchHandWindowEdgeDistance(uv, p1, p2)), min(vrchHandWindowEdgeDistance(uv, p2, p3), vrchHandWindowEdgeDistance(uv, p3, p0))) * orientation;\n  float shapeReady = step(0.001, abs(twiceArea));\n  float softness = max(0.0005, uParam_softness);\n  float windowMask = smoothstep(-softness, softness, edgeDistance);\n  if (uParam_invert) windowMask = 1.0 - windowMask;\n  windowMask *= trackingReady * shapeReady;\n  float revealMask = clamp(windowMask * uParam_reveal, 0.0, 1.0);\n  float glassEffect = clamp(uParam_glass_effect, 0.0, 1.0);\n  vec4 sourceB = sourceA;\n  vec3 color = sourceA.rgb;\n  if (revealMask > 0.0001) {\n    sourceB = vrchHandWindowGlass(uv, glassEffect);\n    vec3 windowColor = sourceB.rgb;\n    if (uParam_invert_color) windowColor = vec3(1.0) - windowColor;\n    float colorMix = clamp(uParam_color_mix, 0.0, 1.0);\n    windowColor = mix(windowColor, windowColor * uParam_window_color.rgb, colorMix);\n    float transmittedLight = dot(windowColor, vec3(0.2126, 0.7152, 0.0722));\n    windowColor += uParam_window_color.rgb * transmittedLight * colorMix * (0.035 + glassEffect * 0.055);\n    float innerHighlight = (1.0 - smoothstep(0.0, max(softness * 4.0, 0.006), abs(edgeDistance))) * trackingReady * shapeReady;\n    windowColor += mix(vec3(1.0), uParam_window_color.rgb, 0.55) * innerHighlight * (0.035 + glassEffect * 0.10) * clamp(0.012 / softness, 0.25, 4.0);\n    float shimmer = 0.5 + 0.5 * sin(iTime * 11.6 + uv.x * 42.0 - uv.y * 29.0);\n    windowColor += mix(vec3(1.0), uParam_window_color.rgb, 0.35) * shimmer * glassEffect * 0.035;\n    color = mix(sourceA.rgb, clamp(windowColor, 0.0, 1.0), revealMask);\n  }\n  vec4 tracking = vrchSampleSignalTexture(0, uv);\n  float skeleton = max(smoothstep(0.02, 0.88, tracking.r), smoothstep(0.02, 0.88, tracking.g));\n  float debugOpacity = uParam_show_skeleton ? skeleton * step(0.001, vrchReadSignal(0)) : 0.0;\n  color = mix(color, vec3(0.12, 0.95, 1.0), clamp(debugOpacity * 0.9, 0.0, 1.0));\n  fragColor = vec4(color, mix(sourceA.a, sourceB.a, revealMask));\n}"
+  },
+  "parameters": [
+    {
+      "key": "reveal",
+      "label": "Reveal",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Window",
+      "description": "Amount of Source B shown inside the fingertip window."
+    },
+    {
+      "key": "window_size",
+      "label": "Window Size",
+      "type": "float",
+      "default": 1,
+      "min": 0.6,
+      "max": 1.8,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Window",
+      "description": "Scales the four-point window around its centre."
+    },
+    {
+      "key": "window_color",
+      "label": "Window Colour",
+      "type": "color",
+      "default": [
+        0.55,
+        0.85,
+        1,
+        1
+      ],
+      "widget": "color",
+      "group": "Window",
+      "description": "Colour of the glass over Source B inside the window."
+    },
+    {
+      "key": "color_mix",
+      "label": "Colour Mix",
+      "type": "float",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Window",
+      "description": "Strength of the coloured-glass mix while preserving Source B detail."
+    },
+    {
+      "key": "glass_effect",
+      "label": "Glass Effect",
+      "type": "float",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Window",
+      "description": "Adds progressively richer refraction, colour dispersion and frosted-glass sampling."
+    },
+    {
+      "key": "softness",
+      "label": "Softness",
+      "type": "float",
+      "default": 0.012,
+      "min": 0.001,
+      "max": 0.08,
+      "step": 0.001,
+      "widget": "slider",
+      "group": "Window",
+      "description": "Softness of the transition between Source A and Source B."
+    },
+    {
+      "key": "invert_color",
+      "label": "Invert Colour",
+      "type": "bool",
+      "default": false,
+      "widget": "toggle",
+      "group": "Window",
+      "description": "Inverts Source B colours inside the active window."
+    },
+    {
+      "key": "invert",
+      "label": "Invert Window",
+      "type": "bool",
+      "default": false,
+      "widget": "toggle",
+      "group": "Window",
+      "description": "Shows Source B outside the four-point window instead."
+    },
+    {
+      "key": "show_skeleton",
+      "label": "Show Skeleton",
+      "type": "bool",
+      "default": false,
+      "widget": "toggle",
+      "group": "Debug",
+      "description": "Shows the detected hand bones and landmarks for setup and debugging."
+    }
+  ],
+  "signals": [
+    {
+      "id": "tracking.hand.confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.hand.center_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.hand.center_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.hand.speed",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "tracking.hand-overlay",
+      "type": "texture",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.hand-landmarks",
+      "type": "texture",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-hand-window-size-v2",
+      "param_key": "window_size",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 35,
+      "release_ms": 190,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-hand-window-color-v2",
+      "param_key": "color_mix",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.16,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 60,
+      "release_ms": 300,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-hand-window-glass-v2",
+      "param_key": "glass_effect",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-hand-window-softness-v2",
+      "param_key": "softness",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.12,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "negative",
+      "attack_ms": 8,
+      "release_ms": 170,
+      "clamp": true
+    }
+  ],
+  "analysis_requirements": [
+    {
+      "kind": "hand",
+      "source_input": 1,
+      "topology": "vrch.hand-landmarks@1",
+      "history_ms": 600
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Blend",
+    "tags": [
+      "two-sources",
+      "camera",
+      "hand",
+      "tracking",
+      "fingertips",
+      "window",
+      "reveal",
+      "coloured-glass",
+      "invert-colour",
+      "audio"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.hand-tracker.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "phase4-hand-window-v6-audio-v2",
+    "created_at": "2026-08-27T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "reveal",
+      "window_size",
+      "window_color",
+      "color_mix"
+    ]
+  }
+}

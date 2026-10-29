@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.patchwork",
+  "title": "Patchwork",
+  "description": "Reassembles an image from bounded horizontal strips and offset blocks that can respond to a beat.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchPatchHash(vec2 point) {\n  return fract(sin(dot(point, vec2(31.41, 97.17))) * 43758.5453);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float stripId = floor(uv.y * uParam_strips);\n  float blockId = floor(uv.x * uParam_blocks);\n  float stripShift = (vrchPatchHash(vec2(stripId, 3.0)) - 0.5) * 2.0 * uParam_offset;\n  float blockShift = (vrchPatchHash(vec2(blockId, stripId)) - 0.5) * uParam_jitter / uParam_strips;\n  vec2 patchUv = vec2(fract(uv.x + stripShift), clamp(uv.y + blockShift, 0.0, 1.0));\n  vec4 image = vrchSampleSource0(uv);\n  vec4 patched = vrchSampleSource0(patchUv);\n  float seamX = min(fract(uv.x * uParam_blocks), 1.0 - fract(uv.x * uParam_blocks));\n  float seamY = min(fract(uv.y * uParam_strips), 1.0 - fract(uv.y * uParam_strips));\n  float seam = 1.0 - smoothstep(0.0, 0.018, min(seamX, seamY));\n  vec3 assembled = patched.rgb * (1.0 - seam * uParam_seams);\n  fragColor = vec4(mix(image.rgb, assembled, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.88,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the patchwork reconstruction."
+    },
+    {
+      "key": "strips",
+      "label": "Strip Size",
+      "type": "float",
+      "default": 36.0,
+      "min": 6.0,
+      "max": 72.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Layout",
+      "description": "Number of horizontal strips."
+    },
+    {
+      "key": "offset",
+      "label": "Offset",
+      "type": "float",
+      "default": 0.025,
+      "min": 0.0,
+      "max": 0.18,
+      "step": 0.002,
+      "widget": "slider",
+      "group": "Layout",
+      "description": "Horizontal displacement between strips."
+    },
+    {
+      "key": "blocks",
+      "label": "Blocks",
+      "type": "float",
+      "default": 8.0,
+      "min": 2.0,
+      "max": 20.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Layout",
+      "description": "Number of patch sections across the image."
+    },
+    {
+      "key": "jitter",
+      "label": "Jitter",
+      "type": "float",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Stable vertical mismatch between patch blocks."
+    },
+    {
+      "key": "seams",
+      "label": "Seams",
+      "type": "float",
+      "default": 0.28,
+      "min": 0.0,
+      "max": 0.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Darkness of the patch boundaries."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-patchwork-strips-v2",
+      "param_key": "strips",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 55,
+      "release_ms": 310,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-patchwork-blocks-v2",
+      "param_key": "blocks",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-patchwork-seams-v2",
+      "param_key": "seams",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 190,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-patchwork-offset-v2",
+      "param_key": "offset",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 10,
+      "release_ms": 230,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "patchwork",
+      "strips",
+      "offset",
+      "beat"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.patchwork.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "patchwork-v2-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "strips",
+      "blocks",
+      "jitter"
+    ]
+  }
+}

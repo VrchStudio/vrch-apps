@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.graphic-pen",
+  "title": "Graphic Pen",
+  "description": "Combines stable edge strokes and directional hatching for a warm-paper pen drawing.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchPenHash(vec2 point) {\n  return fract(sin(dot(point, vec2(27.17, 91.63))) * 15731.743);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec2 pixelStep = vec2(1.5) / iResolution.xy;\n  vec4 image = vrchSampleSource0(uv);\n  vec3 leftColor = vrchSampleSource0(uv - vec2(pixelStep.x, 0.0)).rgb;\n  vec3 rightColor = vrchSampleSource0(uv + vec2(pixelStep.x, 0.0)).rgb;\n  vec3 downColor = vrchSampleSource0(uv - vec2(0.0, pixelStep.y)).rgb;\n  vec3 upColor = vrchSampleSource0(uv + vec2(0.0, pixelStep.y)).rgb;\n  float luma = dot(image.rgb, vec3(0.2126, 0.7152, 0.0722));\n  float edgeStrength = length(rightColor - leftColor) + length(upColor - downColor);\n  vec2 point = (uv - 0.5) * vec2(iResolution.x / iResolution.y, 1.0);\n  float motionWave = sin(iTime * (0.45 + uParam_motion * 0.8));\n  float angle = (uParam_direction + motionWave * uParam_motion * 0.08) * 6.28318530718;\n  float travel = iTime * uParam_motion * 1.4;\n  vec2 hatchDirection = vec2(cos(angle), sin(angle));\n  float hatchA = 0.5 + 0.5 * sin(dot(point, hatchDirection) * uParam_scale * 6.28318530718 + travel);\n  float hatchB = 0.5 + 0.5 * sin(dot(point, vec2(-hatchDirection.y, hatchDirection.x)) * uParam_scale * 3.14159265359 - travel * 0.65);\n  float grain = vrchPenHash(floor(fragCoord / 1.5));\n  float shade = clamp(1.0 - luma, 0.0, 1.0);\n  float hatch = mix(hatchA, max(hatchA, hatchB), smoothstep(0.38, 0.82, shade));\n  float penValue = edgeStrength * uParam_contrast + shade * hatch * (0.72 + (grain - 0.5) * uParam_roughness);\n  float inkMask = smoothstep(0.28, 0.72, penValue);\n  vec3 drawing = mix(uParam_paper.rgb, uParam_ink.rgb, inkMask);\n  fragColor = vec4(mix(image.rgb, drawing, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the pen drawing treatment."
+    },
+    {
+      "key": "scale",
+      "label": "Stroke Size",
+      "type": "float",
+      "default": 47.0,
+      "min": 18.0,
+      "max": 180.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Density of the directional hatching."
+    },
+    {
+      "key": "contrast",
+      "label": "Ink Contrast",
+      "type": "float",
+      "default": 1.92,
+      "min": 0.4,
+      "max": 3.0,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of detected edges and dark strokes."
+    },
+    {
+      "key": "motion",
+      "label": "Stroke Motion",
+      "type": "float",
+      "default": 0.22,
+      "min": 0.0,
+      "max": 0.7,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Stroke",
+      "description": "Slow coherent travel through the existing hatch lines."
+    },
+    {
+      "key": "direction",
+      "label": "Direction",
+      "type": "float",
+      "default": 0.11,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Stroke",
+      "description": "Primary direction of the pen hatching."
+    },
+    {
+      "key": "roughness",
+      "label": "Texture",
+      "type": "float",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Stroke",
+      "description": "Stable irregularity in the graphite marks."
+    },
+    {
+      "key": "ink",
+      "label": "Ink",
+      "type": "color",
+      "default": [
+        0.12,
+        0.105,
+        0.09,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Color of the pen strokes."
+    },
+    {
+      "key": "paper",
+      "label": "Paper",
+      "type": "color",
+      "default": [
+        0.93,
+        0.86,
+        0.69,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Warm drawing-paper color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-pen-scale-v2",
+      "param_key": "scale",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 55,
+      "release_ms": 300,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-pen-direction-v2",
+      "param_key": "direction",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.06,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 80,
+      "release_ms": 420,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-pen-roughness-v2",
+      "param_key": "roughness",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 30,
+      "release_ms": 200,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-pen-contrast-v2",
+      "param_key": "contrast",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.04,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 10,
+      "release_ms": 220,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "pen",
+      "graphite",
+      "hatching",
+      "paper"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.graphic-pen.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "graphic-pen-v3-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "scale",
+      "contrast",
+      "roughness"
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en" class="vrch-foundation">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shader Editor</title>
+  <link rel="stylesheet" href="css/fontawesome-local.css">
+<link rel="stylesheet" href="css/vrch_colors_and_styles.css">
+<link rel="stylesheet" href="css/vrch_pages_v2.css">
+<link rel="stylesheet" href="css/vrch_pages_scene_v2.css">
+  <link rel="stylesheet" href="app.css">
+  <script src="/apps/sdk/apps-v1.js"></script>
+  <script src="scripts/vrch_pages_sha256_fallback.js"></script>
+<script src="scripts/three.min.js"></script>
+<script src="scripts/vrch_pages_visual_foundation.js"></script>
+<script src="scripts/vrch_pages_dialogs.js"></script>
+<script src="scripts/vrch_pages_live_console_action_popover.js"></script>
+<script src="scripts/vrch_pages_scene_spec.js"></script>
+<script src="scripts/vrch_pages_scene_contract.js"></script>
+<script src="scripts/vrch_pages_scene_signal_bus.js"></script>
+<script src="scripts/vrch_pages_scene_source_binding.js"></script>
+<script src="scripts/vrch_pages_scene_runtime.js"></script>
+<script src="scripts/vrch_pages_scene_store.js"></script>
+<script src="scripts/vrch_pages_scene_apps_store.js"></script>
+<script src="scripts/vrch_pages_scene_catalog.js"></script>
+<script src="scripts/vrch_pages_image_audio_reactivity.js"></script>
+<script src="scripts/vrch_pages_scene_parameter_controls.js"></script>
+<script src="scripts/vrch_pages_scene_frame_analysis.js"></script>
+<script src="scripts/vrch_pages_scene_mirror.js"></script>
+<script src="scripts/vrch_pages_scene_selection.js"></script>
+<script src="scripts/vrch_pages_scene_picker.js"></script>
+  <script defer src="analysis.js"></script>
+  <script defer src="media.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body class="scene-v2-page scene-v2-page--editor ui-control-context" data-scene-mode="simple">
+  <main class="ui-layout ui-runtime-screen shader-editor__layout scene-v2-product-screen scene-v2-editor-shell">
+    <header class="ui-topbar shader-editor__topbar">
+      <div class="ui-header-row shader-page-head-row">
+        <h1 class="ui-app-title">Shader Editor</h1>
+        <button id="modeButton" class="ui-tag scene-v2-choice-button" type="button" aria-haspopup="menu" aria-expanded="false" disabled><span class="ui-tag__bracket">[</span><span id="modeText" class="ui-tag__text">SIMPLE</span><i class="fas fa-chevron-down live-console-settings__option-chevron" aria-hidden="true"></i><span class="ui-tag__bracket">]</span></button>
+      </div>
+    </header>
+    <div class="scene-v2-workspace scene-editor-workspace">
+      <section class="scene-v2-column scene-v2-scroll scene-editor-flow">
+        <article id="editorPreviewPanel" class="ui-panel scene-editor-preview-panel is-empty">
+          <div class="ui-panel__header">
+            <div class="scene-editor-preview-head"><span class="ui-control-label">Preview</span><div class="scene-current-summary"><span id="candidateTitle" class="scene-current-summary__title">No visual yet</span></div></div>
+            <div id="presetSaveActions" class="ui-panel__actions scene-preset-save-actions" hidden><span id="saveState" class="scene-preset-save-state" role="status">Loading</span><button id="saveVisual" class="ui-btn--sm" type="button" disabled>Save Visual</button></div>
+          </div>
+          <div id="preview" class="scene-preview" aria-label="Local preview"></div>
+          <div id="trackingFeedback" class="ui-panel__header" hidden><span id="trackingMessage" class="scene-preset-save-state" role="status"></span><button id="retryTracking" class="ui-btn--sm" type="button">Retry Tracking</button></div>
+          <section id="mediaSources" aria-label="Preview sources" hidden></section>
+          <section id="parameters" hidden></section>
+        </article>
+        <article id="scenePickerPanel" class="ui-panel">
+          <div class="ui-panel__header">
+            <div id="pickerSummary" class="scene-picker-entry-summary"><img class="scene-picker-entry-summary__thumbnail" data-scene-picker-trigger-thumbnail alt="" hidden><div class="scene-picker-entry-summary__copy"><span class="scene-picker-entry-summary__title" data-scene-picker-trigger-title>Choose a visual</span><span class="scene-picker-entry-summary__meta" data-scene-picker-trigger-meta></span></div></div>
+            <div class="ui-panel__actions"><button id="chooseVisual" class="ui-btn--sm" type="button" disabled>Choose</button></div>
+          </div>
+        </article>
+        <div id="saveFeedback" class="scene-authoring-feedback" role="status" hidden></div>
+        <div id="recoveryActions" class="ui-panel__actions" hidden><button id="retrySave" class="ui-btn--sm" type="button">Retry Save</button></div>
+        <article id="sourcePanel" class="ui-panel" hidden><div class="ui-panel__header"><span class="ui-control-label">GLSL source</span></div><pre id="sourceCode" class="scene-code scene-code--source"></pre></article>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

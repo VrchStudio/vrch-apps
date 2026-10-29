@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-prism-corridor",
+  "title": "Prism Corridor",
+  "description": "A deep architectural passage of lit copper and ice-blue portals, with shaded facets, moving reflections and musical light accents.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 0,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float musicalAccent(float value) {\n float activity=vrchReadSignal(0)+vrchReadSignal(1)+vrchReadSignal(2);\n float crisp=smoothstep(.02,.18,vrchReadSignal(2));\n return smoothstep(.005,.25,value)*mix(1.0,.12+.88*crisp,step(.001,activity));\n}\n\nfloat portalDistance(vec2 p,float size) {\n vec2 q=abs(p)-vec2(size*1.45,size);return max(q.x,q.y);\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord) {\n vec2 p=(2.0*fragCoord-iResolution.xy)/iResolution.y;\n float phase=vrchPhase_speed(), hit=musicalAccent(uParam_accent);\n p.x+=.075*sin(phase*.23);p.y+=.035*cos(phase*.18);\n vec3 color=vec3(.004,.006,.012);\n float angle=uParam_twist*.3;\n for(int i=0;i<16;i++) {\n  float z=mod(float(i)/16.0+phase*.045,1.0);\n  float size=.055+2.15*pow(z,1.75);\n  float a=angle*(1.0-z)+.02*sin(phase*.21+z*4.0);\n  vec2 q=mat2(cos(a),-sin(a),sin(a),cos(a))*p;\n  float d=portalDistance(q,size), width=(.008+size*.021)*uParam_width;\n  float fade=smoothstep(.0,.12,z)*(1.0-smoothstep(.88,1.0,z));\n  float face=(1.0-smoothstep(width,width+.002,abs(d)))*fade;\n  float edge=exp(-pow(abs((d+width*.6)/max(.002,width*.14)),2.0))*fade;\n  float light=.38+.62*pow(.5+.5*sin(z*7.0-phase*.55+q.x*.7),3.0);\n  float side=smoothstep(-size*.65,size*.65,q.x+q.y*.5);\n  vec3 hue=mix(vec3(.68,.20,.065),vec3(.065,.40,.59),side);\n  hue=mix(hue,uParam_tint.rgb,.16);\n  color+=hue*face*(.11+z*.2)*light;\n  color+=mix(hue,vec3(.80,.84,.82),.32)*edge*(.3+uParam_light*.9+hit*.6)*pow(z,.35);\n  float glow=exp(-abs(d)/max(.006,width*2.4))*fade;\n  color+=hue*glow*.085*uParam_light*light;\n }\n // A restrained floor reflection gives the portals weight without an extra surface layer.\n float floorLight=exp(-pow(abs((p.y+.71)/.16),2.0))*exp(-pow(abs(p.x/1.25),4.0));\n color+=vec3(.012,.019,.035)*floorLight;\n fragColor=vec4(1.0-exp(-color*1.28),1.0);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "width",
+      "label": "Frame Depth",
+      "type": "float",
+      "default": 1,
+      "min": 0.5,
+      "max": 2,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Visible thickness of the portal facets."
+    },
+    {
+      "key": "twist",
+      "label": "Perspective Twist",
+      "type": "float",
+      "default": 0.25,
+      "min": -0.9,
+      "max": 0.9,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Gradual rotation into the architectural passage."
+    },
+    {
+      "key": "light",
+      "label": "Edge Light",
+      "type": "float",
+      "default": 0.72,
+      "min": 0.2,
+      "max": 1.4,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Light on the inner bevels and reflections."
+    },
+    {
+      "key": "tint",
+      "label": "Atmosphere",
+      "type": "color",
+      "default": [
+        0.17,
+        0.28,
+        0.4,
+        1
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Atmosphere of the composition."
+    },
+    {
+      "key": "speed",
+      "label": "Travel",
+      "type": "float",
+      "default": 0.65,
+      "min": 0.08,
+      "max": 1.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous movement through the passage."
+    },
+    {
+      "key": "accent",
+      "label": "Pulse",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Musical accents on the illuminated bevels."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-low-to-width",
+      "param_key": "width",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.09,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-mid-to-twist",
+      "param_key": "twist",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.06,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-high-to-light",
+      "param_key": "light",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-onset-to-accent",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.15,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 20,
+      "release_ms": 260,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "prism-corridor",
+      "stage"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.vp-depth-tunnel",
+      "content_hash": "sha256:c849dc9336de9d58477858d26ad9cfc583f8eaf601039ae910bc053a42f4e121"
+    },
+    "prompt_summary": "A deep architectural passage of lit copper and ice-blue portals, with shaded facets, moving reflections and musical light accents.",
+    "created_at": "2026-09-08T21:15:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "width",
+      "twist",
+      "light",
+      "tint"
+    ]
+  }
+}

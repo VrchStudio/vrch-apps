@@ -1,0 +1,445 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-kaleido-bloom",
+  "title": "Kaleido Bloom",
+  "description": "A guilloche rosette of fine engraved light. Music breathes and weaves the rings; on Source B, spreading both hands opens the bloom and raising them deepens the petals.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor,in vec2 fragCoord){\n vec2 p=(fragCoord-.5*iResolution.xy)/iResolution.y;\n float pix=1.0/iResolution.y;\n float t=vrchPhase_speed();\n float strike=smoothstep(0.0,.85,uParam_accent);\n float r=max(length(p),.0005);\n float th=atan(p.y,p.x);\n // Both hands visible: their spread opens the rosette, their height deepens the petals.\n float lOn=smoothstep(.02,.2,uParam_left_y),rOn=smoothstep(.02,.2,uParam_right_y);\n float both=lOn*rOn*uParam_open;\n float spread=both*smoothstep(.1,.7,abs(uParam_left_x-uParam_right_x));\n float lift=both*smoothstep(.3,.9,.5*(uParam_left_y+uParam_right_y));\n float petals=clamp(floor(uParam_petals+.5),3.0,16.0);\n float count=clamp(floor(uParam_rings+.5),6.0,28.0);\n float size=(.25+uParam_bloom*.12)*(1.0+.45*spread);\n float amp=size*(.075+.07*lift);\n float ripple=uParam_motion*.012*sin(r*44.0-t*6.0);\n vec3 ink=uParam_color.rgb;\n float lines=0.0,sparks=0.0;\n // Within a band every ring angle advances by a fixed step, so the ring phasors are rotated\n // instead of re-evaluated; the spark phasor advances by .9 per ring.\n float twistStep=.35+uParam_twist*.9,invR2=1.0/(r*r);\n vec2 ringStep=vec2(cos(twistStep),sin(twistStep)),ringW=vec2(1.0,0.0);\n float sparkA=th*petals-t*1.4;\n vec2 sparkW=vec2(cos(sparkA),sin(sparkA)),sparkStep=vec2(cos(.9),sin(.9));\n // Rings of each band in their own loop, two rings per iteration: the phasors\n // alternate between two variables, so nothing is copied between rings.\n float w=pix*.5,w2=w*w,countM1=count-1.0;\n int inner=int(ceil(.5*countM1-1e-4)),total=int(count+.5);\n for(int band=0;band<2;band++){\n  float fb=float(band);\n  float m=petals*(1.0+fb),a=amp*(1.0+.5*fb);\n  int first=band==0?0:inner,last=band==0?inner:total;\n  float fi=float(first),k=fi/countM1;\n  float R=size*(band==0?mix(.28,.62,k*2.0):mix(.86,1.34,k*2.0-1.0));\n  float dR=size*(band==0?.68:.96)/countM1;\n  float ang=m*th+fi*twistStep+t*mix(.25,-.18,fb);\n  vec2 ringA=vec2(cos(ang),sin(ang)),ringB;\n  vec2 sparkB;\n  int n=last-first;\n  for(int j=0;j<14;j++){\n   if(2*j>=n)break;\n   {float f=R+a*ringA.y+ripple,fd=a*m*ringA.x;\n    float d=(r-f)*inversesqrt(1.0+fd*fd*invR2);\n    float line=w2/(d*d+w2);lines+=line;\n    float sp=.5+.5*sparkW.y,sp2=sp*sp,sp4=sp2*sp2,sp8=sp4*sp4;\n    sparks+=line*uParam_lace*(sp8*sp8*sp8);\n    ringB=vec2(ringA.x*ringStep.x-ringA.y*ringStep.y,ringA.y*ringStep.x+ringA.x*ringStep.y);\n    sparkB=vec2(sparkW.x*sparkStep.x-sparkW.y*sparkStep.y,sparkW.y*sparkStep.x+sparkW.x*sparkStep.y);\n    R+=dR;}\n   if(2*j+1>=n){sparkW=sparkB;break;}\n   {float f=R+a*ringB.y+ripple,fd=a*m*ringB.x;\n    float d=(r-f)*inversesqrt(1.0+fd*fd*invR2);\n    float line=w2/(d*d+w2);lines+=line;\n    float sp=.5+.5*sparkB.y,sp2=sp*sp,sp4=sp2*sp2,sp8=sp4*sp4;\n    sparks+=line*uParam_lace*(sp8*sp8*sp8);\n    ringA=vec2(ringB.x*ringStep.x-ringB.y*ringStep.y,ringB.y*ringStep.x+ringB.x*ringStep.y);\n    sparkW=vec2(sparkB.x*sparkStep.x-sparkB.y*sparkStep.y,sparkB.y*sparkStep.x+sparkB.x*sparkStep.y);\n    R+=dR;}\n  }\n }\n float wave=strike*strike*exp(-abs(r-(.05+(1.0-strike)*1.1))*70.0);\n float halo=exp(-abs(r-size*.95)*28.0)*.012;\n vec3 c=ink*(lines*.42+halo)+mix(ink,vec3(1.0),.55)*(sparks*1.6+wave*.3);\n c+=mix(ink,vec3(1.0),.6)*exp(-r*r*900.0)*.35;\n c*=(.55+uParam_glow*1.1)*smoothstep(1.25,.35,r);\n fragColor=vec4(1.0-exp(-c*1.3),1.0);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "bloom",
+      "label": "Bloom",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Form",
+      "description": "Size of the rosette."
+    },
+    {
+      "key": "twist",
+      "label": "Weave",
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Form",
+      "description": "Phase offset that interlaces neighbouring rings."
+    },
+    {
+      "key": "lace",
+      "label": "Lace",
+      "type": "float",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Light racing along the engraved lines."
+    },
+    {
+      "key": "accent",
+      "label": "Pulse",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "A ring of light expanding on musical attacks."
+    },
+    {
+      "key": "petals",
+      "label": "Petals",
+      "type": "float",
+      "default": 6,
+      "min": 3,
+      "max": 16,
+      "widget": "slider",
+      "group": "Form",
+      "description": "Symmetry order of the rosette.",
+      "step": 1
+    },
+    {
+      "key": "rings",
+      "label": "Rings",
+      "type": "float",
+      "default": 24,
+      "min": 6,
+      "max": 28,
+      "widget": "slider",
+      "group": "Form",
+      "description": "Number of engraved lines.",
+      "step": 1
+    },
+    {
+      "key": "speed",
+      "label": "Turn",
+      "type": "float",
+      "default": 0.4,
+      "min": 0.05,
+      "max": 1.2,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "How fast the rings counter-rotate."
+    },
+    {
+      "key": "color",
+      "label": "Line Color",
+      "type": "color",
+      "default": [
+        1.0,
+        0.78,
+        0.42,
+        1
+      ],
+      "widget": "color",
+      "group": "Light",
+      "description": "Colour of every engraved line."
+    },
+    {
+      "key": "glow",
+      "label": "Glow",
+      "type": "float",
+      "default": 0.6,
+      "min": 0.1,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Overall brightness."
+    },
+    {
+      "key": "open",
+      "label": "Body Open",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "How much spreading the hands opens the rosette."
+    },
+    {
+      "key": "left_x",
+      "label": "Left Hand X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked left hand position."
+    },
+    {
+      "key": "left_y",
+      "label": "Left Hand Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked left hand height."
+    },
+    {
+      "key": "right_x",
+      "label": "Right Hand X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked right hand position."
+    },
+    {
+      "key": "right_y",
+      "label": "Right Hand Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked right hand height."
+    },
+    {
+      "key": "motion",
+      "label": "Hand Motion",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked hand speed."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.left_hand_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.left_hand_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.right_hand_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.right_hand_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_speed",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-low-to-bloom",
+      "param_key": "bloom",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.35,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 45,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-mid-to-twist",
+      "param_key": "twist",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.3,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 90,
+      "release_ms": 520,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-high-to-lace",
+      "param_key": "lace",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.7,
+      "input_min": 0,
+      "input_max": 0.45,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 20,
+      "release_ms": 160,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-onset-to-accent",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.95,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 6,
+      "release_ms": 420,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-left-hand-x",
+      "param_key": "left_x",
+      "signal_id": "tracking.pose.left_hand_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 110,
+      "release_ms": 110,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-left-hand-y",
+      "param_key": "left_y",
+      "signal_id": "tracking.pose.left_hand_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 220,
+      "release_ms": 700,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-right-hand-x",
+      "param_key": "right_x",
+      "signal_id": "tracking.pose.right_hand_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 110,
+      "release_ms": 110,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-right-hand-y",
+      "param_key": "right_y",
+      "signal_id": "tracking.pose.right_hand_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 220,
+      "release_ms": 700,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-hands-motion",
+      "param_key": "motion",
+      "signal_id": "tracking.pose.hands_speed",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 0.35,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 120,
+      "release_ms": 900,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1.0
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "kaleido-bloom",
+      "stage",
+      "body"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": null,
+    "prompt_summary": "A kaleidoscopic flower of layered petals: bass breathes the bloom, melody counter-rotates the layers, treble lights a fine lace and attacks send a bright ring outward.",
+    "created_at": "2026-09-26T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "bloom",
+      "petals",
+      "color",
+      "twist"
+    ]
+  },
+  "analysis_requirements": [
+    {
+      "kind": "pose",
+      "source_input": 1,
+      "topology": "vrch.pose-landmarks@1",
+      "history_ms": 600
+    }
+  ]
+}

@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.channel-shift",
+  "title": "Channel Shift",
+  "description": "Separates color channels around image edges with a controlled, stage-safe offset.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float angle = uParam_angle * 6.28318530718;\n  float separation = uParam_offset;\n  vec2 direction = vec2(cos(angle), sin(angle));\n  vec2 offset = direction * separation / min(iResolution.x, iResolution.y);\n  vec4 center = vrchSampleSource0(uv);\n  vec4 redSample = vrchSampleSource0(uv + offset);\n  vec4 blueSample = vrchSampleSource0(uv - offset);\n  vec3 shifted = vec3(redSample.r, center.g, blueSample.b);\n  float edge = length(redSample.rgb - blueSample.rgb);\n  shifted += uParam_glow * edge * vec3(0.18, 0.04, 0.24);\n  fragColor = vec4(mix(center.rgb, shifted, uParam_amount), center.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.78,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the channel separation."
+    },
+    {
+      "key": "offset",
+      "label": "Distance",
+      "type": "float",
+      "default": 4,
+      "min": 0.0,
+      "max": 32.0,
+      "step": 0.5,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Normalized separation distance."
+    },
+    {
+      "key": "angle",
+      "label": "Direction",
+      "type": "float",
+      "default": 0.85,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Direction of channel movement."
+    },
+    {
+      "key": "glow",
+      "label": "Edge Glow",
+      "type": "float",
+      "default": 0.24,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Soft color at separated edges."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-channel-offset-v2",
+      "param_key": "offset",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 30,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-channel-angle-v2",
+      "param_key": "angle",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.12,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 300,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-channel-glow-v2",
+      "param_key": "glow",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-channel-offset-v2",
+      "param_key": "offset",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.14,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 8,
+      "release_ms": 140,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "rgb",
+      "chromatic",
+      "edges",
+      "audio"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.channel-shift.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "channel-shift-v3-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "offset",
+      "angle",
+      "glow"
+    ]
+  }
+}

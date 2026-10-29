@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.color-halftone",
+  "title": "Color Halftone",
+  "description": "Separates an image into crisp cyan, magenta and yellow print dots while preserving its large forms.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchCoverageRadius(float coverage) {\n  return sqrt(coverage / 3.14159265359) + 0.145 * pow(smoothstep(0.785, 1.0, coverage), 3.0);\n}\nfloat vrchColorDot(vec2 point, float angle, float density, float coverage, float dotSize) {\n  float cs = cos(angle);\n  float sn = sin(angle);\n  vec2 rotated = vec2(point.x * cs - point.y * sn, point.x * sn + point.y * cs);\n  vec2 local = fract(rotated * density) - 0.5;\n  float baseRadius = vrchCoverageRadius(pow(clamp(coverage, 0.0, 1.0), uParam_contrast));\n  float radius = clamp(baseRadius * dotSize, 0.0, 0.7071);\n  float distanceToCenter = length(local);\n  float antialias = max(fwidth(distanceToCenter) * 1.5, 0.002);\n  return 1.0 - smoothstep(radius - antialias, radius + antialias, distanceToCenter);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec4 image = vrchSampleSource0(uv);\n  vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);\n  vec2 toneGrid = uv * aspect * uParam_density;\n  vec2 toneUv = (floor(toneGrid) + 0.5) / (aspect * uParam_density);\n  vec3 tone = vrchSampleSource0(clamp(toneUv, vec2(0.0), vec2(1.0))).rgb;\n  vec2 point = (uv - 0.5) * aspect;\n  float turn = uParam_angle * 6.28318530718;\n  float cyan = vrchColorDot(point, turn + 0.261799, uParam_density, 1.0 - tone.r, uParam_dot_size);\n  float magenta = vrchColorDot(point, turn + 1.308997, uParam_density, 1.0 - tone.g, uParam_dot_size);\n  float yellow = vrchColorDot(point, turn, uParam_density, 1.0 - tone.b, uParam_dot_size);\n  vec3 absorption = vec3(cyan, magenta, yellow) * uParam_ink;\n  vec3 printed = uParam_paper.rgb * (vec3(1.0) - clamp(absorption, 0.0, 0.92));\n  float treatment = uParam_amount;\n  fragColor = vec4(mix(image.rgb, printed, treatment), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.92,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "How strongly the color print replaces the image."
+    },
+    {
+      "key": "density",
+      "label": "Dot Density",
+      "type": "float",
+      "default": 54.0,
+      "min": 16.0,
+      "max": 160.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Number of separated color-screen cells across the short side."
+    },
+    {
+      "key": "dot_size",
+      "label": "Dot Size",
+      "type": "float",
+      "default": 0.96,
+      "min": 0.45,
+      "max": 1.55,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Radius of the dots without moving the screen grid."
+    },
+    {
+      "key": "contrast",
+      "label": "Contrast",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.35,
+      "max": 2.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "How rapidly dot size responds to the source tone."
+    },
+    {
+      "key": "angle",
+      "label": "Screen Angle",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Print",
+      "description": "Rotates all three print screens together."
+    },
+    {
+      "key": "ink",
+      "label": "Ink",
+      "type": "float",
+      "default": 0.96,
+      "min": 0.2,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Print",
+      "description": "Density of the subtractive print inks."
+    },
+    {
+      "key": "paper",
+      "label": "Paper",
+      "type": "color",
+      "default": [
+        0.96,
+        0.91,
+        0.8,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Color of the unprinted surface."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-color-dot-size-v2",
+      "param_key": "dot_size",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.025,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 45,
+      "release_ms": 260,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-color-contrast-v2",
+      "param_key": "contrast",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 55,
+      "release_ms": 300,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-color-density-v2",
+      "param_key": "density",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 30,
+      "release_ms": 190,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-color-angle-v2",
+      "param_key": "angle",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.008,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 40,
+      "release_ms": 250,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "print",
+      "cmyk",
+      "color",
+      "dots"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.color-halftone.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "color-halftone-v4-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "density",
+      "dot_size",
+      "contrast"
+    ]
+  }
+}

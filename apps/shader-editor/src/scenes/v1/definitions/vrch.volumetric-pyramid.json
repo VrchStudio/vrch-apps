@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.volumetric-pyramid",
+  "title": "Volumetric Glass Pyramid",
+  "description": "A high-fidelity raymarched glass pyramid with form-revealing rotation and a soft warm rim.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 0,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchVolumetricPyramidDistance(vec3 point) {\n  float side = max(abs(point.x), abs(point.z)) - 0.52 * (0.88 - point.y);\n  return max(max(side, point.y - 0.88), -0.72 - point.y);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 point = (2.0 * fragCoord - iResolution.xy) / max(iResolution.y, 1.0);\n  float angle = iTime * uParam_rotation_speed;\n  float cosine = cos(angle);\n  float sine = sin(angle);\n  mat2 rotation = mat2(cosine, -sine, sine, cosine);\n  mat2 inverseRotation = mat2(cosine, sine, -sine, cosine);\n  vec3 rayOrigin = vec3(0.0, 0.0, 3.2);\n  vec3 rayDirection = normalize(vec3(point, -1.8));\n  float travelled = 0.0;\n  float hit = 0.0;\n  float nearDistance = 10.0;\n  float scale = max(uParam_scale, 0.1);\n  vec3 position = rayOrigin;\n  for (int i = 0; i < 64; i++) {\n    position = rayOrigin + rayDirection * travelled;\n    vec3 objectPoint = position;\n    objectPoint.xz = rotation * objectPoint.xz;\n    objectPoint /= scale;\n    float distanceToSurface = vrchVolumetricPyramidDistance(objectPoint) * scale;\n    nearDistance = min(nearDistance, abs(distanceToSurface));\n    if (distanceToSurface < 0.002) {\n      hit = 1.0;\n      break;\n    }\n    travelled += max(distanceToSurface * 0.65, 0.008);\n    if (travelled > 6.0) break;\n  }\n  vec3 background = vec3(0.004, 0.006, 0.012) + 0.012 * vec3(0.08, 0.03, 0.01) / max(length(point), 0.35);\n  vec3 color = background;\n  if (hit > 0.5) {\n    vec3 objectPoint = position;\n    objectPoint.xz = rotation * objectPoint.xz;\n    objectPoint /= scale;\n    float axisX = abs(objectPoint.x);\n    float axisZ = abs(objectPoint.z);\n    vec3 normal;\n    if (objectPoint.y < -0.70) {\n      normal = vec3(0.0, -1.0, 0.0);\n    } else if (axisX > axisZ) {\n      normal = normalize(vec3(sign(objectPoint.x), 0.52, 0.0));\n    } else {\n      normal = normalize(vec3(0.0, 0.52, sign(objectPoint.z)));\n    }\n    normal.xz = inverseRotation * normal.xz;\n    vec3 lightDirection = normalize(vec3(-0.45, 0.75, 0.65));\n    float diffuse = max(dot(normal, lightDirection), 0.0);\n    float fresnel = pow(1.0 - max(dot(normal, -rayDirection), 0.0), 3.0);\n    vec3 glass = uParam_surface_color.rgb * (0.12 + 0.38 * diffuse);\n    color = mix(background, glass + background * 0.3, clamp(uParam_opacity, 0.0, 1.0));\n    color += vec3(1.0, 0.20, 0.035) * fresnel * uParam_glow;\n  }\n  float halo = exp(-18.0 * nearDistance) * (1.0 - hit) * uParam_glow;\n  color += vec3(1.0, 0.16, 0.025) * halo;\n  color = color / (color + vec3(1.0));\n  fragColor = vec4(color, 1.0);\n}"
+  },
+  "parameters": [
+    {
+      "key": "rotation_speed",
+      "label": "Rotation",
+      "type": "float",
+      "default": 0.16,
+      "min": -1.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Pyramid rotation speed and direction."
+    },
+    {
+      "key": "scale",
+      "label": "Size",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.4,
+      "max": 1.6,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Pyramid size within the frame."
+    },
+    {
+      "key": "glow",
+      "label": "Edge Glow",
+      "type": "float",
+      "default": 1.25,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Warm edge and exterior halo intensity."
+    },
+    {
+      "key": "opacity",
+      "label": "Glass Opacity",
+      "type": "float",
+      "default": 0.52,
+      "min": 0.05,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Surface",
+      "description": "Transparency of the glass body."
+    },
+    {
+      "key": "surface_color",
+      "label": "Glass Tint",
+      "type": "color",
+      "default": [
+        0.22,
+        0.48,
+        0.62,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Subtle color held inside the glass surface."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.beat",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_id": "low-to-scale",
+      "param_key": "scale",
+      "signal_id": "audio.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "amount": 0.06,
+      "polarity": "positive",
+      "smoothing_ms": 140,
+      "attack_ms": 40,
+      "decay_ms": 220,
+      "clamp": true
+    },
+    {
+      "binding_id": "beat-to-glow",
+      "param_key": "glow",
+      "signal_id": "audio.beat",
+      "signal_type": "trigger",
+      "operator": "add",
+      "amount": 0.18,
+      "polarity": "positive",
+      "smoothing_ms": 0,
+      "attack_ms": 12,
+      "decay_ms": 230,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "high",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "3d",
+      "volumetric",
+      "pyramid",
+      "glass",
+      "rim-light",
+      "audio"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "volumetric-pyramid-v1",
+    "created_at": "2026-08-14T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "scale",
+      "rotation_speed",
+      "opacity",
+      "glow"
+    ]
+  }
+}

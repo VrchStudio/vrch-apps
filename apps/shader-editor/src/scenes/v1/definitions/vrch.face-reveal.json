@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.face-reveal",
+  "title": "Face Reveal",
+  "description": "Reveals the tracked face from Source B through Source A.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 2,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / max(iResolution.xy, vec2(1.0));\n  vec4 sourceA = vrchSampleSource0(uv);\n  vec4 sourceB = vrchSampleSource1(uv);\n  float confidence = vrchReadSignal(0);\n  vec2 center = vec2(vrchReadSignal(1), vrchReadSignal(2));\n  float aspect = iResolution.x / max(iResolution.y, 1.0);\n  vec2 delta = (uv - center) * vec2(aspect, 1.0);\n  float distanceToFace = length(delta);\n  float feather = max(0.005, uParam_softness);\n  float mask = 1.0 - smoothstep(uParam_face_size - feather, uParam_face_size + feather, distanceToFace);\n  mask *= uParam_reveal * confidence;\n  vec3 color = mix(sourceA.rgb, sourceB.rgb, clamp(mask, 0.0, 1.0));\n  vec4 tracking = vrchSampleSignalTexture(0, uv);\n  color += uParam_contour_color.rgb * tracking.a * uParam_contour * confidence * 0.4;\n  fragColor = vec4(color, mix(sourceA.a, sourceB.a, clamp(mask, 0.0, 1.0)));\n}"
+  },
+  "parameters": [
+    {
+      "key": "reveal",
+      "label": "Reveal",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Amount of Source B shown around the tracked face."
+    },
+    {
+      "key": "face_size",
+      "label": "Face Area",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.12,
+      "max": 0.55,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Size of the reveal around the tracked face."
+    },
+    {
+      "key": "softness",
+      "label": "Softness",
+      "type": "float",
+      "default": 0.055,
+      "min": 0.005,
+      "max": 0.2,
+      "step": 0.005,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Softness around the face reveal."
+    },
+    {
+      "key": "contour",
+      "label": "Contour",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Brightness of the tracked face contour."
+    },
+    {
+      "key": "contour_color",
+      "label": "Contour Colour",
+      "type": "color",
+      "default": [
+        0.15,
+        0.82,
+        1.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Colour",
+      "description": "Colour of the tracked face contour."
+    }
+  ],
+  "signals": [
+    {
+      "id": "tracking.face.confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.face.center_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.face.center_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.face.speed",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.face-overlay",
+      "type": "texture",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.face-landmarks",
+      "type": "texture",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [],
+  "analysis_requirements": [
+    {
+      "kind": "face",
+      "source_input": 1,
+      "topology": "vrch.face-landmarks@1",
+      "history_ms": 600
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Blend",
+    "tags": [
+      "two-sources",
+      "camera",
+      "face",
+      "tracking",
+      "reveal",
+      "portrait"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.face-tracker.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "phase4-face-reveal-v1",
+    "created_at": "2026-08-23T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "reveal",
+      "face_size",
+      "softness",
+      "contour"
+    ]
+  }
+}

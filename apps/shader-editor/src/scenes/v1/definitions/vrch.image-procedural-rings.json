@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.image-procedural-rings",
+  "title": "Breathing Rings",
+  "description": "Low-opacity rings expand from a chosen center while the live image remains the clear subject.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 resolution = max(iResolution.xy, vec2(1.0));\n  vec2 uv = fragCoord / resolution;\n  vec4 image = vrchSampleSource0(uv);\n  vec2 aspect = vec2(resolution.x / resolution.y, 1.0);\n  vec2 point = (uv - uParam_center) * aspect;\n  float radius = length(point);\n  float phase = fract(radius * uParam_rings - iTime * uParam_speed);\n  float ringDistance = abs(phase - 0.5);\n  float antialias = max(fwidth(ringDistance) * 1.5, 0.001);\n  float ring = 1.0 - smoothstep(uParam_width, uParam_width + antialias, ringDistance);\n  float falloff = 1.0 - smoothstep(0.12, 1.05, radius);\n  float mask = ring * mix(0.28, 1.0, falloff);\n  vec3 treated = image.rgb + uParam_color.rgb * mask * uParam_brightness;\n  fragColor = vec4(mix(image.rgb, treated, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.24,
+      "min": 0.0,
+      "max": 0.55,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Ring-layer strength while preserving the source image."
+    },
+    {
+      "key": "rings",
+      "label": "Ring Count",
+      "type": "float",
+      "default": 8.0,
+      "min": 3.0,
+      "max": 24.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Number and spacing of the expanding rings."
+    },
+    {
+      "key": "width",
+      "label": "Ring Width",
+      "type": "float",
+      "default": 0.055,
+      "min": 0.01,
+      "max": 0.15,
+      "step": 0.005,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Visible width of each ring."
+    },
+    {
+      "key": "speed",
+      "label": "Expansion",
+      "type": "float",
+      "default": 0.08,
+      "min": -0.5,
+      "max": 0.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Slow inward or outward ring movement."
+    },
+    {
+      "key": "brightness",
+      "label": "Light",
+      "type": "float",
+      "default": 0.32,
+      "min": 0.0,
+      "max": 0.75,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Brightness of the ring light."
+    },
+    {
+      "key": "center",
+      "label": "Center",
+      "type": "vec2",
+      "default": [
+        0.5,
+        0.5
+      ],
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "xy",
+      "group": "Look",
+      "description": "Origin of the rings in normalized image coordinates."
+    },
+    {
+      "key": "color",
+      "label": "Ring Color",
+      "type": "color",
+      "default": [
+        0.2,
+        0.78,
+        1.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Ring-light tint."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_id": "mid-to-light",
+      "param_key": "brightness",
+      "signal_id": "audio.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "amount": 0.16,
+      "polarity": "positive",
+      "smoothing_ms": 150,
+      "attack_ms": 45,
+      "decay_ms": 230,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Blend",
+    "tags": [
+      "rings",
+      "halo",
+      "ripple",
+      "overlay",
+      "audio"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "image-rings-v1",
+    "created_at": "2026-08-14T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "rings",
+      "width",
+      "speed"
+    ]
+  }
+}

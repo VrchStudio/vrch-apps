@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.halftone-circle",
+  "title": "Halftone Circles",
+  "description": "Rebuilds image tone with restrained concentric ink rings centered on the frame.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec4 image = vrchSampleSource0(uv);\n  float luma = dot(image.rgb, vec3(0.2126, 0.7152, 0.0722));\n  vec2 point = (uv - 0.5) * vec2(iResolution.x / iResolution.y, 1.0);\n  float radius = length(point);\n  float phaseOffset = uParam_phase + iTime * uParam_motion;\n  float ringPhase = abs(fract(radius * uParam_rings - phaseOffset) - 0.5) * 2.0;\n  float tonalWidth = clamp(uParam_width + (1.0 - luma) * uParam_contrast, 0.04, 0.92);\n  float antialias = max(fwidth(ringPhase) * 1.25, 0.002);\n  float inkMask = 1.0 - smoothstep(tonalWidth - antialias, tonalWidth + antialias, ringPhase);\n  vec3 paperTone = uParam_paper.rgb;\n  vec3 inkTone = mix(uParam_ink.rgb * (0.35 + luma * 0.65), image.rgb, 0.52);\n  vec3 printed = mix(paperTone, inkTone, inkMask);\n  float treatment = uParam_amount;\n  fragColor = vec4(mix(image.rgb, printed, treatment), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the circular print treatment."
+    },
+    {
+      "key": "rings",
+      "label": "Ring Size",
+      "type": "float",
+      "default": 26.0,
+      "min": 12.0,
+      "max": 150.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Number of rings across the short side."
+    },
+    {
+      "key": "width",
+      "label": "Line Width",
+      "type": "float",
+      "default": 0.065,
+      "min": 0.03,
+      "max": 0.65,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Minimum width of each ring."
+    },
+    {
+      "key": "contrast",
+      "label": "Contrast",
+      "type": "float",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 0.9,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "How strongly source tone changes ring width."
+    },
+    {
+      "key": "phase",
+      "label": "Ring Position",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 0.82,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Moves the rings through their concentric path without scaling the frame."
+    },
+    {
+      "key": "motion",
+      "label": "Ring Motion",
+      "type": "float",
+      "default": 0.025,
+      "min": 0.0,
+      "max": 0.18,
+      "step": 0.005,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Calm continuous travel of the rings."
+    },
+    {
+      "key": "ink",
+      "label": "Ink",
+      "type": "color",
+      "default": [
+        0.77,
+        0.04,
+        0.035,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Printed ring color."
+    },
+    {
+      "key": "paper",
+      "label": "Paper",
+      "type": "color",
+      "default": [
+        0.96,
+        0.9,
+        0.76,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Background paper color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-circle-width-v2",
+      "param_key": "width",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 50,
+      "release_ms": 280,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-circle-phase-v2",
+      "param_key": "phase",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 70,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-circle-rings-v2",
+      "param_key": "rings",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 30,
+      "release_ms": 190,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-circle-phase-v2",
+      "param_key": "phase",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.04,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 10,
+      "release_ms": 260,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "print",
+      "rings",
+      "circular",
+      "poster"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.halftone-circle.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "halftone-circle-v5-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "rings",
+      "width",
+      "contrast"
+    ]
+  }
+}

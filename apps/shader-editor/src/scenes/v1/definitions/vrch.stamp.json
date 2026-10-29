@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.stamp",
+  "title": "Stamp",
+  "description": "Creates a bold two-color rubber-stamp image with deterministic grain and uneven ink edges.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchStampHash(vec2 point) {\n  return fract(sin(dot(point, vec2(73.13, 19.71))) * 43758.5453);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec2 pixelStep = vec2(1.0 + uParam_spread * 3.0) / iResolution.xy;\n  vec4 image = vrchSampleSource0(uv);\n  vec2 inkUv = clamp(uv - vec2(uParam_registration / min(iResolution.x, iResolution.y), 0.0), vec2(0.0), vec2(1.0));\n  float centerLuma = dot(vrchSampleSource0(inkUv).rgb, vec3(0.2126, 0.7152, 0.0722));\n  float nearbyLuma = dot(vrchSampleSource0(inkUv + vec2(pixelStep.x, 0.0)).rgb, vec3(0.2126, 0.7152, 0.0722));\n  nearbyLuma += dot(vrchSampleSource0(inkUv - vec2(pixelStep.x, 0.0)).rgb, vec3(0.2126, 0.7152, 0.0722));\n  nearbyLuma += dot(vrchSampleSource0(inkUv + vec2(0.0, pixelStep.y)).rgb, vec3(0.2126, 0.7152, 0.0722));\n  nearbyLuma += dot(vrchSampleSource0(inkUv - vec2(0.0, pixelStep.y)).rgb, vec3(0.2126, 0.7152, 0.0722));\n  nearbyLuma *= 0.25;\n  float spreadLuma = mix(centerLuma, min(centerLuma, nearbyLuma), uParam_spread);\n  float grain = vrchStampHash(floor(fragCoord / 2.0)) - 0.5;\n  float threshold = clamp(uParam_threshold + grain * uParam_grain, 0.05, 0.95);\n  float antialias = max(fwidth(spreadLuma) * (1.0 + uParam_edge), 0.002);\n  float inkMask = 1.0 - smoothstep(threshold - antialias, threshold + antialias, spreadLuma);\n  vec3 stamped = mix(uParam_paper.rgb, uParam_ink.rgb, inkMask);\n  fragColor = vec4(mix(image.rgb, stamped, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.88,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the stamp treatment."
+    },
+    {
+      "key": "threshold",
+      "label": "Ink Balance",
+      "type": "float",
+      "default": 0.26,
+      "min": 0.15,
+      "max": 0.85,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Balance between ink and paper."
+    },
+    {
+      "key": "spread",
+      "label": "Ink Spread",
+      "type": "float",
+      "default": 0.38,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Ink",
+      "description": "How far dark ink grows into nearby areas."
+    },
+    {
+      "key": "grain",
+      "label": "Grain",
+      "type": "float",
+      "default": 0.14,
+      "min": 0.0,
+      "max": 0.35,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Ink",
+      "description": "Stable variation in ink coverage."
+    },
+    {
+      "key": "edge",
+      "label": "Edge",
+      "type": "float",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Ink",
+      "description": "Softness of the stamped edge."
+    },
+    {
+      "key": "registration",
+      "label": "Ink Offset",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 24,
+      "step": 0.1,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Horizontal registration of the printed ink while the source stays centered."
+    },
+    {
+      "key": "ink",
+      "label": "Ink",
+      "type": "color",
+      "default": [
+        0.31,
+        0.028,
+        0.024,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Rubber-stamp ink color."
+    },
+    {
+      "key": "paper",
+      "label": "Paper",
+      "type": "color",
+      "default": [
+        0.96,
+        0.89,
+        0.75,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Background paper color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-stamp-threshold-v2",
+      "param_key": "threshold",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.07,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 55,
+      "release_ms": 240,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-stamp-spread-v2",
+      "param_key": "spread",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 60,
+      "release_ms": 280,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-stamp-grain-v2",
+      "param_key": "grain",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 190,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-stamp-registration-v2",
+      "param_key": "registration",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 8,
+      "release_ms": 150,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "stamp",
+      "ink",
+      "threshold",
+      "paper"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.stamp.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "stamp-v2-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "threshold",
+      "spread",
+      "grain"
+    ]
+  }
+}

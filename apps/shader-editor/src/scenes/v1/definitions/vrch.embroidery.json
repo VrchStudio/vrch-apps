@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.embroidery",
+  "title": "Embroidery",
+  "description": "Reconstructs image color with directional cross-stitches, thread highlights and a visible fabric ground.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchStitchLine(vec2 point, vec2 direction, float width, float length) {\n  vec2 normal = vec2(-direction.y, direction.x);\n  float across = abs(dot(point, normal));\n  float along = abs(dot(point, direction));\n  float antialias = max(fwidth(across) * 1.5, 0.008);\n  float widthMask = 1.0 - smoothstep(width - antialias, width + antialias, across);\n  float endMask = 1.0 - smoothstep(length - 0.08, length, along);\n  return widthMask * endMask;\n}\nfloat vrchThreadHash(vec2 point) {\n  return fract(sin(dot(point, vec2(53.19, 17.71))) * 43758.5453);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);\n  vec2 grid = uv * aspect * uParam_density;\n  vec2 cell = floor(grid);\n  vec2 local = fract(grid) - 0.5;\n  vec2 sampleUv = (cell + 0.5) / (aspect * uParam_density);\n  vec4 image = vrchSampleSource0(sampleUv);\n  float response = clamp((uParam_contrast - 1.16) / 0.34, 0.0, 1.0);\n  float stitchWidth = 0.055 + response * 0.145;\n  float stitchLength = 0.35 + response * 0.13;\n  float angle = uParam_direction * 6.28318530718 + (vrchThreadHash(cell) - 0.5) * uParam_roughness;\n  vec2 directionA = vec2(cos(angle), sin(angle));\n  vec2 directionB = vec2(-directionA.y, directionA.x);\n  float stitchA = vrchStitchLine(local, directionA, stitchWidth, stitchLength);\n  float stitchB = vrchStitchLine(local, directionB, stitchWidth, stitchLength);\n  float stitch = max(stitchA, stitchB * 0.82);\n  float ridge = clamp(0.5 + dot(local, directionA) * 1.8, 0.0, 1.0);\n  vec3 threadBase = max(image.rgb, vec3(0.0));\n  float ridgeLight = mix(0.72, 1.0 + uParam_contrast * 0.3 + response * 0.55, ridge);\n  vec3 threadColor = threadBase * ridgeLight;\n  threadColor += threadBase * stitchA * response * 0.45;\n  vec3 textile = mix(uParam_fabric.rgb, threadColor, stitch);\n  fragColor = vec4(mix(image.rgb, textile, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the embroidered reconstruction."
+    },
+    {
+      "key": "density",
+      "label": "Stitch Size",
+      "type": "float",
+      "default": 38.0,
+      "min": 18.0,
+      "max": 160.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Thread",
+      "description": "Density of stitches along the short side."
+    },
+    {
+      "key": "direction",
+      "label": "Direction",
+      "type": "float",
+      "default": 0.12,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Thread",
+      "description": "Dominant direction of the thread."
+    },
+    {
+      "key": "contrast",
+      "label": "Thread Lift",
+      "type": "float",
+      "default": 1.3,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Thread",
+      "description": "Coverage and source-colored ridge light across each stitch."
+    },
+    {
+      "key": "roughness",
+      "label": "Texture",
+      "type": "float",
+      "default": 0.28,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Thread",
+      "description": "Stable direction variation between stitches."
+    },
+    {
+      "key": "fabric",
+      "label": "Fabric",
+      "type": "color",
+      "default": [
+        0.032,
+        0.024,
+        0.018,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Fabric visible between the threads."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-embroidery-density-v2",
+      "param_key": "density",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 50,
+      "release_ms": 300,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-embroidery-direction-v2",
+      "param_key": "direction",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.06,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 85,
+      "release_ms": 430,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-embroidery-roughness-v2",
+      "param_key": "roughness",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-embroidery-contrast-v2",
+      "param_key": "contrast",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.03,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 10,
+      "release_ms": 220,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "embroidery",
+      "stitch",
+      "thread",
+      "fabric"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.embroidery.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "embroidery-v6-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "density",
+      "contrast",
+      "roughness"
+    ]
+  }
+}

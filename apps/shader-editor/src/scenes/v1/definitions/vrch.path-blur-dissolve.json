@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.path-blur-dissolve",
+  "title": "Path Blur + Dissolve",
+  "description": "Carries the source itself through a bounded directional trail and stable grain-like displacement.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchDissolveHash(vec2 point) {\n  return fract(sin(dot(point, vec2(17.17, 113.51))) * 43758.5453);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec4 image = vrchSampleSource0(uv);\n  float pathPhase = iTime * (0.32 + uParam_motion * 0.85);\n  float motionWave = sin(pathPhase);\n  float angle = (uParam_angle + motionWave * uParam_motion * 0.1) * 6.28318530718;\n  vec2 direction = vec2(cos(angle), sin(angle));\n  float breathing = 0.9 + 0.1 * sin(pathPhase * 0.73 + 1.1);\n  float trailLength = uParam_length * breathing;\n  float grain = vrchDissolveHash(floor(fragCoord / max(uParam_grain, 1.0)));\n  float dissolveField = smoothstep(uParam_dissolve - 0.12, uParam_dissolve + 0.12, grain);\n  float signedGrain = grain * 2.0 - 1.0;\n  float pixelScale = max(min(iResolution.x, iResolution.y), 1.0);\n  vec2 grainOffset = direction * signedGrain * trailLength * (0.2 + dissolveField * 0.55) / pixelScale;\n  vec2 displacedUv = clamp(uv - grainOffset, vec2(0.0), vec2(1.0));\n  vec4 displaced = vrchSampleSource0(displacedUv);\n  vec2 stepUv = direction * trailLength * 2.4 / pixelScale;\n  vec4 trail = vec4(0.0);\n  float trailWeight = 0.0;\n  for (int i = 0; i < 7; i++) {\n    float fi = float(i) / 6.0;\n    float weight = 1.0 - fi * 0.55;\n    trail += vrchSampleSource0(clamp(displacedUv - stepUv * fi, vec2(0.0), vec2(1.0))) * weight;\n    trailWeight += weight;\n  }\n  trail /= max(trailWeight, 0.001);\n  float blurWeight = uParam_blur_mix * (0.35 + dissolveField * 0.65);\n  vec3 carriedSource = mix(displaced.rgb, trail.rgb, blurWeight);\n  float treatment = 1.0 - pow(abs(1.0 - clamp(uParam_amount, 0.0, 1.0)), 2.0);\n  vec3 color = mix(image.rgb, carriedSource, treatment);\n  fragColor = vec4(color, image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.72,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Overall blur-and-dissolve strength."
+    },
+    {
+      "key": "length",
+      "label": "Trail Length",
+      "type": "float",
+      "default": 16.0,
+      "min": 0.0,
+      "max": 36.0,
+      "step": 0.5,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Length of the directional image trail."
+    },
+    {
+      "key": "angle",
+      "label": "Direction",
+      "type": "float",
+      "default": 0.47,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Direction of the blurred path."
+    },
+    {
+      "key": "blur_mix",
+      "label": "Blur",
+      "type": "float",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Balance between the sharp source and its trail."
+    },
+    {
+      "key": "dissolve",
+      "label": "Dissolve",
+      "type": "float",
+      "default": 0.26,
+      "min": 0.0,
+      "max": 0.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Texture",
+      "description": "How much of the trail breaks back into sharp image."
+    },
+    {
+      "key": "grain",
+      "label": "Grain Size",
+      "type": "float",
+      "default": 4.0,
+      "min": 1.0,
+      "max": 12.0,
+      "step": 0.5,
+      "widget": "slider",
+      "group": "Texture",
+      "description": "Scale of the dissolve grain."
+    },
+    {
+      "key": "motion",
+      "label": "Path Motion",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Slow coherent drift and breathing of the trail."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-path-length-v2",
+      "param_key": "length",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 50,
+      "release_ms": 300,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-path-angle-v2",
+      "param_key": "angle",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.06,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 90,
+      "release_ms": 450,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-path-dissolve-v2",
+      "param_key": "dissolve",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 30,
+      "release_ms": 200,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-path-blur-v2",
+      "param_key": "blur_mix",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 10,
+      "release_ms": 230,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "blur",
+      "trail",
+      "dissolve",
+      "dreamy"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.path-blur-dissolve.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "path-blur-dissolve-v4-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "length",
+      "blur_mix",
+      "dissolve"
+    ]
+  }
+}

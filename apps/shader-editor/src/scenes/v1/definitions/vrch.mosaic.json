@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.mosaic",
+  "title": "Mosaic",
+  "description": "A stable, crisp pixel mosaic whose optional separation belongs to each sampled block.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 resolution = max(iResolution.xy, vec2(1.0));\n  vec2 uv = fragCoord / resolution;\n  vec4 source = vrchSampleSource0(uv);\n  vec2 aspect = vec2(resolution.x / resolution.y, 1.0);\n  vec2 gridUv = uv * aspect * uParam_blocks;\n  vec2 cell = floor(gridUv);\n  vec2 local = fract(gridUv) - 0.5;\n  vec2 sampleUv = (cell + 0.5) / (aspect * uParam_blocks);\n  vec4 cellSample = vrchSampleSource0(sampleUv);\n  float responseInput = clamp(uParam_response, 0.0, 1.0);\n  float response = pow(responseInput, 0.35) * smoothstep(0.012, 0.03, responseInput);\n  float reducedLevels = max(3.0, uParam_levels * 0.2);\n  float levels = mix(uParam_levels, reducedLevels, response);\n  vec3 quantized = floor(cellSample.rgb * levels + 0.5) / levels;\n  float corner = max(abs(local.x), abs(local.y));\n  float separation = clamp(uParam_separation + response * 1.35, 0.0, 1.0);\n  float edgeWidth = max(fwidth(corner) * 1.25, 0.001) + 0.11 * separation;\n  float edge = smoothstep(0.5 - edgeWidth, 0.5, corner) * separation;\n  vec3 mosaic = quantized * (1.0 - 0.5 * edge);\n  fragColor = vec4(mix(source.rgb, mosaic, uParam_amount), source.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.63,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Mosaic strength."
+    },
+    {
+      "key": "blocks",
+      "label": "Mosaic Detail",
+      "type": "float",
+      "default": 52.0,
+      "min": 8.0,
+      "max": 160.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Number of stable mosaic cells along the short side; higher values retain finer detail."
+    },
+    {
+      "key": "levels",
+      "label": "Colors",
+      "type": "float",
+      "default": 16.0,
+      "min": 2.0,
+      "max": 32.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Color quantization levels."
+    },
+    {
+      "key": "separation",
+      "label": "Block Separation",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Darkens the sampled color only at its own block edge; it never adds an unrelated grid color."
+    },
+    {
+      "key": "response",
+      "label": "Audio Response",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Reduces color levels and reveals source-colored block edges while preserving cell identity."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-mosaic-blocks-v2",
+      "param_key": "blocks",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "negative",
+      "attack_ms": 55,
+      "release_ms": 320,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-mosaic-levels-v2",
+      "param_key": "levels",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 350,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-mosaic-separation-v2",
+      "param_key": "separation",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 190,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-mosaic-levels-v2",
+      "param_key": "levels",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.04,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "negative",
+      "attack_ms": 10,
+      "release_ms": 220,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "pixel",
+      "blocks",
+      "retro"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.mosaic.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "mosaic-v3-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "blocks",
+      "levels",
+      "separation"
+    ]
+  }
+}

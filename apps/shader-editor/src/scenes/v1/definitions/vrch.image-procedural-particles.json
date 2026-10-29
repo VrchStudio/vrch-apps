@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.image-procedural-particles",
+  "title": "Floating Particles",
+  "description": "Keeps the source image clear beneath sparse, stable particles with slow drift and restrained live accents.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchParticleHash(vec2 point) {\n  return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 resolution = max(iResolution.xy, vec2(1.0));\n  vec2 uv = fragCoord / resolution;\n  vec4 image = vrchSampleSource0(uv);\n  vec2 aspect = vec2(resolution.x / resolution.y, 1.0);\n  vec2 field = uv * aspect * uParam_density;\n  vec2 cell = floor(field);\n  vec2 local = fract(field) - 0.5;\n  float seed = vrchParticleHash(cell);\n  float particleActive = step(0.78, seed);\n  float phase = seed * 6.28318530718;\n  vec2 drift = vec2(sin(iTime * uParam_speed + phase), cos(iTime * uParam_speed * 0.73 + phase * 1.31)) * 0.16;\n  float radius = uParam_size * mix(0.55, 1.25, vrchParticleHash(cell + 19.7));\n  float distanceToParticle = length(local - drift);\n  float antialias = max(fwidth(distanceToParticle) * 1.5, 0.002);\n  float core = 1.0 - smoothstep(radius, radius + antialias, distanceToParticle);\n  float halo = 1.0 - smoothstep(radius * 1.8, radius * (3.6 + uParam_glow * 2.0) + antialias, distanceToParticle);\n  float mask = particleActive * clamp(core + halo * uParam_glow * 0.32, 0.0, 1.0);\n  vec3 treated = image.rgb + uParam_color.rgb * mask * uParam_brightness;\n  fragColor = vec4(mix(image.rgb, treated, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 0.6,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Particle layer strength while preserving the source image."
+    },
+    {
+      "key": "density",
+      "label": "Particle Count",
+      "type": "float",
+      "default": 22.0,
+      "min": 8.0,
+      "max": 48.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Stable particle-cell density."
+    },
+    {
+      "key": "size",
+      "label": "Particle Size",
+      "type": "float",
+      "default": 0.075,
+      "min": 0.02,
+      "max": 0.16,
+      "step": 0.005,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Particle core size inside each cell."
+    },
+    {
+      "key": "speed",
+      "label": "Drift",
+      "type": "float",
+      "default": 0.16,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Slow deterministic particle drift."
+    },
+    {
+      "key": "glow",
+      "label": "Glow",
+      "type": "float",
+      "default": 0.32,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Soft halo around existing particles."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "type": "float",
+      "default": 0.48,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Particle brightness."
+    },
+    {
+      "key": "color",
+      "label": "Particle Color",
+      "type": "color",
+      "default": [
+        1.0,
+        0.5,
+        0.18,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Particle and halo color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.beat",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_id": "beat-to-brightness",
+      "param_key": "brightness",
+      "signal_id": "audio.beat",
+      "signal_type": "trigger",
+      "operator": "add",
+      "amount": 0.28,
+      "polarity": "positive",
+      "smoothing_ms": 0,
+      "attack_ms": 12,
+      "decay_ms": 220,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Blend",
+    "tags": [
+      "particles",
+      "dust",
+      "sparks",
+      "overlay",
+      "audio"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "image-particles-v1",
+    "created_at": "2026-08-14T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "density",
+      "size",
+      "speed"
+    ]
+  }
+}

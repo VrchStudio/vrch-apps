@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.hand-reveal",
+  "title": "Hand Reveal",
+  "description": "Uses the tracked hand and its motion trail to reveal Source B through Source A.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 2,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchHandRevealSample(vec2 uv) {\n  vec4 value = vrchSampleSignalTexture(0, clamp(uv, vec2(0.0), vec2(1.0)));\n  return max(max(value.r, value.g), max(value.b * uParam_trail, value.a));\n}\nfloat vrchHandRevealMask(vec2 uv, float radius) {\n  float aspect = iResolution.x / max(iResolution.y, 1.0);\n  vec2 x = vec2(radius / max(aspect, 0.01), 0.0);\n  vec2 y = vec2(0.0, radius);\n  float value = vrchHandRevealSample(uv);\n  value = max(value, vrchHandRevealSample(uv + x));\n  value = max(value, vrchHandRevealSample(uv - x));\n  value = max(value, vrchHandRevealSample(uv + y));\n  value = max(value, vrchHandRevealSample(uv - y));\n  value = max(value, vrchHandRevealSample(uv + x + y));\n  value = max(value, vrchHandRevealSample(uv + x - y));\n  value = max(value, vrchHandRevealSample(uv - x + y));\n  value = max(value, vrchHandRevealSample(uv - x - y));\n  return value;\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / max(iResolution.xy, vec2(1.0));\n  vec4 sourceA = vrchSampleSource0(uv);\n  vec4 sourceB = vrchSampleSource1(uv);\n  float confidence = vrchReadSignal(0);\n  float motion = vrchReadSignal(1);\n  vec4 tracking = vrchSampleSignalTexture(0, uv);\n  float spread = vrchHandRevealMask(uv, uParam_radius * (1.0 + motion * 0.35));\n  float edge0 = mix(0.02, 0.45, clamp(uParam_softness, 0.0, 1.0));\n  float mask = smoothstep(edge0, 0.92, spread) * uParam_reveal * confidence;\n  vec3 color = mix(sourceA.rgb, sourceB.rgb, clamp(mask, 0.0, 1.0));\n  float outline = tracking.a * uParam_outline * confidence;\n  color += uParam_outline_color.rgb * outline * 0.45;\n  fragColor = vec4(color, mix(sourceA.a, sourceB.a, clamp(mask, 0.0, 1.0)));\n}"
+  },
+  "parameters": [
+    {
+      "key": "reveal",
+      "label": "Reveal",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Amount of Source B revealed by the tracked hand."
+    },
+    {
+      "key": "radius",
+      "label": "Reveal Size",
+      "type": "float",
+      "default": 0.009,
+      "min": 0.005,
+      "max": 0.16,
+      "step": 0.005,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Width of the reveal around the hand structure."
+    },
+    {
+      "key": "softness",
+      "label": "Softness",
+      "type": "float",
+      "default": 0.18,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Softness around the hand-shaped reveal."
+    },
+    {
+      "key": "trail",
+      "label": "Trail Reveal",
+      "type": "float",
+      "default": 0.25,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "How strongly hand motion trails reveal Source B."
+    },
+    {
+      "key": "outline",
+      "label": "Outline",
+      "type": "float",
+      "default": 0.28,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Brightness of the tracked hand outline."
+    },
+    {
+      "key": "outline_color",
+      "label": "Outline Colour",
+      "type": "color",
+      "default": [
+        0.12,
+        0.95,
+        0.78,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Look",
+      "description": "Colour of the tracked hand outline."
+    }
+  ],
+  "signals": [
+    {
+      "id": "tracking.hand.confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.hand.speed",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.hand-overlay",
+      "type": "texture",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.hand-landmarks",
+      "type": "texture",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [],
+  "analysis_requirements": [
+    {
+      "kind": "hand",
+      "source_input": 1,
+      "topology": "vrch.hand-landmarks@1",
+      "history_ms": 600
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Blend",
+    "tags": [
+      "two-sources",
+      "camera",
+      "hand",
+      "tracking",
+      "reveal",
+      "trail"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.hand-tracker.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "phase4-hand-reveal-v1",
+    "created_at": "2026-08-23T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "reveal",
+      "radius",
+      "softness",
+      "trail"
+    ]
+  }
+}

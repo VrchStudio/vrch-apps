@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-radial-repeat",
+  "title": "Radial Repeat",
+  "description": "A controllable radial mirror for building kaleidoscopic image compositions with a stable centre and continuous rotation.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor,in vec2 fragCoord) {\n vec2 p=(2.0*fragCoord-iResolution.xy)/iResolution.y;\n float phase=vrchPhase_speed(), r=length(p), count=max(3.0,floor(uParam_segments+.5));\n float wedge=6.2831853/count;\n float angle=atan(p.y,p.x)+phase*.22+uParam_rotation+uParam_twist*r;\n angle=abs(mod(angle+wedge*.5,wedge)-wedge*.5);\n vec2 q=vec2(cos(angle),sin(angle))*r/max(uParam_zoom,.1);\n vec2 uv=fract(q*.45+uParam_offset);\n vec4 sampled=vrchSampleSource0(uv);\n fragColor=sampled;\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "segments",
+      "label": "Segments",
+      "type": "float",
+      "default": 6,
+      "min": 3,
+      "max": 12,
+      "step": 1,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Number of mirrored sectors."
+    },
+    {
+      "key": "zoom",
+      "label": "Scale",
+      "type": "float",
+      "default": 1.15,
+      "min": 0.45,
+      "max": 2.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Scale of the repeated source image."
+    },
+    {
+      "key": "twist",
+      "label": "Twist",
+      "type": "float",
+      "default": 0.12,
+      "min": -1.2,
+      "max": 1.2,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Radial bending of the mirrored image."
+    },
+    {
+      "key": "rotation",
+      "label": "Rotation",
+      "type": "float",
+      "default": 0.2,
+      "min": -3.14,
+      "max": 3.14,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Rotation offset of the whole composition."
+    },
+    {
+      "key": "offset",
+      "label": "Source Offset",
+      "type": "float",
+      "default": 0.34,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Position sampled within the source image."
+    },
+    {
+      "key": "speed",
+      "label": "Motion",
+      "type": "float",
+      "default": 0.24,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous radial rotation."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-low-to-zoom",
+      "param_key": "zoom",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-mid-to-twist",
+      "param_key": "twist",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.06,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-high-to-offset",
+      "param_key": "offset",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.045,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 340,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "radial-repeat",
+      "creative-base"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": null,
+    "prompt_summary": "A controllable radial mirror for building kaleidoscopic image compositions with a stable centre and continuous rotation.",
+    "created_at": "2026-09-08T21:15:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "segments",
+      "zoom",
+      "twist",
+      "rotation"
+    ]
+  }
+}

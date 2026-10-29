@@ -1,0 +1,14 @@
+/* App-only composition; shared primitives own all control appearance. */
+.scene-v2-editor-shell { padding: 8px; }
+.shader-page-head-row { width: 100%; justify-content: space-between; }
+.scene-editor-preview-head { flex-wrap: wrap; gap: 8px; }
+.scene-editor-preview-head .scene-current-summary { border: 0; padding: 0; }
+.scene-preset-save-actions { flex-wrap: wrap; }
+.scene-preset-save-state { min-width: 11ch; }
+.scene-preview { height: 240px; }
+#recoveryActions { justify-content: flex-end; }
+#sourceCode { max-height: 260px; }
+
+.shader-media-row { flex-wrap: wrap; gap: 8px; }
+.shader-media-row .ui-panel__actions { flex-wrap: wrap; margin-left: auto; min-width: 0; }
+.shader-media-row button { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }

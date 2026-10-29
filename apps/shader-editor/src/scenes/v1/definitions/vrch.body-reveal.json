@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.body-reveal",
+  "title": "Body Reveal",
+  "description": "Reveals the tracked body from Source B through Source A.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 2,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / max(iResolution.xy, vec2(1.0));\n  vec4 sourceA = vrchSampleSource0(uv);\n  vec4 sourceB = vrchSampleSource1(uv);\n  float confidence = vrchReadSignal(0);\n  vec2 center = vec2(vrchReadSignal(1), vrchReadSignal(2));\n  vec2 size = vec2(max(0.05, uParam_body_width), max(0.08, uParam_body_height));\n  float distanceToBody = length((uv - center) / size);\n  float softness = max(0.01, uParam_softness);\n  float mask = 1.0 - smoothstep(1.0 - softness, 1.0 + softness, distanceToBody);\n  mask *= uParam_reveal * confidence;\n  vec3 color = mix(sourceA.rgb, sourceB.rgb, clamp(mask, 0.0, 1.0));\n  vec4 tracking = vrchSampleSignalTexture(0, uv);\n  color += uParam_skeleton_color.rgb * tracking.a * uParam_skeleton * confidence * 0.4;\n  fragColor = vec4(color, mix(sourceA.a, sourceB.a, clamp(mask, 0.0, 1.0)));\n}"
+  },
+  "parameters": [
+    {
+      "key": "reveal",
+      "label": "Reveal",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Amount of Source B shown around the tracked body."
+    },
+    {
+      "key": "body_width",
+      "label": "Body Width",
+      "type": "float",
+      "default": 0.23,
+      "min": 0.08,
+      "max": 0.55,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Width of the reveal around the tracked body."
+    },
+    {
+      "key": "body_height",
+      "label": "Body Height",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.2,
+      "max": 0.85,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Height of the reveal around the tracked body."
+    },
+    {
+      "key": "softness",
+      "label": "Softness",
+      "type": "float",
+      "default": 0.18,
+      "min": 0.02,
+      "max": 0.6,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Softness around the body reveal."
+    },
+    {
+      "key": "skeleton",
+      "label": "Skeleton",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Brightness of the tracked body structure."
+    },
+    {
+      "key": "skeleton_color",
+      "label": "Skeleton Colour",
+      "type": "color",
+      "default": [
+        0.72,
+        0.4,
+        1.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Colour",
+      "description": "Colour of the tracked body structure."
+    }
+  ],
+  "signals": [
+    {
+      "id": "tracking.pose.confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.pose.center_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.pose.center_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.pose.speed",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.pose-overlay",
+      "type": "texture",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.pose-landmarks",
+      "type": "texture",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [],
+  "analysis_requirements": [
+    {
+      "kind": "pose",
+      "source_input": 1,
+      "topology": "vrch.pose-landmarks@1",
+      "history_ms": 600
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Blend",
+    "tags": [
+      "two-sources",
+      "camera",
+      "body",
+      "pose",
+      "tracking",
+      "reveal"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.body-tracker.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "phase4-body-reveal-v1",
+    "created_at": "2026-08-23T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "reveal",
+      "body_width",
+      "softness",
+      "skeleton"
+    ]
+  }
+}

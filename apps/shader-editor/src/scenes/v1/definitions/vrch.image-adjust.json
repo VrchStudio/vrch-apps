@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.image-adjust",
+  "title": "Image Adjust",
+  "description": "Familiar image controls collected into one safe, source-aware filter scene.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "vec3 vrchAdjustHue(vec3 color, float angle) {\n  const mat3 toYiq = mat3(0.299, 0.587, 0.114, 0.596, -0.275, -0.321, 0.212, -0.523, 0.311);\n  const mat3 toRgb = mat3(1.0, 0.956, 0.621, 1.0, -0.272, -0.647, 1.0, -1.106, 1.703);\n  vec3 yiq = toYiq * color;\n  float hue = atan(yiq.z, yiq.y) + angle;\n  float chroma = length(yiq.yz);\n  return clamp(toRgb * vec3(yiq.x, chroma * cos(hue), chroma * sin(hue)), 0.0, 1.0);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec2 px = vec2(uParam_blur) / iResolution.xy;\n  vec4 center = vrchSampleSource0(uv);\n  vec4 blurred = center;\n  blurred += vrchSampleSource0(uv + vec2(px.x, 0.0));\n  blurred += vrchSampleSource0(uv - vec2(px.x, 0.0));\n  blurred += vrchSampleSource0(uv + vec2(0.0, px.y));\n  blurred += vrchSampleSource0(uv - vec2(0.0, px.y));\n  blurred += vrchSampleSource0(uv + px);\n  blurred += vrchSampleSource0(uv - px);\n  blurred += vrchSampleSource0(uv + vec2(px.x, -px.y));\n  blurred += vrchSampleSource0(uv + vec2(-px.x, px.y));\n  blurred /= 9.0;\n  float blurMix = smoothstep(0.0, 0.5, uParam_blur);\n  vec4 source = mix(center, blurred, blurMix);\n  vec3 color = source.rgb * uParam_brightness;\n  color = (color - 0.5) * uParam_contrast + 0.5;\n  float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));\n  color = mix(vec3(luma), color, uParam_saturate);\n  color = vrchAdjustHue(color, radians(uParam_hue_rotate));\n  color = mix(color, vec3(1.0) - color, uParam_invert);\n  vec3 sepia = vec3(dot(color, vec3(0.393, 0.769, 0.189)), dot(color, vec3(0.349, 0.686, 0.168)), dot(color, vec3(0.272, 0.534, 0.131)));\n  color = mix(color, sepia, uParam_sepia);\n  fragColor = vec4(clamp(color, 0.0, 1.0), clamp(source.a * uParam_opacity, 0.0, 1.0));\n}"
+  },
+  "parameters": [
+    {
+      "key": "opacity",
+      "label": "Opacity",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Image",
+      "description": "Final image opacity."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Image",
+      "description": "Overall brightness, including the V1 remote-control range."
+    },
+    {
+      "key": "contrast",
+      "label": "Contrast",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Image",
+      "description": "Tonal contrast around middle grey, including the V1 remote-control range."
+    },
+    {
+      "key": "saturate",
+      "label": "Saturation",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Color saturation, including the V1 remote-control range."
+    },
+    {
+      "key": "hue_rotate",
+      "label": "Hue",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 360.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Hue rotation in degrees using the V1 zero-to-full-turn range."
+    },
+    {
+      "key": "invert",
+      "label": "Invert",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Blend toward inverted colors."
+    },
+    {
+      "key": "sepia",
+      "label": "Sepia",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Warm sepia treatment."
+    },
+    {
+      "key": "blur",
+      "label": "Blur",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 50.0,
+      "step": 0.5,
+      "widget": "slider",
+      "group": "Image",
+      "description": "Screen-space blur radius in pixels using the V1 range."
+    }
+  ],
+  "signals": [],
+  "default_bindings": [],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "image",
+      "adjust",
+      "parity",
+      "filter"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.image-adjust.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "scene-filter-v1",
+    "created_at": "2026-08-12T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "opacity",
+      "brightness",
+      "contrast",
+      "saturate"
+    ]
+  }
+}

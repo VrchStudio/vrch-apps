@@ -1,0 +1,435 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-solar-flare",
+  "title": "Solar Flare",
+  "description": "An abstract star of glowing filament lines wrapped in wild flames. Music swells and stirs it; each raised hand on Source B draws the flames up toward it.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "// Solar Flare: a translucent star of glowing filament contours wrapped in flames, coloured by one\n// temperature ramp. The flames start inside the limb and burn outward over the edge, so the fire sits\n// on the star. A raised hand lets the fire on its side climb toward it.\nfloat sfH(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}\nfloat sfV(vec2 p){\n vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);\n return mix(mix(sfH(i),sfH(i+vec2(1.0,0.0)),f.x),mix(sfH(i+vec2(0.0,1.0)),sfH(i+vec2(1.0,1.0)),f.x),f.y);\n}\nfloat sfH3(vec3 p){p=fract(p*vec3(.1031,.1030,.0973));p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}\nfloat sfV3(vec3 p){\n vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);\n return mix(mix(mix(sfH3(i),sfH3(i+vec3(1,0,0)),f.x),mix(sfH3(i+vec3(0,1,0)),sfH3(i+vec3(1,1,0)),f.x),f.y),\n            mix(mix(sfH3(i+vec3(0,0,1)),sfH3(i+vec3(1,0,1)),f.x),mix(sfH3(i+vec3(0,1,1)),sfH3(i+vec3(1,1,1)),f.x),f.y),f.z);\n}\n// Flame noise over (direction on the circle, height - time): isotropic around the star.\nfloat sfNoise(vec3 q){\n float sx=sin(q.x),cx=cos(q.x),sy=sin(q.y),cy=cos(q.y),sz=sin(q.z),cz=cos(q.z);\n float n=sx*sy+sy*cz+sz*cx;\n float s2x=2.0*sx*cx,c2x=1.0-2.0*sx*sx,s2y=2.0*sy*cy,c2y=1.0-2.0*sy*sy,s2z=2.0*sz*cz,c2z=1.0-2.0*sz*sz;\n n+=.45*(s2x*s2y+s2y*c2z+s2z*c2x);\n float s4x=2.0*s2x*c2x,c4x=1.0-2.0*s2x*s2x,s4y=2.0*s2y*c2y,s4z=2.0*s2z*c2z,c4z=1.0-2.0*s2z*s2z;\n return n+.2*(s4x*s4y+s4y*c4z+s4z*c4x);\n}\n// Plasma field on the star; its evenly spaced contours are the abstract filament lines.\nfloat sfField(vec3 pos,float t){\n vec3 q=pos*(4.4+uParam_detail*3.6)+vec3(t*.45,-t*.28,t*.2);\n q+=uParam_corona*.55*sin(q.yzx*.65+vec3(.0,t*.13,.8));\n return sfNoise(q);\n}\nfloat sfLines(float n,float t,float w){\n float f=sin(n*4.2+t*.35);\n return w/(w+f*f);\n}\n// Blackbody-like ramp: deep tint, gold, then white heat; brighter as it gets hotter.\nvec3 sfRamp(float T,vec3 tint){\n T=clamp(T,0.0,1.4);\n vec3 c=tint*smoothstep(.0,.4,T);\n c=mix(c,vec3(1.0,.55,.12),smoothstep(.38,.72,T));\n c=mix(c,vec3(1.0,.88,.62),smoothstep(.75,1.05,T));\n return c*(.1+1.5*T*T);\n}\n// Flame noise coordinate at height h above the limb (negative over the disk) in direction pd.\nvec3 sfFireQ(vec2 pd,float h,float t,float surge,float warp){\n vec3 q=vec3(pd*7.0,h*4.0-t*(1.15+1.3*surge));\n q.xy+=vec2(-pd.y,pd.x)*(sfV3(q*vec3(.5,.5,.8)+vec3(0.0,0.0,t*.25))-.5)*warp*(1.4+6.0*max(h,0.0));\n return q;\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord){\n vec2 p=(2.0*fragCoord-iResolution.xy)/max(min(iResolution.x,iResolution.y),1.0);\n float aspect=iResolution.x/max(iResolution.y,1.0);\n float t=vrchPhase_speed();\n float limb=uParam_radius*.78;\n float r=length(p),a=atan(p.y,p.x);\n vec3 tint=uParam_tint.rgb;\n float warp=.6+1.6*uParam_corona;\n // Hands: each raised hand lets the fire on its side climb toward it (aimed from the chest).\n float lp=smoothstep(.02,.2,uParam_left_y),rp=smoothstep(.02,.2,uParam_right_y);\n vec2 lh=vec2((uParam_left_x-.5)*2.0*min(aspect,1.6),(uParam_left_y-.5)*2.0);\n vec2 rh=vec2((uParam_right_x-.5)*2.0*min(aspect,1.6),(uParam_right_y-.5)*2.0);\n vec2 chest=vec2(0.0,-.35);\n vec2 d1=normalize(lh-chest+vec2(1e-4)),d2=normalize(rh-chest+vec2(1e-4));\n float surge=clamp(uParam_accent+max(uParam_motion-.3,0.0)*1.4,0.0,1.4);\n float h1=lp*(.1+.7*smoothstep(.35,.95,uParam_left_y))*uParam_lift;\n float h2=rp*(.1+.7*smoothstep(.35,.95,uParam_right_y))*uParam_lift;\n vec2 pd=p/max(r,1e-4);\n float g1=exp(-(1.0-dot(pd,d1))*14.0),g2=exp(-(1.0-dot(pd,d2))*14.0);\n float handH=h1*g1+h2*g2;\n float T=0.0;\n // The plasma boundary wobbles with the flow, so the star never shows a clean circular outline.\n float Le=limb*(1.0+.11*(sfV(pd*4.0+vec2(t*.13,-t*.05))-.5)+.06*(sfV(pd*11.0+vec2(-t*.21,t*.17))-.5));\n // Flames first: one fire around and across the star. Height is measured from the limb and is\n // negative over the disk, where the same tongues lick across the visible surface toward the edge,\n // so the fire sits on the star rather than behind it.\n float fireT=0.0,fireMask=0.0;\n float h=r-limb;\n // Wild by default: a few tall tongues wander round the star between lower flames;\n // their allowed height grows where a hand pulls.\n float tall=sfV(pd*2.6+vec2(t*.11,-t*.07)),tall2=tall*tall;\n float H=.11+.06*sfV(pd*6.0+vec2(t*.2,0.0))+.32*tall2*tall+handH*(1.0+.6*surge)+.07*surge+limb*.1;\n // The flame field is at most 1: past 1.83 H neither a flame nor its edge glow can reach.\n if(r>limb*.5&&h<H*1.83){\n  // The flame field is smooth: the coarse stage samples it at 2x2 block centres; interpolate.\n  vec2 g=(fragCoord-1.0)*.5,gi=floor(g),gw=fract(g);\n  vec2 lo=vec2(.5),hi=iResolution.xy-.5;\n  float f00=vrchCoarseData(clamp(gi*2.0+.5,lo,hi)).x,f10=vrchCoarseData(clamp(gi*2.0+vec2(2.5,.5),lo,hi)).x;\n  float f01=vrchCoarseData(clamp(gi*2.0+vec2(.5,2.5),lo,hi)).x,f11=vrchCoarseData(clamp(gi*2.0+2.5,lo,hi)).x;\n  float f=mix(mix(f00,f10,gw.x),mix(f01,f11,gw.x),gw.y);\n  // Over the disk the tongues thin out the further they reach in from the edge.\n  float inside=max(-h,0.0)/limb;\n  float v=f*1.8-max(h,0.0)/H*.8-.34-inside*2.2;\n  float fire=clamp(v*2.0,0.0,1.0);\n  fire*=fire;\n  float edge=exp(-abs(v)*14.0);\n  // Over the disk the flames thin out toward the centre, where the surface faces the viewer.\n  float onDisk=smoothstep(limb*.5,limb*.95,r);\n  fireMask=fire*onDisk;\n  float over=mix(.45,1.0,smoothstep(limb*.92,limb*1.04,r));\n  fireT=(fire*(.55+.4*f)+edge*.22*(1.0-smoothstep(.0,H*1.4,max(h,0.0))))*onDisk*over;\n }\n if(r<Le*1.15){\n  // Sphere surface in view space; the star turns under the filament lines.\n  float z=sqrt(max(Le*Le-r*r,0.0))/Le;\n  vec2 pf=p/max(r,1e-4)*min(r,Le);\n  vec3 n=vec3(pf/Le,z);\n  // Translucent star: filament contours at three depths, in the same temperature ramp as the\n  // flames. Lines run hot (gold to white), the plasma between them is cool and dark.\n  float Rq=uParam_radius*1.35;\n  mat2 yaw=mat2(cos(t*.12),-sin(t*.12),sin(t*.12),cos(t*.12));\n  float tl=.18+uParam_corona*.12;mat2 tilt=mat2(cos(tl),-sin(tl),sin(tl),cos(tl));\n  // The middle layer is a flat slice through the star: its lines keep an even spacing all the way\n  // out and simply fade instead of crowding into a rim.\n  vec3 f1=n*Rq,f2=vec3(n.xy,-n.z)*Rq,f3=vec3(p/Le,0.0)*Rq*1.18;\n  f1.xz=yaw*f1.xz;f1.yz=tilt*f1.yz;f2.xz=yaw*f2.xz;f2.yz=tilt*f2.yz;f3.xz=yaw*f3.xz;f3.yz=tilt*f3.yz;\n  float lw=.035+.05*(1.0-uParam_light);\n  float n1=sfField(f1,t),n2=sfField(f2,t),n3=sfField(f3,t);\n  float l1=sfLines(n1,t,lw),l2=sfLines(n2,t,lw),l3=sfLines(n3,t,lw);\n  float mu=z;\n  float rr=r/Le;\n  float fill=smoothstep(1.0,.5,rr);\n  T=(.24+.1*smoothstep(-.6,1.0,n3))*fill;\n  float keep=smoothstep(.15,.6,mu)*step(rr,1.0);\n  // Filament lines catch fire where a flame crosses them.\n  float burn=1.0+.6*fireMask;\n  T+=(l1*(.5+.25*uParam_light)*(.75+.25*mu)+l2*.14*(1.0-mu*.5))*keep*burn;\n  T+=l3*(.24+.24*(1.0-keep))*smoothstep(1.13,.8,rr)*burn;\n  // The side facing a raised hand runs hotter.\n  // Both warm-ups fade out with the plasma, so they never show the region's circular bound.\n  float body=smoothstep(1.1,.8,rr);\n  T+=(.18*(lp*g1+rp*g2)*smoothstep(.4,1.0,r/limb)+.1*surge)*body;\n }\n // Flames glow over the disk (added, so the lines show through them) and beyond it.\n T+=fireT;\n if(r>limb*.85){\n  // Soft corona and fine radial streamers, faded in across the disk's outer band.\n  float ho=max(r-limb,0.0);\n  float streak=sfV(vec2(a*14.0,ho*1.5-t*.2))*sfV(vec2((a+6.2832)*14.0,ho*1.5-t*.2))*1.6;\n  float corona=(exp(-ho/(.06+.05*uParam_corona))*(.3+.2*streak)+exp(-ho/.3)*.06)*smoothstep(limb*.85,limb*1.06,r);\n  T=max(T,corona*.36);\n }\n vec3 c=sfRamp(T,tint);\n // A faint glow over everything near the star, in the same ramp.\n c+=sfRamp(.5,tint)*exp(-max(r-limb,0.0)*6.0)*.05;\n fragColor=vec4(1.0-exp(-max(c,vec3(0.0))*1.15),1.0);\n}\n"
+  },
+  "coarse": {
+    "entry_point": "vrchCoarse",
+    "source": "// Per 2x2 block: the flame field at the block centre, for the main pass to interpolate. Blocks\n// that no flame can reach (with margin) store nothing.\nvoid vrchCoarse(in vec2 blockOrigin,in float blockSize,out vec4 value){\n vec2 fc=blockOrigin+.5*blockSize;\n vec2 p=(2.0*fc-iResolution.xy)/max(min(iResolution.x,iResolution.y),1.0);\n float aspect=iResolution.x/max(iResolution.y,1.0);\n float t=vrchPhase_speed();\n float limb=uParam_radius*.78;\n float r=length(p);\n float warp=.6+1.6*uParam_corona;\n float lp=smoothstep(.02,.2,uParam_left_y),rp=smoothstep(.02,.2,uParam_right_y);\n vec2 lh=vec2((uParam_left_x-.5)*2.0*min(aspect,1.6),(uParam_left_y-.5)*2.0);\n vec2 rh=vec2((uParam_right_x-.5)*2.0*min(aspect,1.6),(uParam_right_y-.5)*2.0);\n vec2 chest=vec2(0.0,-.35);\n vec2 d1=normalize(lh-chest+vec2(1e-4)),d2=normalize(rh-chest+vec2(1e-4));\n float surge=clamp(uParam_accent+max(uParam_motion-.3,0.0)*1.4,0.0,1.4);\n float h1=lp*(.1+.7*smoothstep(.35,.95,uParam_left_y))*uParam_lift;\n float h2=rp*(.1+.7*smoothstep(.35,.95,uParam_right_y))*uParam_lift;\n vec2 pd=p/max(r,1e-4);\n float g1=exp(-(1.0-dot(pd,d1))*14.0),g2=exp(-(1.0-dot(pd,d2))*14.0);\n float handH=h1*g1+h2*g2;\n float h=r-limb;\n float tall=sfV(pd*2.6+vec2(t*.11,-t*.07)),tall2=tall*tall;\n float H=.11+.06*sfV(pd*6.0+vec2(t*.2,0.0))+.32*tall2*tall+handH*(1.0+.6*surge)+.07*surge+limb*.1;\n value=vec4(0.0);\n if(r>limb*.5-.05&&h<H*1.83+.05){\n  vec3 q=sfFireQ(pd,h,t,surge,warp);\n  vec3 q2=q*2.03+vec3(1.7,9.2,3.1),q3=q2*2.03+vec3(1.7,9.2,3.1);\n  float fs=.5*sfV3(q);fs+=.25*sfV3(q2);fs+=.125*sfV3(q3);\n  value=vec4(fs*1.143,0.0,0.0,1.0);\n }\n}\n\n",
+    "divisor": 2
+  },
+  "parameters": [
+    {
+      "key": "radius",
+      "label": "Star Size",
+      "type": "float",
+      "default": 0.6,
+      "min": 0.35,
+      "max": 0.78,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Star",
+      "description": "Size of the stellar body."
+    },
+    {
+      "key": "corona",
+      "label": "Plasma Twist",
+      "type": "float",
+      "default": 0.28,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Star",
+      "description": "Twist and spread of the plasma currents."
+    },
+    {
+      "key": "light",
+      "label": "Filaments",
+      "type": "float",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Definition and light inside the surface currents."
+    },
+    {
+      "key": "accent",
+      "label": "Flare",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "A local plasma eruption from the stellar surface."
+    },
+    {
+      "key": "speed",
+      "label": "Pace",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.08,
+      "max": 1.4,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous flow of plasma across the turning star."
+    },
+    {
+      "key": "detail",
+      "label": "Surface Detail",
+      "type": "float",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Star",
+      "description": "Scale of the currents on the stellar surface."
+    },
+    {
+      "key": "tint",
+      "label": "Plasma Color",
+      "type": "color",
+      "default": [
+        0.95,
+        0.14,
+        0.018,
+        1
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Base color of the stellar plasma."
+    },
+    {
+      "key": "lift",
+      "label": "Flame Reach",
+      "type": "float",
+      "default": 1.0,
+      "min": 0,
+      "max": 1.5,
+      "widget": "slider",
+      "group": "Body",
+      "description": "How high the flames climb toward a raised hand."
+    },
+    {
+      "key": "left_x",
+      "label": "Left Hand X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked left hand position."
+    },
+    {
+      "key": "left_y",
+      "label": "Left Hand Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked left hand height."
+    },
+    {
+      "key": "right_x",
+      "label": "Right Hand X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked right hand position."
+    },
+    {
+      "key": "right_y",
+      "label": "Right Hand Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked right hand height."
+    },
+    {
+      "key": "motion",
+      "label": "Hand Motion",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Fast hand moves make the flames surge."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.left_hand_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.left_hand_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.right_hand_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.right_hand_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_speed",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "solar-low",
+      "param_key": "radius",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.17,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 25,
+      "release_ms": 190,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "solar-mid",
+      "param_key": "corona",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.5,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 35,
+      "release_ms": 220,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "solar-high",
+      "param_key": "light",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.45,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 12,
+      "release_ms": 130,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "solar-onset",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.9,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 6,
+      "release_ms": 120,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-left-hand-x",
+      "param_key": "left_x",
+      "signal_id": "tracking.pose.left_hand_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 110,
+      "release_ms": 110,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-left-hand-y",
+      "param_key": "left_y",
+      "signal_id": "tracking.pose.left_hand_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 220,
+      "release_ms": 700,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-right-hand-x",
+      "param_key": "right_x",
+      "signal_id": "tracking.pose.right_hand_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 110,
+      "release_ms": 110,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-right-hand-y",
+      "param_key": "right_y",
+      "signal_id": "tracking.pose.right_hand_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 220,
+      "release_ms": 700,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-hands-motion",
+      "param_key": "motion",
+      "signal_id": "tracking.pose.hands_speed",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 0.35,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 120,
+      "release_ms": 900,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1.0
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "solar-flare",
+      "stage",
+      "body"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.vp-solar-flare",
+      "content_hash": "sha256:23249c71dd05b6ef27457ffd52b97c9a22415533fd4932382aa54e641c647e18"
+    },
+    "prompt_summary": "Dark-centered solar body with layered plasma, uneven corona filaments and localized solar eruptions. Preserve the accepted four musical actions.",
+    "created_at": "2026-09-12T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "radius",
+      "corona",
+      "light",
+      "accent"
+    ]
+  },
+  "analysis_requirements": [
+    {
+      "kind": "pose",
+      "source_input": 1,
+      "topology": "vrch.pose-landmarks@1",
+      "history_ms": 600
+    }
+  ]
+}

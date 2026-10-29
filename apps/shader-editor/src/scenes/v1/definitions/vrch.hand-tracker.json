@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.hand-tracker",
+  "title": "Hand Tracker",
+  "description": "Draws adjustable hand joints, bones and per-point motion trails over a selectable colour or the analyzed image.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec4 tracking = vrchSampleSignalTexture(0, uv);\n  float confidence = vrchReadSignal(0);\n  float motion = vrchReadSignal(1);\n  float pointDensity = clamp(float(uParam_point_count - 6) / 15.0, 0.0, 1.0);\n  float boneEdge = 0.92 - clamp(uParam_line_width, 0.0, 2.0) * 0.02;\n  float nodeEdge = 0.92 - clamp(uParam_node_size, 0.0, 2.0) * 0.02 - pointDensity * 0.005;\n  float bones = step(0.001, uParam_line_width) * smoothstep(0.02, boneEdge, tracking.r);\n  float joints = step(0.001, uParam_node_size) * smoothstep(0.02, nodeEdge, tracking.g);\n  float trails = step(0.001, uParam_trail_width) * step(0.001, uParam_trail_length) * smoothstep(0.01, 0.9, tracking.b);\n  float shape = clamp(max(bones, joints) + trails * 0.7, 0.0, 1.0);\n  float glow = clamp(tracking.a * (uParam_glow + motion * 0.18) * step(0.001, shape), 0.0, 1.0);\n  vec3 background = mix(uParam_background_color.rgb, vrchSampleSource0(uv).rgb, clamp(uParam_background_image, 0.0, 1.0));\n  vec3 trackerColor = uParam_color.rgb * (shape + glow * 0.35) * mix(0.45, 1.0, confidence);\n  fragColor = vec4(background + trackerColor, 1.0);\n}"
+  },
+  "parameters": [
+    {
+      "key": "color",
+      "label": "Colour",
+      "type": "color",
+      "default": [
+        0.12,
+        0.95,
+        0.78,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Colour",
+      "description": "Colour of the tracked hand."
+    },
+    {
+      "key": "background_image",
+      "label": "Background Image",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Background",
+      "description": "Visibility of the analyzed image behind the tracker."
+    },
+    {
+      "key": "background_color",
+      "label": "Background Colour",
+      "type": "color",
+      "default": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Background",
+      "description": "Background colour used when the analyzed image is hidden."
+    },
+    {
+      "key": "node_size",
+      "label": "Node Size",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Shape",
+      "description": "Size of hand joint markers."
+    },
+    {
+      "key": "point_count",
+      "label": "Tracked Points",
+      "type": "int",
+      "default": 21,
+      "min": 6,
+      "max": 21,
+      "step": 1,
+      "widget": "slider",
+      "group": "Detail",
+      "description": "Number of visible hand joint markers and per-point trails."
+    },
+    {
+      "key": "line_width",
+      "label": "Line Width",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Thickness of hand bone lines."
+    },
+    {
+      "key": "trail_width",
+      "label": "Trail Width",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Thickness of hand motion trails."
+    },
+    {
+      "key": "trail_length",
+      "label": "Trail Length",
+      "type": "float",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Length of hand motion trails."
+    },
+    {
+      "key": "glow",
+      "label": "Glow",
+      "type": "float",
+      "default": 0.45,
+      "min": 0.0,
+      "max": 1.2,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Soft glow around the tracked structure."
+    }
+  ],
+  "signals": [
+    {
+      "id": "tracking.hand.confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.hand.speed",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.hand-overlay",
+      "type": "texture",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.hand-landmarks",
+      "type": "texture",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [],
+  "analysis_requirements": [
+    {
+      "kind": "hand",
+      "source_input": 0,
+      "topology": "vrch.hand-landmarks@1",
+      "history_ms": 600
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "camera",
+      "hand",
+      "tracking",
+      "skeleton",
+      "trail"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.hand-tracker.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "phase4-hand-tracker-v3",
+    "created_at": "2026-08-22T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "line_width",
+      "node_size",
+      "trail_width",
+      "background_image"
+    ]
+  }
+}

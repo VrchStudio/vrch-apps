@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.body-focus",
+  "title": "Body Focus",
+  "description": "Keeps the tracked body clear while softly treating the surrounding image.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / max(iResolution.xy, vec2(1.0));\n  vec4 source = vrchSampleSource0(uv);\n  float confidence = vrchReadSignal(0);\n  vec2 center = vec2(vrchReadSignal(1), vrchReadSignal(2));\n  vec2 size = vec2(max(0.05, uParam_body_width), max(0.08, uParam_body_height));\n  vec2 shape = (uv - center) / size;\n  float body = 1.0 - smoothstep(0.72, 1.0, length(shape));\n  float luma = dot(source.rgb, vec3(0.2126, 0.7152, 0.0722));\n  vec3 treated = mix(source.rgb, vec3(luma) * uParam_background_tint.rgb, uParam_desaturate);\n  treated *= 1.0 - uParam_dim;\n  float effectAmount = clamp(uParam_amount * confidence, 0.0, 1.0);\n  vec3 color = mix(source.rgb, treated, effectAmount * (1.0 - body));\n  vec4 tracking = vrchSampleSignalTexture(0, uv);\n  color += uParam_skeleton_color.rgb * tracking.a * uParam_skeleton * confidence * 0.38;\n  fragColor = vec4(color, source.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.82,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the treatment outside the tracked body."
+    },
+    {
+      "key": "body_width",
+      "label": "Body Width",
+      "type": "float",
+      "default": 0.22,
+      "min": 0.08,
+      "max": 0.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Width of the clear area around the tracked body."
+    },
+    {
+      "key": "body_height",
+      "label": "Body Height",
+      "type": "float",
+      "default": 0.48,
+      "min": 0.2,
+      "max": 0.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Height of the clear area around the tracked body."
+    },
+    {
+      "key": "desaturate",
+      "label": "Desaturate",
+      "type": "float",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Colour",
+      "description": "Colour removed from the surrounding image."
+    },
+    {
+      "key": "dim",
+      "label": "Background Dim",
+      "type": "float",
+      "default": 0.28,
+      "min": 0.0,
+      "max": 0.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Colour",
+      "description": "Darkness applied outside the tracked body."
+    },
+    {
+      "key": "background_tint",
+      "label": "Background Tint",
+      "type": "color",
+      "default": [
+        0.86,
+        0.8,
+        1.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Colour",
+      "description": "Tint used in the treated background."
+    },
+    {
+      "key": "skeleton",
+      "label": "Skeleton",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Brightness of the tracked body structure."
+    },
+    {
+      "key": "skeleton_color",
+      "label": "Skeleton Colour",
+      "type": "color",
+      "default": [
+        0.72,
+        0.4,
+        1.0,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Colour",
+      "description": "Colour of the tracked body structure."
+    }
+  ],
+  "signals": [
+    {
+      "id": "tracking.pose.confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.pose.center_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.pose.center_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.5
+    },
+    {
+      "id": "tracking.pose.speed",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.pose-overlay",
+      "type": "texture",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.pose-landmarks",
+      "type": "texture",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [],
+  "analysis_requirements": [
+    {
+      "kind": "pose",
+      "source_input": 0,
+      "topology": "vrch.pose-landmarks@1",
+      "history_ms": 600
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "camera",
+      "body",
+      "pose",
+      "tracking",
+      "focus"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.body-tracker.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "phase4-body-focus-v1",
+    "created_at": "2026-08-23T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "body_width",
+      "body_height",
+      "desaturate"
+    ]
+  }
+}

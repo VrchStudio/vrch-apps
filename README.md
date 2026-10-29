@@ -29,6 +29,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [VibeLive Synth](apps/vibelive-synth): play and blend AI music loops rendered by a connected Mac.
 
+- [Shader Editor](apps/shader-editor): edit and save visual presets with audio and image inputs.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.

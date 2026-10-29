@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.hand-focus",
+  "title": "Hand Focus",
+  "description": "Keeps tracked hands clear while softly blurring the surrounding image.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchHandFocusSample(vec2 uv) {\n  vec4 value = vrchSampleSignalTexture(0, clamp(uv, vec2(0.0), vec2(1.0)));\n  return max(max(value.r, value.g), max(value.b * uParam_trail, value.a));\n}\nfloat vrchHandFocusMask(vec2 uv, float radius) {\n  float aspect = iResolution.x / max(iResolution.y, 1.0);\n  vec2 x = vec2(radius / max(aspect, 0.01), 0.0);\n  vec2 y = vec2(0.0, radius);\n  float value = vrchHandFocusSample(uv);\n  value = max(value, vrchHandFocusSample(uv + x));\n  value = max(value, vrchHandFocusSample(uv - x));\n  value = max(value, vrchHandFocusSample(uv + y));\n  value = max(value, vrchHandFocusSample(uv - y));\n  value = max(value, vrchHandFocusSample(uv + x + y));\n  value = max(value, vrchHandFocusSample(uv + x - y));\n  value = max(value, vrchHandFocusSample(uv - x + y));\n  value = max(value, vrchHandFocusSample(uv - x - y));\n  return value;\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / max(iResolution.xy, vec2(1.0));\n  vec4 source = vrchSampleSource0(uv);\n  float confidence = vrchReadSignal(0);\n  float motion = vrchReadSignal(1);\n  vec4 tracking = vrchSampleSignalTexture(0, uv);\n  float spread = vrchHandFocusMask(uv, uParam_hand_area * (1.0 + motion * 0.2));\n  float edge0 = mix(0.02, 0.5, clamp(uParam_softness, 0.0, 1.0));\n  float handMask = smoothstep(edge0, 0.92, spread) * confidence;\n  vec2 px = vec2(uParam_blur) / max(iResolution.xy, vec2(1.0));\n  vec3 blurred = source.rgb;\n  blurred += vrchSampleSource0(uv + vec2(px.x, 0.0)).rgb;\n  blurred += vrchSampleSource0(uv - vec2(px.x, 0.0)).rgb;\n  blurred += vrchSampleSource0(uv + vec2(0.0, px.y)).rgb;\n  blurred += vrchSampleSource0(uv - vec2(0.0, px.y)).rgb;\n  blurred += vrchSampleSource0(uv + px).rgb;\n  blurred += vrchSampleSource0(uv - px).rgb;\n  blurred += vrchSampleSource0(uv + vec2(px.x, -px.y)).rgb;\n  blurred += vrchSampleSource0(uv + vec2(-px.x, px.y)).rgb;\n  blurred *= 0.111111;\n  float luma = dot(blurred, vec3(0.2126, 0.7152, 0.0722));\n  vec3 treated = mix(blurred, vec3(luma), uParam_desaturate) * (1.0 - uParam_dim);\n  float effectAmount = clamp(uParam_amount * confidence * (1.0 - handMask), 0.0, 1.0);\n  vec3 color = mix(source.rgb, treated, effectAmount);\n  float outline = tracking.a * uParam_outline * confidence;\n  color += uParam_outline_color.rgb * outline * 0.35;\n  fragColor = vec4(color, source.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.86,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the blur outside tracked hands."
+    },
+    {
+      "key": "hand_area",
+      "label": "Hand Area",
+      "type": "float",
+      "default": 0.009,
+      "min": 0.005,
+      "max": 0.16,
+      "step": 0.005,
+      "widget": "slider",
+      "group": "Shape",
+      "description": "Size of the clear area around each tracked hand."
+    },
+    {
+      "key": "blur",
+      "label": "Blur",
+      "type": "float",
+      "default": 6.0,
+      "min": 0.0,
+      "max": 28.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Detail",
+      "description": "Blur applied outside tracked hands."
+    },
+    {
+      "key": "softness",
+      "label": "Edge Softness",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Shape",
+      "description": "Softness around the clear hand area."
+    },
+    {
+      "key": "trail",
+      "label": "Trail Focus",
+      "type": "float",
+      "default": 0.25,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "How strongly recent hand motion remains in focus."
+    },
+    {
+      "key": "desaturate",
+      "label": "Desaturate",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Colour",
+      "description": "Colour removed from the blurred background."
+    },
+    {
+      "key": "dim",
+      "label": "Background Dim",
+      "type": "float",
+      "default": 0.25,
+      "min": 0.0,
+      "max": 0.75,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Colour",
+      "description": "Darkness applied outside tracked hands."
+    },
+    {
+      "key": "outline",
+      "label": "Outline",
+      "type": "float",
+      "default": 0.32,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.05,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Brightness of the tracked hand outline."
+    },
+    {
+      "key": "outline_color",
+      "label": "Outline Colour",
+      "type": "color",
+      "default": [
+        0.12,
+        0.95,
+        0.78,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Colour",
+      "description": "Colour of the tracked hand outline."
+    }
+  ],
+  "signals": [
+    {
+      "id": "tracking.hand.confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.hand.speed",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.hand-overlay",
+      "type": "texture",
+      "optional": false,
+      "default": 0.0
+    },
+    {
+      "id": "tracking.hand-landmarks",
+      "type": "texture",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [],
+  "analysis_requirements": [
+    {
+      "kind": "hand",
+      "source_input": 0,
+      "topology": "vrch.hand-landmarks@1",
+      "history_ms": 600
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "camera",
+      "hand",
+      "tracking",
+      "focus",
+      "blur"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.hand-tracker.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "phase4-hand-focus-v1",
+    "created_at": "2026-08-24T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "hand_area",
+      "blur",
+      "softness"
+    ]
+  }
+}

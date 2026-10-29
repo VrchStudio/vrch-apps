@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.hologram",
+  "title": "Hologram",
+  "description": "Adds cool spectral color, animated scanlines and restrained chromatic warp while retaining the source image.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float motionPhase = vrchPhase_speed();\n  float warp = sin(uv.y * 14.0 + motionPhase * 1.1) * uParam_warp;\n  vec2 warpedUv = vec2(clamp(uv.x + warp, 0.0, 1.0), uv.y);\n  float liveSplit = uParam_color_shift;\n  vec2 colorOffset = vec2(liveSplit / min(iResolution.x, iResolution.y), 0.0);\n  vec4 center = vrchSampleSource0(warpedUv);\n  float red = vrchSampleSource0(clamp(warpedUv + colorOffset, vec2(0.0), vec2(1.0))).r;\n  float blue = vrchSampleSource0(clamp(warpedUv - colorOffset, vec2(0.0), vec2(1.0))).b;\n  float luma = dot(center.rgb, vec3(0.2126, 0.7152, 0.0722));\n  float scan = 0.5 + 0.5 * sin((uv.y * uParam_scanlines - motionPhase * 0.25) * 6.28318530718);\n  float scanLight = mix(0.76, 1.06, scan);\n  float flicker = 1.0 - 0.06 * (0.5 + 0.5 * sin(motionPhase * 3.0 + uv.y * 2.0));\n  vec3 spectral = mix(vec3(red, center.g, blue), uParam_tint.rgb * (0.32 + luma * 1.15), 0.68);\n  spectral *= scanLight * flicker;\n  float liveGlow = uParam_glow;\n  float bandCenter = 0.5 + 0.26 * sin(motionPhase * 0.45);\n  float bandDistance = (uv.y - bandCenter) / 0.065;\n  float scanBand = exp(-bandDistance * bandDistance);\n  spectral += liveGlow * uParam_tint.rgb * (luma * 0.10 + scanBand * (0.20 + luma * 0.85));\n  fragColor = vec4(mix(center.rgb, clamp(spectral, 0.0, 1.0), uParam_amount), center.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.47,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the holographic treatment."
+    },
+    {
+      "key": "scanlines",
+      "label": "Scanlines",
+      "type": "float",
+      "default": 50.0,
+      "min": 18.0,
+      "max": 220.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Density of animated horizontal scanlines."
+    },
+    {
+      "key": "color_shift",
+      "label": "Color Split",
+      "type": "float",
+      "default": 4,
+      "min": 0.0,
+      "max": 18.0,
+      "step": 0.5,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Chromatic separation in display pixels."
+    },
+    {
+      "key": "warp",
+      "label": "Warp",
+      "type": "float",
+      "default": 0.003,
+      "min": 0.0,
+      "max": 0.08,
+      "step": 0.001,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Horizontal spectral wave displacement."
+    },
+    {
+      "key": "speed",
+      "label": "Motion Speed",
+      "type": "float",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Shared speed for scanline travel, warp, and brightness breathing."
+    },
+    {
+      "key": "glow",
+      "label": "Glow",
+      "type": "float",
+      "default": 0.18,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Color",
+      "description": "Brightness of the local travelling scan band and restrained spectral highlights."
+    },
+    {
+      "key": "tint",
+      "label": "Tint",
+      "type": "color",
+      "default": [
+        0.08,
+        0.82,
+        0.96,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Primary hologram color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-hologram-warp-v2",
+      "param_key": "warp",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 35,
+      "release_ms": 190,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-hologram-color-v2",
+      "param_key": "color_shift",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 60,
+      "release_ms": 280,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-hologram-scanlines-v2",
+      "param_key": "scanlines",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 26,
+      "release_ms": 170,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-hologram-glow-v2",
+      "param_key": "glow",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "positive",
+      "attack_ms": 8,
+      "release_ms": 160,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "hologram",
+      "scanlines",
+      "spectral",
+      "animated"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.hologram.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "hologram-v3-audio-v2",
+    "created_at": "2026-08-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "scanlines",
+      "color_shift",
+      "speed"
+    ]
+  }
+}

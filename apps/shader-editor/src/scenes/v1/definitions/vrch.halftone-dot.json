@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.halftone-dot",
+  "title": "Halftone Dots",
+  "description": "Turns an image into clean print-like dots while keeping the subject readable.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float vrchCoverageRadius(float coverage) {\n  return sqrt(coverage / 3.14159265359) + 0.145 * pow(smoothstep(0.785, 1.0, coverage), 3.0);\n}\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float density = uParam_density;\n  vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);\n  vec2 cellUv = uv * aspect * density;\n  vec2 cellId = floor(cellUv);\n  vec2 centerUv = (cellId + 0.5) / (aspect * density);\n  vec4 image = vrchSampleSource0(centerUv);\n  float luma = dot(image.rgb, vec3(0.2126, 0.7152, 0.0722));\n  float radius = vrchCoverageRadius(1.0 - pow(clamp(luma * uParam_contrast, 0.0, 1.0), uParam_shape));\n  float distanceToCenter = length(fract(cellUv) - 0.5);\n  float edge = fwidth(distanceToCenter) * 1.5;\n  float ink = 1.0 - smoothstep(radius - edge, radius + edge, distanceToCenter);\n  vec3 printColor = mix(uParam_paper.rgb, uParam_ink.rgb, ink);\n  fragColor = vec4(mix(image.rgb, printColor, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.92,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "How strongly the dot print replaces the image."
+    },
+    {
+      "key": "density",
+      "label": "Dot Size",
+      "type": "float",
+      "default": 54.0,
+      "min": 18.0,
+      "max": 180.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Dot grid density normalized to the output."
+    },
+    {
+      "key": "contrast",
+      "label": "Contrast",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.5,
+      "max": 2.0,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Separation between light and dark dots."
+    },
+    {
+      "key": "shape",
+      "label": "Dot Shape",
+      "type": "float",
+      "default": 0.85,
+      "min": 0.35,
+      "max": 2.0,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Response curve of dot size."
+    },
+    {
+      "key": "ink",
+      "label": "Ink",
+      "type": "color",
+      "default": [
+        0.055,
+        0.06,
+        0.07,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Printed dot color."
+    },
+    {
+      "key": "paper",
+      "label": "Paper",
+      "type": "color",
+      "default": [
+        0.94,
+        0.91,
+        0.82,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Printed background color."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-dot-shape-v2",
+      "param_key": "shape",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.05,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 45,
+      "release_ms": 260,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-dot-contrast-v2",
+      "param_key": "contrast",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.9,
+      "curve": "smoothstep",
+      "polarity": "positive",
+      "attack_ms": 50,
+      "release_ms": 280,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "high-to-dot-density-v2",
+      "param_key": "density",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.08,
+      "input_min": 0.06,
+      "input_max": 0.88,
+      "curve": "ease_in",
+      "polarity": "positive",
+      "attack_ms": 28,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "onset-to-dot-shape-v2",
+      "param_key": "shape",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.04,
+      "input_min": 0.1,
+      "input_max": 1.0,
+      "curve": "ease_out",
+      "polarity": "negative",
+      "attack_ms": 10,
+      "release_ms": 210,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "print",
+      "dots",
+      "graphic"
+    ],
+    "thumbnail_ref": "scenes/v1/thumbnails/vrch.halftone-dot.png",
+    "roles": [
+      "product-baseline",
+      "beta-gate",
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "halftone-v1-audio-v2",
+    "created_at": "2026-08-12T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "density",
+      "contrast",
+      "shape"
+    ]
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-chrome-bloom",
+  "title": "Chrome Bloom",
+  "description": "Liquid chrome flows continuously, speeds up with percussion, and eases back to a visible slow flow between beats.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 0,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "mat2 turn(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}\nvec3 finish(vec3 c){return 1.0-exp(-max(c,vec3(0.0)));}\n// Time-only rotations and phase offsets, prepared once per pixel.\nmat2 gSpinA,gSpinB;\nvec2 gF1,gF2,gF3,gF4,gF5,gF6,gF7,gF8;\nfloat gTwist,gLobeZ,gCrossR;\n// p is already in the spinning frame: the two time rotations are applied once per ray.\nfloat metalForm(vec3 p){\n p.xy=turn(p.z*gTwist)*p.xy;\n // Angles enter only through sin/cos of small multiples; expand them from the direction.\n float r=length(p.xy);\n vec2 a1=r>1e-7?p.xy/r:vec2(1.0,0.0);\n vec2 a2=vec2(a1.x*a1.x-a1.y*a1.y,2.0*a1.x*a1.y);\n vec2 a3=vec2(a2.x*a1.x-a2.y*a1.y,a2.y*a1.x+a2.x*a1.y);\n float knot=.61+.22*(a3.x*gF1.x+a3.y*gF1.y)+.10*(a2.x*gF2.x-a2.y*gF2.y)+.07*sin(p.z*3.5+gLobeZ);\n float lift=.25*(a3.y*gF3.x-a3.x*gF3.y)+.12*(a1.y*gF4.x+a1.x*gF4.y);\n float section=uParam_mass*(.86+.23*(a2.x*gF5.x+a2.y*gF5.y)+.12*(a3.y*gF6.x-a3.x*gF6.y));\n float ring=length(vec2(r-knot,p.z-lift))-section;\n // The inner ring stays within gCrossR of the origin; when it is .10 farther\n // than the outer ring the smooth union returns the outer ring unchanged.\n if(length(p)-gCrossR>ring+.10)return ring;\n float q=length(p.xz);\n vec2 b1=q>1e-7?vec2(p.x,p.z)/q:vec2(1.0,0.0);\n vec2 b2=vec2(b1.x*b1.x-b1.y*b1.y,2.0*b1.x*b1.y);\n float inner=.47+.085*(b2.x*gF7.x-b2.y*gF7.y);\n float crossRing=length(vec2(q-inner,p.y-.12*(b2.y*gF8.x-b2.x*gF8.y)-uParam_sweep*.26*(b1.x*.92106099-b1.y*.38941834)))-.105;\n float blend=clamp(.5+.5*(crossRing-ring)/.10,0.,1.);\n return mix(crossRing,ring,blend)-.10*blend*(1.-blend);\n}\nvec3 metalEnv(vec3 r,float t){\n r.xz=turn(uParam_sweep*.8+t*.045)*r.xz;\n float soft=mix(.18,.04,clamp(uParam_polish/1.2,0.,1.));\n float key=1.0-smoothstep(.24,.24+soft,abs(r.x+.24));\n key*=smoothstep(-.5,.0,r.y);\n float strip=1.0-smoothstep(.045,.045+soft*.5,abs(r.x-.66));\n strip*=smoothstep(-.6,-.2,r.y);\n float horizon=1.0-smoothstep(.055,.055+soft,abs(r.y+.16));\n float warm=max(0.,dot(r,normalize(vec3(.3,-.55,.6))));warm*=warm;warm*=warm;warm*=warm;\n float ceiling=smoothstep(.4,.9,r.y)*.12;\n vec3 c=vec3(.0035,.004,.005)+vec3(.85,.92,1.0)*(key*1.7+strip*2.4+horizon*.65+ceiling);\n c+=mix(vec3(.9,.36,.08),uParam_tint.rgb,.8)*warm*1.8;\n return c;\n}\n// Ray interval inside the finite cylinder x*x+y*y<=R*R, |z|<=H (empty: x>y).\nvec2 cylSpan(vec3 o,vec3 d,float R,float H){\n float a=dot(d.xy,d.xy),b=dot(o.xy,d.xy),c=dot(o.xy,o.xy)-R*R;\n float h=b*b-a*c;\n if(h<0.0||a<1e-8)return vec2(1e9,-1e9);\n h=sqrt(h);\n vec2 tc=vec2(-b-h,-b+h)/a;\n float iz=1.0/(abs(d.z)>1e-6?d.z:1e-6);\n vec2 tz=vec2((-H-o.z)*iz,(H-o.z)*iz);\n tz=vec2(min(tz.x,tz.y),max(tz.x,tz.y));\n return vec2(max(tc.x,tz.x),min(tc.y,tz.y));\n}\nvec2 phasor(float a){return vec2(cos(a),sin(a));}\n// Time-only state shared by the main pass and the coarse stage.\nvoid bloomSetup(float t){\n float flow=vrchPhase_flow()*.9+vrchPhase_accent()*2.4;\n gSpinA=turn(t*.28);gSpinB=turn(t*.19+.5);gTwist=.6+uParam_fold*.9;gCrossR=length(vec2(.555,.12+.26*abs(uParam_sweep)))+.105;gLobeZ=flow*.5;\n gF1=phasor(flow*.65);gF2=phasor(flow*.38);gF3=phasor(flow*.43);gF4=phasor(flow*.52);\n gF5=phasor(flow*.57);gF6=phasor(flow*.34);gF7=phasor(flow*.48);gF8=phasor(flow*.37);\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord){\n vec2 uv=(2.0*fragCoord-iResolution.xy)/min(iResolution.x,iResolution.y);\n uv/=uParam_size;\n float t=vrchPhase_speed();\n bloomSetup(t);\n vec3 ro=vec3(0.,0.,3.25),rd=normalize(vec3(uv,-2.45));\n vec3 world=rd;\n ro.xz=gSpinA*ro.xz;ro.yz=gSpinB*ro.yz;\n rd.xz=gSpinA*rd.xz;rd.yz=gSpinB*rd.yz;\n // Every surface point lies inside one of two z-aligned cylinders of the\n // spinning frame (twist keeps radius and z): the outer ring and the inner ring.\n float s=uParam_mass*1.21+.03;\n vec2 spanA=cylSpan(ro,rd,1.0+s,.37+s);\n vec2 spanB=cylSpan(ro,rd,length(vec2(.69,.255+.26*abs(uParam_sweep)))+.02,.71);\n float travel=min(spanA.x,spanB.x),exitAt=max(spanA.y,spanB.y);\n bool found=false;float hitD=0.0;\n float disc=exitAt>travel?1.0:-1.0;\n // The coarse stage found a start that no ray of this 4x4 block reaches the metal before.\n travel=max(max(0.0,travel),vrchCoarseData(fragCoord).x);\n if(disc>0.0&&travel<exitAt){\n  // Over-relaxed steps; a step that lands inside the metal is taken back and\n  // the march continues with the conservative factor.\n  float relax=.72,lastTravel=travel;\n  for(int i=0;i<112;i++){\n   float d=metalForm(ro+travel*rd);\n   if(d<0.0&&relax>.5){travel=lastTravel;relax=.44;continue;}\n   if(d<.003){found=true;hitD=d;break;}\n   lastTravel=travel;\n   travel+=max(.0008,d*relax);if(travel>5.5||travel>exitAt)break;\n  }\n }\n // Refine the actual surface crossing before reflecting hard studio lights.\n // The first step reuses the march's last sample; later steps keep its slope.\n if(found){\n  vec3 q=ro+travel*rd;\n  float slope=(metalForm(q+rd*.001)-metalForm(q-rd*.001))/.002;\n  bool steep=abs(slope)>.002;\n  if(steep)travel-=clamp(hitD/slope,-.025,.025);\n  if(steep)travel-=clamp(metalForm(ro+travel*rd)/slope,-.025,.025);\n  if(steep)travel-=clamp(metalForm(ro+travel*rd)/slope,-.025,.025);\n  if(abs(metalForm(ro+travel*rd))>.0003)found=false;\n }\n vec3 c=vec3(.0018,.0018,.0018);\n if(found){\n  vec3 p=ro+travel*rd;vec2 e=vec2(.0005,-.0005);\n  // Tetrahedral gradient: four field samples instead of six.\n  vec3 n=normalize(e.xyy*metalForm(p+e.xyy)+e.yyx*metalForm(p+e.yyx)+e.yxy*metalForm(p+e.yxy)+e.xxx*metalForm(p+e.xxx));\n  float occlusion=0.;\n  for(int j=0;j<2;j++){\n   float h=.035+.165*float(j);\n   occlusion+=(h-metalForm(p+n*h))/(h+ .001)*.32;\n  }\n  float ao=clamp(1.-occlusion,.22,1.);\n  // Back from the spinning frame to the studio frame.\n  n.yz=n.yz*gSpinB;n.xz=n.xz*gSpinA;\n  rd=world;\n  vec3 refl=reflect(rd,n);\n  c=metalEnv(refl,t)*ao;\n  float ed=1.-max(0.,dot(n,-rd)),edge=ed*ed*ed;\n  c+=vec3(.028,.035,.043)*edge;\n  float footprint=travel*2.0/(min(iResolution.x,iResolution.y)*uParam_size*2.45);\n  float coverage=smoothstep(0.0,sqrt(footprint*10.0),max(0.0,dot(n,-rd)));\n  c=mix(vec3(.0018),c,coverage);\n }\n fragColor=vec4(finish(c*uParam_light),1.0);\n}\n"
+  },
+  "coarse": {
+    "entry_point": "vrchCoarse",
+    "source": "// One cone per 4x4 block, around the block's centre ray and wide enough for its\n// corner rays, marches until the metal could come within the cone.\nvoid vrchCoarse(in vec2 blockOrigin,in float blockSize,out vec4 value){\n bloomSetup(vrchPhase_speed());\n float m=min(iResolution.x,iResolution.y);\n vec2 uv=(2.0*(blockOrigin+.5*blockSize)-iResolution.xy)/m/uParam_size;\n vec3 ro=vec3(0.,0.,3.25),rd=normalize(vec3(uv,-2.45));\n ro.xz=gSpinA*ro.xz;ro.yz=gSpinB*ro.yz;\n rd.xz=gSpinA*rd.xz;rd.yz=gSpinB*rd.yz;\n float s=uParam_mass*1.21+.03;\n vec2 spanA=cylSpan(ro,rd,1.0+s,.37+s);\n vec2 spanB=cylSpan(ro,rd,length(vec2(.69,.255+.26*abs(uParam_sweep)))+.02,.71);\n float entry=min(spanA.x,spanB.x),exitAt=max(spanA.y,spanB.y);\n value=vec4(0.0);\n if(exitAt<=entry)return;\n // Cone half-width per unit distance: the block's half diagonal in pixels, with margin.\n float k=blockSize*.70711*2.0/(m*uParam_size*2.45)*1.2;\n float tc=max(0.0,entry-.15);\n for(int i=0;i<112;i++){\n  float dc=metalForm(ro+tc*rd)-tc*k;\n  if(dc<.003)break;\n  tc+=dc*.44;if(tc>exitAt+.1)break;\n }\n value=vec4(max(0.0,tc-.12),0.0,0.0,1.0);\n}\n",
+    "divisor": 4
+  },
+  "parameters": [
+    {
+      "key": "flow",
+      "label": "Flow",
+      "type": "float",
+      "default": 0.48,
+      "min": 0,
+      "max": 1.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous stretching and gathering of the metal curves, independent of rotation."
+    },
+    {
+      "key": "mass",
+      "label": "Tube Width",
+      "type": "float",
+      "default": 0.21,
+      "min": 0.12,
+      "max": 0.34,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Thickness of the interlocked metal curves."
+    },
+    {
+      "key": "fold",
+      "label": "Fold",
+      "type": "float",
+      "default": 0.64,
+      "min": 0.15,
+      "max": 1.4,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Twist and deformation of the metal form."
+    },
+    {
+      "key": "polish",
+      "label": "Polish",
+      "type": "float",
+      "default": 0.94,
+      "min": 0.1,
+      "max": 1.2,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Contrast and strength of the reflected studio lights."
+    },
+    {
+      "key": "tint",
+      "label": "Reflected Color",
+      "type": "color",
+      "default": [
+        0.85,
+        0.24,
+        0.055,
+        1
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Reflected Color of the composition."
+    },
+    {
+      "key": "light",
+      "label": "Exposure",
+      "type": "float",
+      "default": 1.05,
+      "min": 0.6,
+      "max": 1.8,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Overall sculptural light without lifting the background."
+    },
+    {
+      "key": "speed",
+      "label": "Turn",
+      "type": "float",
+      "default": 0.16,
+      "min": 0,
+      "max": 1.6,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Slow overall rotation, independent of the liquid shape flow."
+    },
+    {
+      "key": "accent",
+      "label": "Music Drive",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Increase the speed of the continuous shape flow."
+    },
+    {
+      "key": "sweep",
+      "label": "Inner Reach",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Draw the inner curve out through the opening, with shifting reflections."
+    },
+    {
+      "key": "size",
+      "label": "Framing",
+      "type": "float",
+      "default": 1,
+      "min": 0.65,
+      "max": 1.3,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Size of the sculpture in the frame."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.beat",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "chrome-beat",
+      "param_key": "accent",
+      "signal_id": "audio.v2.beat",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.7,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 100,
+      "release_ms": 650,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "chrome-onset",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.55,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 100,
+      "release_ms": 650,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "high",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1.0
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "chrome-bloom",
+      "stage"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.study-chrome-bloom",
+      "content_hash": "sha256:af5b1e3431e2403f8ae72b33e929c2b3f084af1262a9fffbc96d1671c000d7ee"
+    },
+    "prompt_summary": "Liquid chrome flows continuously, speeds up with percussion, and eases back to a visible slow flow between beats.",
+    "created_at": "2026-09-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "flow",
+      "mass",
+      "fold",
+      "tint"
+    ]
+  }
+}

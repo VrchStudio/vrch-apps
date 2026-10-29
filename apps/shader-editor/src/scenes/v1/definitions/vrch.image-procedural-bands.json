@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.image-procedural-bands",
+  "title": "Soft Light Bands",
+  "description": "Three slow translucent bands cross one dominant source image as a restrained generic composite.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 resolution = max(iResolution.xy, vec2(1.0));\n  vec2 uv = fragCoord / resolution;\n  vec4 image = vrchSampleSource0(uv);\n  vec2 aspect = vec2(resolution.x / resolution.y, 1.0);\n  vec2 point = (uv - 0.5) * aspect;\n  vec2 direction = vec2(cos(uParam_angle), sin(uParam_angle));\n  float along = dot(point, direction);\n  float across = dot(point, vec2(-direction.y, direction.x));\n  float phase = iTime * uParam_speed;\n  float bendA = sin(along * 2.3 + phase) * 0.055;\n  float bendB = sin(along * 1.7 - phase * 0.83 + 2.1) * 0.07;\n  float bendC = sin(along * 2.0 + phase * 0.61 + 4.4) * 0.045;\n  float antialias = max(fwidth(across) * 1.5, 0.002);\n  float bandA = 1.0 - smoothstep(uParam_width, uParam_width + antialias, abs(across + uParam_spacing + bendA));\n  float bandB = 1.0 - smoothstep(uParam_width * 0.82, uParam_width * 0.82 + antialias, abs(across + bendB));\n  float bandC = 1.0 - smoothstep(uParam_width * 1.12, uParam_width * 1.12 + antialias, abs(across - uParam_spacing + bendC));\n  float mask = clamp(bandA * 0.68 + bandB * 0.52 + bandC * 0.62, 0.0, 1.0);\n  vec3 treated = image.rgb + uParam_color.rgb * mask * uParam_brightness;\n  fragColor = vec4(mix(image.rgb, treated, uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.24,
+      "min": 0.0,
+      "max": 0.55,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Band strength while the image remains dominant."
+    },
+    {
+      "key": "width",
+      "label": "Band Width",
+      "type": "float",
+      "default": 0.11,
+      "min": 0.025,
+      "max": 0.22,
+      "step": 0.005,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Width of each soft band."
+    },
+    {
+      "key": "spacing",
+      "label": "Spacing",
+      "type": "float",
+      "default": 0.31,
+      "min": 0.14,
+      "max": 0.6,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Distance between the three bands."
+    },
+    {
+      "key": "angle",
+      "label": "Direction",
+      "type": "float",
+      "default": 0.28,
+      "min": -3.14,
+      "max": 3.14,
+      "step": 0.02,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Direction of the band composition."
+    },
+    {
+      "key": "speed",
+      "label": "Motion",
+      "type": "float",
+      "default": 0.08,
+      "min": 0.0,
+      "max": 0.6,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Slow shared drift through all bands."
+    },
+    {
+      "key": "brightness",
+      "label": "Light",
+      "type": "float",
+      "default": 0.28,
+      "min": 0.0,
+      "max": 0.7,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Brightness of the translucent light."
+    },
+    {
+      "key": "color",
+      "label": "Band Color",
+      "type": "color",
+      "default": [
+        1.0,
+        0.46,
+        0.16,
+        1.0
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Light-band tint."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_id": "mid-to-width",
+      "param_key": "width",
+      "signal_id": "audio.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "amount": 0.035,
+      "polarity": "positive",
+      "smoothing_ms": 160,
+      "attack_ms": 45,
+      "decay_ms": 250,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Blend",
+    "tags": [
+      "bands",
+      "light",
+      "overlay",
+      "composite",
+      "audio"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "image-bands-v1",
+    "created_at": "2026-08-14T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "amount",
+      "width",
+      "spacing",
+      "speed"
+    ]
+  }
+}

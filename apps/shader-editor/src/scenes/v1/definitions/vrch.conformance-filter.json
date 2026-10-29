@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "scene_id": "vrch.conformance-filter",
+  "title": "Conformance Filter",
+  "description": "One-source quantized halftone filter used to qualify source sampling and parameters.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  vec2 cells = floor(uv * uParam_scale) / uParam_scale;\n  vec4 image = vrchSampleSource0(cells);\n  float luma = dot(image.rgb, vec3(0.2126, 0.7152, 0.0722));\n  float steps = max(2.0, uParam_steps);\n  float value = floor(luma * steps) / (steps - 1.0);\n  fragColor = vec4(mix(image.rgb, vec3(value), uParam_amount), image.a);\n}"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 0.85,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Filter strength."
+    },
+    {
+      "key": "scale",
+      "label": "Detail",
+      "type": "float",
+      "default": 180.0,
+      "min": 24.0,
+      "max": 480.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Sampling grid density."
+    },
+    {
+      "key": "steps",
+      "label": "Tones",
+      "type": "float",
+      "default": 6.0,
+      "min": 2.0,
+      "max": 16.0,
+      "step": 1.0,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Number of luminance levels."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0.0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_id": "high-to-amount",
+      "param_key": "amount",
+      "signal_id": "audio.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "amount": 0.15,
+      "polarity": "positive",
+      "smoothing_ms": 80,
+      "attack_ms": 20,
+      "decay_ms": 120,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 0.5
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1.0
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "conformance",
+      "halftone"
+    ],
+    "thumbnail_ref": "generated:conformance-filter",
+    "roles": [
+      "engineering-fixture"
+    ]
+  },
+  "provenance": {
+    "kind": "builtin",
+    "template_version": "phase0-1",
+    "created_at": "2026-08-12T00:00:00Z"
+  }
+}
