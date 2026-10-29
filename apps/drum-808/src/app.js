@@ -107,7 +107,7 @@ function openAudio() {
   if (opening) return opening;
   const epoch = ++audioEpoch;
   opening = (async () => {
-    const ctx = new AudioContext({sampleRate: SR, latencyHint: 'interactive'});
+    const ctx = new AudioContext({sampleRate: SR, latencyHint: 'interactive', sinkId: {type: 'none'}});
     let output = null;
     try {
       void ctx.resume().catch(() => {});
@@ -146,7 +146,7 @@ function audioError(error) {
   if (error?.code === 'stale' || disposed) return;
   ui.playing = false; invalidate();
   const code = error?.code || error?.name;
-  status(['capability_denied', 'io_not_authorized', 'permission_denied', 'NotAllowedError'].includes(code)
+  status(['capability_denied', 'io_not_authorized', 'permission_denied'].includes(code)
     ? 'Allow audio in Menu, then press Start.' : 'Audio unavailable. Press Start to retry.', true);
 }
 // Performance time at which a rendered frame is heard, for display only.

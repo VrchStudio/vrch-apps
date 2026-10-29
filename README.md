@@ -48,3 +48,15 @@ This repository contains the Apps and their build tools. The My Apps host and fi
 Bundled third-party resources retain their own license notices. Public source availability does not replace those notices or grant an additional blanket license to all repository contents. No new blanket license has been selected for VRCH-owned code.
 
 An existing installed App without an icon may declare its original identity in `apps/<slug>/legacy-baseline.json` (`appId`, `version`, `revision`, `packageDigest`). Only that exact source and byte-identical package may be published as the original baseline. Any later version must provide an icon; the exception does not permit editing or replacing the original.
+
+### Audio compatibility checks
+
+Apps that synthesize through `output.createNode(context)` must create the context with `sampleRate: 48000` and `sinkId: {type: "none"}`. The VRCH host selects and plays the physical output. Switching an existing context with `setSinkId` can be blocked by the App sandbox in newer Chromium. Only explicit SDK authorization errors should direct users to allow audio in Menu.
+
+Run the Drum 808 regression with the Pages checkout alongside this repository (or set `VRCH_PAGES_ROOT`):
+
+```sh
+node tests/drum808_audio_browser.cjs
+```
+
+It exercises the actual Player, SDK and PCM output bridge; browser audio devices are fixtures and newer `setSinkId` policy refusal is emulated on older Chrome. Physical sound still needs device acceptance.
