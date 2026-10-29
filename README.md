@@ -21,6 +21,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [Vape Grain](apps/vape-grain): shape granular instruments with breath and touch.
 
+- [PalmNotes Duo](apps/palmnotes-duo): play notes and octaves with two-hand gestures.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.

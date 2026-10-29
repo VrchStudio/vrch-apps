@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PalmNotes Duo</title>
+  <link rel="stylesheet" href="controls.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="/apps/sdk/apps-v1.js"></script>
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <main class="instrument">
+    <header class="app-header"><h1>PalmNotes <strong>DUO</strong></h1></header>
+    <section class="stage" aria-label="Live gesture stage">
+      <canvas id="camera" width="640" height="480" aria-label="Full camera view with hand tracking"></canvas>
+      <span id="status" role="status">READY</span>
+      <div id="message"><b>Play with your hands.</b><span>Press K2 to begin.</span></div>
+      <span id="tracking"></span><span id="hands" hidden></span>
+    </section>
+    <section class="performance" aria-label="Current note and octave">
+      <div class="readout"><span id="count" hidden></span><strong id="note">Rest</strong><span id="note-hint">No sound</span></div>
+      <div id="registers" aria-label="Current octave"></div>
+      <div id="notes" aria-label="Scale position"></div>
+    </section>
+    <p id="hint" hidden></p>
+  </main>
+</body>
+</html>

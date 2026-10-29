@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "id": "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31",
+  "name": "PalmNotes Duo",
+  "version": "0.1.0",
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "entry": "index.html",
+  "capabilities": {
+    "controls": true,
+    "video_input": true,
+    "audio_output": true
+  },
+  "guide": {
+    "description": "One hand plays seven notes. The other chooses the octave.",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          {
+            "control": "K2 \u00b7 Press",
+            "action": "Start or stop the camera and sound."
+          },
+          {
+            "control": "Melody hand",
+            "action": "1\u20135 fingers: Do\u2013Sol. Shaka: La. OK: Si."
+          },
+          {
+            "control": "Octave hand",
+            "action": "Fist: middle. Thumb up: high. Thumb down: low."
+          }
+        ]
+      },
+      {
+        "title": "Common controls",
+        "controls": [
+          {
+            "control": "K1 \u00b7 Press",
+            "action": "Open Menu and Guide."
+          },
+          {
+            "control": "K2 \u00b7 Press",
+            "action": "Start or stop."
+          },
+          {
+            "control": "E1 \u00b7 Turn",
+            "action": "Adjust volume."
+          },
+          {
+            "control": "E2 \u00b7 Turn / press",
+            "action": "Choose Soft, Bell, Pluck, Retro or Piano."
+          },
+          {
+            "control": "K3 \u00b7 Press",
+            "action": "Exchange melody and octave hands."
+          }
+        ]
+      },
+      {
+        "title": "Playing",
+        "text": "Hold a note and change the octave hand to shift its octave. Hold the octave while changing notes. Release the melody hand to repeat a note. Point the octave thumb clearly up or down; other control-hand shapes stop sound."
+      },
+      {
+        "title": "Sound and settings",
+        "text": "Choose speaker or headphones in Menu. Tone, volume and hand roles save automatically. Preview offers short note auditions."
+      }
+    ]
+  }
+}
