@@ -13,17 +13,17 @@ const slugs=process.argv.slice(2);if(!slugs.length)slugs.push('beatbox-coach','d
   const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:480,height:480}});
   try{
    await context.grantPermissions(['microphone'],{origin:new URL(config.url).origin});
-   await context.addInitScript(()=>{
+   await context.addInitScript(({slug})=>{
     const Native=AudioContext,Worklet=AudioWorkletNode;window.contexts=[];window.sinkSwitches=0;window.outputMeters=[];window.peak=0;
-    window.AudioContext=class extends Native{constructor(...args){super(...args);contexts.push(this);}};
+    window.AudioContext=class extends Native{constructor(...args){super(...args);contexts.push(this);if(slug==='gm-studio'&&window!==top&&!window.interruptedOnce){window.interruptedOnce=true;this.resume=()=>Promise.reject(Error('fixture first startup interruption'));}}};
     if(window!==top){const gain=Native.prototype.createGain;AudioContext.prototype.createGain=function(){if(window.failNextGain){window.failNextGain=false;throw Error('fixture startup interruption');}return gain.call(this);};}
     if(window!==top)AudioContext.prototype.setSinkId=async function(){sinkSwitches++;throw new DOMException('Speaker selection refused','NotAllowedError');};
     window.AudioWorkletNode=class extends Worklet{constructor(c,n,o){super(c,n,o);if(window===top&&o?.processorOptions?.mode==='playback'){const m=c.createAnalyser();this.connect(m);outputMeters.push(m);}}};
     if(window===top){function sample(){for(const m of outputMeters){const a=new Float32Array(m.fftSize);m.getFloatTimeDomainData(a);for(const v of a)peak=Math.max(peak,Math.abs(v));}requestAnimationFrame(sample);}requestAnimationFrame(sample);}
-   });
+   },{slug});
    const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(15000);
    await page.goto(config.url);
-   async function launch(){await page.getByRole('button',{name:'Launch',exact:true}).click();const allow=page.getByRole('dialog').getByRole('button',{name:'Launch',exact:true});if(await allow.count())await allow.click();await page.waitForSelector('#screen:not([hidden]) iframe');const f=page.frames().find(f=>f.url().includes('/r/'));await f.waitForSelector('body');const start=page.getByRole('dialog').getByRole('button',{name:'Start',exact:true});if(await start.count())await start.click();return f;}
+   async function launch(){await page.getByRole('button',{name:'Launch',exact:true}).click();const allow=page.getByRole('dialog').getByRole('button',{name:'Launch',exact:true});if(await allow.count())await allow.click();await page.waitForSelector('#screen:not([hidden]) iframe');const f=page.frames().find(f=>f.url().includes('/r/'));await f.waitForSelector('body');const start=page.getByRole('dialog').getByRole('button',{name:'Start',exact:true});if(await start.count())await start.click();if(slug==='gm-studio'){await f.waitForFunction(()=>contexts.length>0&&contexts.every(c=>c.state==='closed'));await f.locator('#gate-btn').click();await f.waitForFunction(()=>contexts.length>=2&&contexts.at(-1).state==='running');}return f;}
    let frame=await launch();
    async function control(key){for(const type of ['down','up'])await frame.evaluate(({key,type})=>{const b=__vrchAppBootstrap;b.port.dispatchEvent(new MessageEvent('message',{data:{type:'sdk_event',event:'controls',generation:b.binding.generation,data:{control:key,type}}}));},{key,type});}
    async function play(){

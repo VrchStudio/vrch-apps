@@ -1,5 +1,9 @@
 # GM Studio
 
+## 2.0.2
+
+- Make Retry restart interrupted audio cleanly.
+
 ## 2.0.1
 
 - Add an official VRCH icon.

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "eff41831-449d-4e58-93ec-88aa610fb2c6",
   "name": "GM Studio",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "entry": "index.html",
   "sdk_version": 1,
   "data_schema_version": 1,

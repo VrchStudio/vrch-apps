@@ -112,6 +112,9 @@
       renderGate();
       setStatus('就绪 · 点 ▶ 播放');
     } catch (error) {
+      try { e.node?.disconnect(); e.outNode?.disconnect(); } catch (_) { /* startup did not finish */ }
+      await Promise.allSettled([e.out?.close(), e.ctx?.close()]);
+      if (token !== epoch) return;
       phase = 'error';
       const code = error.code || error.name;
       $('gate-msg').textContent = code === 'interaction_required' ? '点“开始”启用声音。' : '声音无法启动，点重试。';
@@ -445,6 +448,7 @@
     document.querySelectorAll('#tabs button').forEach((b) => {
       b.addEventListener('click', () => setView(b.dataset.view));
     });
+    $('gate-btn').addEventListener('click', () => { void start(); });
     $('play').addEventListener('click', () => { if (!engine) { void start(); return; } transport(!playing); });
     $('stop').addEventListener('click', () => { transport(false); seekBar(0); });
     $('loop').addEventListener('click', () => { song.loop = !song.loop; pushSong(); save(); render(); });
