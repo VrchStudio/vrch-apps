@@ -63,17 +63,20 @@
     }
     if (audioWanted) return audioWanted;
     audioWanted = (async () => {
+      let ctx = null, out = null, outNode = null;
       try {
-        const ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+        ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive', sinkId: { type: 'none' } });
         await ctx.resume();
-        const out = await sdk.audio.openOutput({ channels: 2 });
-        const outNode = await out.createNode(ctx);
+        out = await sdk.audio.openOutput({ channels: 2 });
+        outNode = await out.createNode(ctx);
         const master = ctx.createGain();
         master.gain.value = 0;
         master.connect(outNode);
         audio = { ctx, master, out };
         return audio;
       } catch (err) {
+        try { outNode?.disconnect(); } catch (_) { /* startup did not finish */ }
+        await Promise.allSettled([out?.close(), ctx?.close()]);
         console.warn('audio unavailable', err);
         audioWanted = null;
         return null;

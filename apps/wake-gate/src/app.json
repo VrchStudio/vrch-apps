@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "debc92f2-613a-4e03-9f41-1f8c070debd1",
   "name": "Wake Gate",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "entry": "index.html",
   "sdk_version": 1,
   "data_schema_version": 1,
@@ -18,18 +18,39 @@
       {
         "title": "Quick start",
         "controls": [
-          { "control": "E1 · Turn", "action": "Set the alarm hour." },
-          { "control": "E2 · Turn", "action": "Set the alarm minute." },
-          { "control": "K2 · Press", "action": "Arm the alarm; press again to disarm." }
+          {
+            "control": "E1 · Turn",
+            "action": "Set the alarm hour."
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "Set the alarm minute."
+          },
+          {
+            "control": "K2 · Press",
+            "action": "Arm the alarm; press again to disarm."
+          }
         ]
       },
       {
         "title": "Common controls",
         "controls": [
-          { "control": "E3 · Turn", "action": "Ring volume." },
-          { "control": "E4 · Turn", "action": "Number of gates, one to three." },
-          { "control": "K3 · Press", "action": "Test: ring in ten seconds." },
-          { "control": "K4 · Press", "action": "Preview the ring tone briefly." }
+          {
+            "control": "E3 · Turn",
+            "action": "Ring volume."
+          },
+          {
+            "control": "E4 · Turn",
+            "action": "Number of gates, one to three."
+          },
+          {
+            "control": "K3 · Press",
+            "action": "Test: ring in ten seconds."
+          },
+          {
+            "control": "K4 · Press",
+            "action": "Preview the ring tone briefly."
+          }
         ]
       },
       {
@@ -45,5 +66,6 @@
         "text": "Alarm time, volume, gate count and the last wake-up time are saved automatically."
       }
     ]
-  }
+  },
+  "icon": "assets/wake-gate.svg"
 }

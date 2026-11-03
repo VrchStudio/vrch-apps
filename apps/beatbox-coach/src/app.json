@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "e90b992f-10ca-4b5f-a583-5758179d7f10",
   "name": "Beatbox Coach",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "entry": "index.html",
   "sdk_version": 1,
   "data_schema_version": 1,
@@ -18,47 +18,110 @@
       {
         "title": "Quick start",
         "controls": [
-          { "control": "变身 · 说话", "action": "对着麦克风说“动 次 嚓”，立刻变成底鼓、军鼓和镲。" },
-          { "control": "K2 · Press", "action": "切到“单音”，按 K3 听示范，再模仿，看相似度。" },
-          { "control": "K4 · Press", "action": "在“节奏”模式里开始练习：数 4 拍后跟着打两小节，自动打分。" }
+          {
+            "control": "变身 · 说话",
+            "action": "对着麦克风说“动 次 嚓”，立刻变成底鼓、军鼓和镲。"
+          },
+          {
+            "control": "K2 · Press",
+            "action": "切到“单音”，按 K3 听示范，再模仿，看相似度。"
+          },
+          {
+            "control": "K4 · Press",
+            "action": "在“节奏”模式里开始练习：数 4 拍后跟着打两小节，自动打分。"
+          }
         ]
       },
       {
         "title": "Common controls",
         "controls": [
-          { "control": "K2 · Press", "action": "切换模式：变身 → 单音 → 节奏。" },
-          { "control": "E3 · Turn", "action": "麦克风灵敏度：漏触发就调高，误触发就调低。" },
-          { "control": "E4 · Turn", "action": "输出音量。" },
-          { "control": "E2–E4 · Press", "action": "把该旋钮恢复默认值。" },
-          { "control": "顶部标签 · Tap", "action": "直接切换模式。" }
+          {
+            "control": "K2 · Press",
+            "action": "切换模式：变身 → 单音 → 节奏。"
+          },
+          {
+            "control": "E3 · Turn",
+            "action": "麦克风灵敏度：漏触发就调高，误触发就调低。"
+          },
+          {
+            "control": "E4 · Turn",
+            "action": "输出音量。"
+          },
+          {
+            "control": "E2–E4 · Press",
+            "action": "把该旋钮恢复默认值。"
+          },
+          {
+            "control": "顶部标签 · Tap",
+            "action": "直接切换模式。"
+          }
         ]
       },
       {
         "title": "变身",
         "controls": [
-          { "control": "E1 · Turn", "action": "选择鼓组：经典、808、低保真、人声。" },
-          { "control": "E2 · Turn", "action": "混入你的原声。" },
-          { "control": "K3 · Press", "action": "开关节拍器。" },
-          { "control": "K4 · Hold", "action": "按住静音。" },
-          { "control": "鼓垫 · Tap", "action": "直接试听这个鼓声。" }
+          {
+            "control": "E1 · Turn",
+            "action": "选择鼓组：经典、808、低保真、人声。"
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "混入你的原声。"
+          },
+          {
+            "control": "K3 · Press",
+            "action": "开关节拍器。"
+          },
+          {
+            "control": "K4 · Hold",
+            "action": "按住静音。"
+          },
+          {
+            "control": "鼓垫 · Tap",
+            "action": "直接试听这个鼓声。"
+          }
         ]
       },
       {
         "title": "单音",
         "controls": [
-          { "control": "E1 · Turn", "action": "选择要练的声音：B、Pf、K、t、ts。" },
-          { "control": "K3 · Press", "action": "播放示范声音，然后模仿一次。" },
-          { "control": "K4 · Press", "action": "对比：先放你刚才的声音，再放示范。" },
-          { "control": "声音按钮 · Tap", "action": "选择声音。" }
+          {
+            "control": "E1 · Turn",
+            "action": "选择要练的声音：B、Pf、K、t、ts。"
+          },
+          {
+            "control": "K3 · Press",
+            "action": "播放示范声音，然后模仿一次。"
+          },
+          {
+            "control": "K4 · Press",
+            "action": "对比：先放你刚才的声音，再放示范。"
+          },
+          {
+            "control": "声音按钮 · Tap",
+            "action": "选择声音。"
+          }
         ]
       },
       {
         "title": "节奏",
         "controls": [
-          { "control": "E1 · Turn", "action": "选择节奏型。" },
-          { "control": "E2 · Turn", "action": "调整速度 BPM。" },
-          { "control": "K3 · Press", "action": "播放或停止示范节奏。" },
-          { "control": "K4 · Press", "action": "开始或停止练习，结束后显示每一步的结果和分数。" }
+          {
+            "control": "E1 · Turn",
+            "action": "选择节奏型。"
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "调整速度 BPM。"
+          },
+          {
+            "control": "K3 · Press",
+            "action": "播放或停止示范节奏。"
+          },
+          {
+            "control": "K4 · Press",
+            "action": "开始或停止练习，结束后显示每一步的结果和分数。"
+          }
         ]
       },
       {
@@ -70,5 +133,6 @@
         "text": "模式、鼓组、旋钮、所选声音和节奏、速度、你的声音特征和最高分都会自动保存。退出 App 时释放麦克风。"
       }
     ]
-  }
+  },
+  "icon": "assets/beatbox-coach.svg"
 }

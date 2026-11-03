@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "d0d6f747-e3a9-4ab5-884e-4edb5ece58a4",
   "name": "Vocal Chain",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "entry": "index.html",
   "sdk_version": 1,
   "data_schema_version": 1,
@@ -162,5 +162,6 @@
         "text": "所有页面的参数、页面位置、调性和开关都会自动保存，下次打开还在。退出 App 时释放麦克风和扬声器。"
       }
     ]
-  }
+  },
+  "icon": "assets/vocal-chain.svg"
 }

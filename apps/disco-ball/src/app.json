@@ -4,13 +4,18 @@
   "data_schema_version": 1,
   "id": "5b1752ad-ea1d-45cb-9ba1-9ad1dd89783f",
   "name": "Disco Ball",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "entry": "index.html",
   "capabilities": {
     "controls": true,
     "audio_input": false,
     "audio_output": true,
-    "websocket": [{"channel": 1, "format": "json"}]
+    "websocket": [
+      {
+        "channel": 1,
+        "format": "json"
+      }
+    ]
   },
   "guide": {
     "description": "A spinning soccer-pattern mirror ball of 32 facets: every facet that lights up plays its own note, in time.",
@@ -18,36 +23,96 @@
       {
         "title": "Quick start",
         "controls": [
-          {"control": "K2 · Press", "action": "Start the sparkle groove; press again to stop."},
-          {"control": "K3 · Press", "action": "Glitter burst: a rising cascade of tiles and notes."},
-          {"control": "E2 · Turn", "action": "More or fewer tiles lighting per step."}
+          {
+            "control": "K2 · Press",
+            "action": "Start the sparkle groove; press again to stop."
+          },
+          {
+            "control": "K3 · Press",
+            "action": "Glitter burst: a rising cascade of tiles and notes."
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "More or fewer tiles lighting per step."
+          }
         ]
       },
       {
         "title": "Common controls",
         "controls": [
-          {"control": "E1 · Turn", "action": "Tempo, 40–240 BPM."},
-          {"control": "E1 · Press", "action": "Sparkle rate: 1/4, 1/8 or 1/16 notes."},
-          {"control": "E2 · Turn", "action": "Density, 1–6 tiles per step."},
-          {"control": "E2 · Press", "action": "Next scale: Major, Minor, Whole-tone, Blues."},
-          {"control": "E3 · Turn", "action": "Energy: opens the bass filter, deepens the wobble, spins the ball faster."},
-          {"control": "E3 · Press", "action": "Next colors: Silver, Rainbow, Sunset, Ocean, Disco, Neon."},
-          {"control": "E4 · Turn", "action": "Drive: pushes the whole mix into gritty saturation."},
-          {"control": "E4 · Press", "action": "Next voice: Bell, Pluck, Glass, Funk, Strings, Guzheng."},
-          {"control": "K1 · Press", "action": "Open Menu for Guide, audio, Reload or Exit."},
-          {"control": "K2 · Press", "action": "Start or stop."},
-          {"control": "K3 · Press", "action": "Glitter burst."},
-          {"control": "K3 · Hold", "action": "Acid bass layer on or off."},
-          {"control": "K4 · Press", "action": "Next groove style: Disco, Techno, Euro, Off."}
+          {
+            "control": "E1 · Turn",
+            "action": "Tempo, 40–240 BPM."
+          },
+          {
+            "control": "E1 · Press",
+            "action": "Sparkle rate: 1/4, 1/8 or 1/16 notes."
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "Density, 1–6 tiles per step."
+          },
+          {
+            "control": "E2 · Press",
+            "action": "Next scale: Major, Minor, Whole-tone, Blues."
+          },
+          {
+            "control": "E3 · Turn",
+            "action": "Energy: opens the bass filter, deepens the wobble, spins the ball faster."
+          },
+          {
+            "control": "E3 · Press",
+            "action": "Next colors: Silver, Rainbow, Sunset, Ocean, Disco, Neon."
+          },
+          {
+            "control": "E4 · Turn",
+            "action": "Drive: pushes the whole mix into gritty saturation."
+          },
+          {
+            "control": "E4 · Press",
+            "action": "Next voice: Bell, Pluck, Glass, Funk, Strings, Guzheng."
+          },
+          {
+            "control": "K1 · Press",
+            "action": "Open Menu for Guide, audio, Reload or Exit."
+          },
+          {
+            "control": "K2 · Press",
+            "action": "Start or stop."
+          },
+          {
+            "control": "K3 · Press",
+            "action": "Glitter burst."
+          },
+          {
+            "control": "K3 · Hold",
+            "action": "Acid bass layer on or off."
+          },
+          {
+            "control": "K4 · Press",
+            "action": "Next groove style: Disco, Techno, Euro, Off."
+          }
         ]
       },
       {
         "title": "Touch",
         "controls": [
-          {"control": "Tile · Tap", "action": "Light that tile and play its note."},
-          {"control": "Backdrop · Tap", "action": "Glitter burst, same as K3."},
-          {"control": "Scale, Voice, Groove · Tap", "action": "Cycle that setting."},
-          {"control": "Start · Tap", "action": "Same as K2."}
+          {
+            "control": "Tile · Tap",
+            "action": "Light that tile and play its note."
+          },
+          {
+            "control": "Backdrop · Tap",
+            "action": "Glitter burst, same as K3."
+          },
+          {
+            "control": "Scale, Voice, Groove · Tap",
+            "action": "Cycle that setting."
+          },
+          {
+            "control": "Start · Tap",
+            "action": "Same as K2."
+          }
         ]
       },
       {
@@ -59,5 +124,6 @@
         "text": "Tempo, rate, density, scale, colors, energy, drive, voice, groove and the acid layer save automatically. Reopening keeps them and starts stopped."
       }
     ]
-  }
+  },
+  "icon": "assets/disco-ball.svg"
 }

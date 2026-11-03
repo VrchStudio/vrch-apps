@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "57e105f1-1e03-4283-8124-11020e5601d2",
   "name": "Pitch Shift",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "entry": "index.html",
   "sdk_version": 1,
   "data_schema_version": 1,
@@ -106,5 +106,6 @@
         "text": "音高、微调、混合、音量和旁通状态都会自动保存，下次打开还在。退出 App 时释放麦克风和扬声器。"
       }
     ]
-  }
+  },
+  "icon": "assets/pitch-shift.svg"
 }

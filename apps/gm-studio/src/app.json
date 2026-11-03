@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "eff41831-449d-4e58-93ec-88aa610fb2c6",
   "name": "GM Studio",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "entry": "index.html",
   "sdk_version": 1,
   "data_schema_version": 1,
@@ -13,7 +13,7 @@
     "websocket": []
   },
   "guide": {
-    "description": "用 Microsoft GS 波表（gm.sf2）编曲的小 DAW：编曲窗、钢琴卷帘、音序器和 128 个 GM 音色。",
+    "description": "用 Roland GS 波表（gm.sf2）编曲的小 DAW：编曲窗、钢琴卷帘、音序器和 128 个 GM 音色。",
     "sections": [
       {
         "title": "Quick start",
@@ -116,5 +116,6 @@
         "text": "速度、循环、6 条轨道的音色和音符都会自动保存，下次打开原样恢复。进入编曲窗就是保存下来的工程。"
       }
     ]
-  }
+  },
+  "icon": "assets/gm-studio.svg"
 }

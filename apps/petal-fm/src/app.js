@@ -239,7 +239,7 @@
     const e = {};
     phase = 'starting'; render();
     try {
-      e.ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+      e.ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive', sinkId: { type: 'none' } });
       if (!e.ctx.audioWorklet) throw Object.assign(new Error('no worklet'), { code: 'unsupported_environment' });
       await e.ctx.resume();
       if (e.ctx.state !== 'running') throw Object.assign(new Error('gesture'), { code: 'interaction_required' });

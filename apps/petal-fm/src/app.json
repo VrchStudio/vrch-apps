@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "b542c073-74de-4fd7-86a7-b9a5c025e130",
   "name": "Petal FM",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "entry": "index.html",
   "sdk_version": 1,
   "data_schema_version": 1,
@@ -136,5 +136,6 @@
         "text": "The voice, page, tempo, play and key settings, effects and voice edits save automatically."
       }
     ]
-  }
+  },
+  "icon": "assets/petal-fm.svg"
 }

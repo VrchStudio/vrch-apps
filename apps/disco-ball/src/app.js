@@ -127,7 +127,7 @@ function openAudio() {
   if (opening) return opening;
   const epoch = ++audioEpoch;
   opening = (async () => {
-    const ctx = new AudioContext({sampleRate: SR, latencyHint: 'interactive'});
+    const ctx = new AudioContext({sampleRate: SR, latencyHint: 'interactive', sinkId: {type: 'none'}});
     let output = null;
     try {
       void ctx.resume().catch(() => {});

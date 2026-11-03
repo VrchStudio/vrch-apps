@@ -1,0 +1,9 @@
+Bundled gm.sf2
+
+Embedded original metadata:
+Copyright 1996 Roland Corporation U.S.
+Engineer: Roland Corporation
+Conversion software: dls_cnv v0.27y
+Comment: 960920 ver. 1.00.16
+
+This notice preserves the supplied resource attribution; it does not grant a new license to its samples.
