@@ -1854,7 +1854,7 @@
     },
     "e90b992f-10ca-4b5f-a583-5758179d7f10": {
       "slug": "beatbox-coach",
-      "latest": "1.0.1",
+      "latest": "1.0.2",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -1893,25 +1893,44 @@
             "updateApi": 1
           },
           "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
+        },
+        "1.0.2": {
+          "version": "1.0.2",
+          "name": "Beatbox Coach",
+          "tag": "beatbox-coach-v1.0.2",
+          "sourceCommit": "1953ba367140c9acdca443f360b97b3af7e0713b",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/beatbox-coach-v1.0.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/beatbox-coach-v1.0.2/beatbox-coach-1.0.2.vrchapp",
+          "size": 53472,
+          "sha256": "feacae1a33074bc2f994833a3c17bd7900c36cb3cf1d16c6246559fc132378ec",
+          "packageDigest": "feacae1a33074bc2f994833a3c17bd7900c36cb3cf1d16c6246559fc132378ec",
+          "revision": "e4ea8a91d94e58609d580041ceeb91a375e288db532cb55f04dab24897d3337e",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Use English controls, status messages and help throughout the App.\n- Preserve existing sounds, projects and saved settings."
         }
       },
       "guide": {
-        "description": "把你的嘴巴声音实时变成鼓声，并用示范、对比和打分带你学会 Beatbox。",
+        "description": "Turn your beatboxing into drums and practice with demos, comparisons and scores.",
         "sections": [
           {
             "title": "Quick start",
             "controls": [
               {
-                "control": "变身 · 说话",
-                "action": "对着麦克风说“动 次 嚓”，立刻变成底鼓、军鼓和镲。"
+                "control": "Transform · Speak",
+                "action": "Say B, Pf and t into the microphone to trigger kick, snare and hats."
               },
               {
                 "control": "K2 · Press",
-                "action": "切到“单音”，按 K3 听示范，再模仿，看相似度。"
+                "action": "Switch to Sound Lab, press K3 for a demo, then imitate it and check your match."
               },
               {
                 "control": "K4 · Press",
-                "action": "在“节奏”模式里开始练习：数 4 拍后跟着打两小节，自动打分。"
+                "action": "In Rhythm mode, start practice: count four beats, play two bars, then see your score."
               }
             ]
           },
@@ -1920,100 +1939,100 @@
             "controls": [
               {
                 "control": "K2 · Press",
-                "action": "切换模式：变身 → 单音 → 节奏。"
+                "action": "Cycle Transform, Sound Lab and Rhythm."
               },
               {
                 "control": "E3 · Turn",
-                "action": "麦克风灵敏度：漏触发就调高，误触发就调低。"
+                "action": "Microphone sensitivity: raise it for missed hits, lower it for false triggers."
               },
               {
                 "control": "E4 · Turn",
-                "action": "输出音量。"
+                "action": "Output volume."
               },
               {
                 "control": "E2–E4 · Press",
-                "action": "把该旋钮恢复默认值。"
+                "action": "Reset that encoder to its default value."
               },
               {
-                "control": "顶部标签 · Tap",
-                "action": "直接切换模式。"
+                "control": "Tabs · Tap",
+                "action": "Switch directly to a mode."
               }
             ]
           },
           {
-            "title": "变身",
+            "title": "Transform",
             "controls": [
               {
                 "control": "E1 · Turn",
-                "action": "选择鼓组：经典、808、低保真、人声。"
+                "action": "Choose Classic, 808, Lo-fi or Vocal kit."
               },
               {
                 "control": "E2 · Turn",
-                "action": "混入你的原声。"
+                "action": "Mix in your dry voice."
               },
               {
                 "control": "K3 · Press",
-                "action": "开关节拍器。"
+                "action": "Toggle the metronome."
               },
               {
                 "control": "K4 · Hold",
-                "action": "按住静音。"
+                "action": "Mute while held."
               },
               {
-                "control": "鼓垫 · Tap",
-                "action": "直接试听这个鼓声。"
+                "control": "Pads · Tap",
+                "action": "Listen to a drum sound."
               }
             ]
           },
           {
-            "title": "单音",
+            "title": "Sound Lab",
             "controls": [
               {
                 "control": "E1 · Turn",
-                "action": "选择要练的声音：B、Pf、K、t、ts。"
+                "action": "Choose B, Pf, K, t or ts."
               },
               {
                 "control": "K3 · Press",
-                "action": "播放示范声音，然后模仿一次。"
+                "action": "Play a demo, then imitate the sound."
               },
               {
                 "control": "K4 · Press",
-                "action": "对比：先放你刚才的声音，再放示范。"
+                "action": "Compare your last recording with the demo."
               },
               {
-                "control": "声音按钮 · Tap",
-                "action": "选择声音。"
+                "control": "Sound buttons · Tap",
+                "action": "Choose a sound."
               }
             ]
           },
           {
-            "title": "节奏",
+            "title": "Rhythm",
             "controls": [
               {
                 "control": "E1 · Turn",
-                "action": "选择节奏型。"
+                "action": "Choose a rhythm pattern."
               },
               {
                 "control": "E2 · Turn",
-                "action": "调整速度 BPM。"
+                "action": "Adjust tempo in BPM."
               },
               {
                 "control": "K3 · Press",
-                "action": "播放或停止示范节奏。"
+                "action": "Start or stop the demo rhythm."
               },
               {
                 "control": "K4 · Press",
-                "action": "开始或停止练习，结束后显示每一步的结果和分数。"
+                "action": "Start or stop practice; see the step results and score at the end."
               }
             ]
           },
           {
-            "title": "声音与识别",
-            "text": "示范声音由 App 合成，模仿人声 Beatbox，不是真人录音。识别看的是每个声音最开始 8 毫秒的音色，戴耳机效果最好，外放可能互相触发。在“单音”里练得越多，变身模式就越认得你的声音。"
+            "title": "Audio and recognition",
+            "text": "Demos are synthesized beatbox sounds, not human recordings. Recognition compares the first 8 ms of each sound. Use headphones to avoid speaker retriggering. Practicing in Sound Lab improves recognition of your voice in Transform."
           },
           {
-            "title": "保存的设置",
-            "text": "模式、鼓组、旋钮、所选声音和节奏、速度、你的声音特征和最高分都会自动保存。退出 App 时释放麦克风。"
+            "title": "Saved settings",
+            "text": "Mode, kit, parameters, selected sound and pattern, tempo, learned voice features and best scores save automatically. Exiting releases the microphone."
           }
         ]
       },
