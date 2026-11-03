@@ -2078,6 +2078,139 @@
           }
         ]
       }
+    },
+    "5b1752ad-ea1d-45cb-9ba1-9ad1dd89783f": {
+      "slug": "disco-ball",
+      "latest": "1.7.0",
+      "versions": {
+        "1.7.0": {
+          "version": "1.7.0",
+          "name": "Disco Ball",
+          "tag": "disco-ball-v1.7.0",
+          "sourceCommit": "96f1dbb4deba71b4c4c282b7ffa1315eae8abbb0",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/disco-ball-v1.7.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/disco-ball-v1.7.0/disco-ball-1.7.0.vrchapp",
+          "size": 49756,
+          "sha256": "f5d128e81356f8e730f696b65e2df17e46136007dd743accc72051d46a4c1b29",
+          "packageDigest": "f5d128e81356f8e730f696b65e2df17e46136007dd743accc72051d46a4c1b29",
+          "revision": "2f7d80dcfa175cae8e53a6c61558ef17f37225c3f3aeb0542a6b7575c991bd56",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "A spinning soccer-pattern mirror ball of 32 facets: every facet that lights up plays its own note, in time.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "K2 · Press",
+                "action": "Start the sparkle groove; press again to stop."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Glitter burst: a rising cascade of tiles and notes."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "More or fewer tiles lighting per step."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Tempo, 40–240 BPM."
+              },
+              {
+                "control": "E1 · Press",
+                "action": "Sparkle rate: 1/4, 1/8 or 1/16 notes."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Density, 1–6 tiles per step."
+              },
+              {
+                "control": "E2 · Press",
+                "action": "Next scale: Major, Minor, Whole-tone, Blues."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Energy: opens the bass filter, deepens the wobble, spins the ball faster."
+              },
+              {
+                "control": "E3 · Press",
+                "action": "Next colors: Silver, Rainbow, Sunset, Ocean, Disco, Neon."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Drive: pushes the whole mix into gritty saturation."
+              },
+              {
+                "control": "E4 · Press",
+                "action": "Next voice: Bell, Pluck, Glass, Funk, Strings, Guzheng."
+              },
+              {
+                "control": "K1 · Press",
+                "action": "Open Menu for Guide, audio, Reload or Exit."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Start or stop."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Glitter burst."
+              },
+              {
+                "control": "K3 · Hold",
+                "action": "Acid bass layer on or off."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Next groove style: Disco, Techno, Euro, Off."
+              }
+            ]
+          },
+          {
+            "title": "Touch",
+            "controls": [
+              {
+                "control": "Tile · Tap",
+                "action": "Light that tile and play its note."
+              },
+              {
+                "control": "Backdrop · Tap",
+                "action": "Glitter burst, same as K3."
+              },
+              {
+                "control": "Scale, Voice, Groove · Tap",
+                "action": "Cycle that setting."
+              },
+              {
+                "control": "Start · Tap",
+                "action": "Same as K2."
+              }
+            ]
+          },
+          {
+            "title": "Audio",
+            "text": "Mono output. Notes come from tile height: tiles near the top play higher. In the Euro groove a gong rings in every fourth bar. Sparkles keep sample-accurate time on the audio thread. Route sound and set its level in Menu. In Preview, enable Listen to preview first."
+          },
+          {
+            "title": "Saved settings",
+            "text": "Tempo, rate, density, scale, colors, energy, drive, voice, groove and the acid layer save automatically. Reopening keeps them and starts stopped."
+          }
+        ]
+      }
     }
   }
 }
