@@ -38,6 +38,10 @@ const slugs=process.argv.slice(2);if(!slugs.length)slugs.push('beatbox-coach','d
      await frame.waitForTimeout(80);
      const state=await frame.evaluate(()=>({text:document.body.innerText,htmlLang:document.documentElement.lang,width:innerWidth,scroll:document.documentElement.scrollWidth,attrs:[...document.querySelectorAll('[title],[aria-label]')].map(n=>[n.title,n.getAttribute('aria-label')]).flat().filter(Boolean)}));
      if(!process.env.BASELINE_CAPTURE){assert.equal(state.htmlLang,'en');assert.ok(!/[\p{Script=Han}]/u.test(state.text),state.text);assert.ok(state.attrs.every(s=>!/[\p{Script=Han}]/u.test(s)),state.attrs.join('\n'));assert.ok(state.scroll<=state.width,'Horizontal overflow: '+JSON.stringify(state));}
+     if(!process.env.BASELINE_CAPTURE){
+      const collisions=await frame.evaluate(()=>[...document.querySelectorAll('.meter > span')].filter(n=>n.getClientRects().length).flatMap(n=>{const range=document.createRange();range.selectNodeContents(n);const text=range.getBoundingClientRect(),bar=n.nextElementSibling?.getBoundingClientRect();return bar&&text.right+4>bar.left?[{label:n.textContent,textRight:text.right,barLeft:bar.left}]:[];}));
+      assert.deepEqual(collisions,[],'Parameter labels need clear space before their slider');
+     }
      await page.screenshot({path:path.join(out,slug+'-'+label+'-'+h+'.png')});
     }
    }

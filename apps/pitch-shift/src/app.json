@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "57e105f1-1e03-4283-8124-11020e5601d2",
   "name": "Pitch Shift",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "entry": "index.html",
   "sdk_version": 1,
   "data_schema_version": 1,

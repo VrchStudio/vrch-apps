@@ -1,5 +1,9 @@
 # Vocal Chain
 
+## 1.2.3
+
+- Keep English parameter labels clear of their sliders.
+
 ## 1.2.2
 
 - Use English controls, status messages and help throughout the App.

@@ -55,7 +55,7 @@ header { display: flex; align-items: flex-start; gap: 10px; }
 /* meters */
 #rows { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 .meter { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-.meter span { width: 34px; color: var(--dim); }
+.meter span { flex: 0 0 64px; color: var(--dim); }
 .meter i { flex: 1; height: 9px; border-radius: 4px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
 .meter b { display: block; height: 100%; width: 0; background: var(--accent); opacity: 0.85; }
 .meter em { width: 58px; text-align: right; font-style: normal; color: #c3c9d8; font-variant-numeric: tabular-nums; }

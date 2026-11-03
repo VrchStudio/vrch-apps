@@ -1,5 +1,9 @@
 # Pitch Shift
 
+## 1.1.6
+
+- Keep English parameter labels clear of their sliders.
+
 ## 1.1.5
 
 - Use English controls, status messages and help throughout the App.

@@ -43,7 +43,7 @@ header { display: flex; align-items: flex-start; gap: 8px; }
 
 #rows { display: flex; flex-direction: column; gap: 7px; }
 .meter { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-.meter span { width: 40px; color: var(--dim); }
+.meter span { flex: 0 0 64px; color: var(--dim); }
 .meter i { flex: 1; height: 8px; border-radius: 4px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
 .meter b { display: block; height: 100%; width: 0; background: var(--accent); }
 .meter em { width: 62px; text-align: right; font-style: normal; color: #c7cddb; font-variant-numeric: tabular-nums; }
