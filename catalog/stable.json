@@ -2254,7 +2254,7 @@
     },
     "b542c073-74de-4fd7-86a7-b9a5c025e130": {
       "slug": "petal-fm",
-      "latest": "1.1.0",
+      "latest": "1.1.1",
       "versions": {
         "1.1.0": {
           "version": "1.1.0",
@@ -2274,6 +2274,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "1.1.1": {
+          "version": "1.1.1",
+          "name": "Petal FM",
+          "tag": "petal-fm-v1.1.1",
+          "sourceCommit": "97a84f40917d652ace737bcdd69c31c5d41d5d7f",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/petal-fm-v1.1.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/petal-fm-v1.1.1/petal-fm-1.1.1.vrchapp",
+          "size": 66165,
+          "sha256": "2f1badd3a1b02eb7b2150d2b9460f83b9d074684bf0d697e9623cff2cabe5bea",
+          "packageDigest": "2f1badd3a1b02eb7b2150d2b9460f83b9d074684bf0d697e9623cff2cabe5bea",
+          "revision": "20b09601c5de565c4b4735bcf9b8a9e896107e08bbecd14c759d4c50dd806bc0",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
         }
       },
       "guide": {
@@ -2400,7 +2419,8 @@
             "text": "The voice, page, tempo, play and key settings, effects and voice edits save automatically."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+UGV0YWwgRk08L3RpdGxlPgogIDxnIHN0cm9rZT0iI2U4ZThlMyI+PGVsbGlwc2UgY3g9IjMyIiBjeT0iMTgiIHJ4PSI3IiByeT0iMTIiLz48ZWxsaXBzZSBjeD0iMzIiIGN5PSIxOCIgcng9IjciIHJ5PSIxMiIgdHJhbnNmb3JtPSJyb3RhdGUoNjAgMzIgMzIpIi8+PGVsbGlwc2UgY3g9IjMyIiBjeT0iMTgiIHJ4PSI3IiByeT0iMTIiIHRyYW5zZm9ybT0icm90YXRlKDEyMCAzMiAzMikiLz48ZWxsaXBzZSBjeD0iMzIiIGN5PSIxOCIgcng9IjciIHJ5PSIxMiIgdHJhbnNmb3JtPSJyb3RhdGUoMTgwIDMyIDMyKSIvPjxlbGxpcHNlIGN4PSIzMiIgY3k9IjE4IiByeD0iNyIgcnk9IjEyIiB0cmFuc2Zvcm09InJvdGF0ZSgyNDAgMzIgMzIpIi8+PGVsbGlwc2UgY3g9IjMyIiBjeT0iMTgiIHJ4PSI3IiByeT0iMTIiIHRyYW5zZm9ybT0icm90YXRlKDMwMCAzMiAzMikiLz48L2c+PGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iNyIgZmlsbD0iIzEwMTAxMCIgc3Ryb2tlPSIjZmYxNDkzIi8+Cjwvc3ZnPgo="
     },
     "57e105f1-1e03-4283-8124-11020e5601d2": {
       "slug": "pitch-shift",
