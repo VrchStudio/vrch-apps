@@ -25,7 +25,8 @@ const TONE_SECONDS = 2;
 const MAX_GRAINS = 48;
 
 /* ── presets ────────────────────────────────────────────────────────────
- * bed     : 'saw' | 'sine' | 'glass' | 'bell' | 'reed' | 'noise'
+ * bed     : the waveform: 'saw' | 'sine' | 'glass' | 'bell' | 'reed' (square)
+ *           | 'organ' | 'pulse' (25 % pulse) | 'triangle' | 'noise'
  * chord   : semitones stacked in the bed (the bed is a sustained chord)
  * voices  : detuned copies per chord note, spread over `detune` cents
  * scale   : semitone offsets a grain may be transposed by
@@ -39,11 +40,21 @@ const MAX_GRAINS = 48;
  * base    : parameter values before macros
  * macros  : which parameter E1..E4 move, and over what range
  * lfo     : slow modulation [target, rate Hz, depth]; pitch depth in cents
+ * play    : the E minor player, a tempo-synced voice reading a single E note
+ *           of the preset's waveform; modes (one or two of):
+ *             'arp'    random notes of E natural minor
+ *             'octave' E or B leaping between octaves
+ *             'chord'  triads of the progression Em – C – G – D, one per bar
+ *           div steps per beat; prob chance a step plays (or the preset's
+ *           pattern gives each step's velocity); oct [lo, hi] octave range
+ *           above the E note; len grain length (s); win its window
+ * noteRoot: the E the player's note buffer is built on (Hz)
  */
 const PRESETS = [
   {
-    id: 'DRIFT', gain: 0.85, root: 110, bed: 'saw', voices: 3, detune: 20, harmonics: 9,
-    chord: [0, 7, 12], scale: [0, 0, 7, 12, -12, 19], pitchDetune: 10,
+    id: 'DRIFT', gain: 0.85, root: 82.41, noteRoot: 164.81, bed: 'organ', voices: 3, detune: 16,
+    chord: [0, 7, 14, 15], scale: [0, 0, 7, 12, -12, 19], pitchDetune: 10,
+    play: { modes: ['arp'], div: 1, prob: 0.7, oct: [0, 2], len: 1.2, win: 'hann', gain: 0.9 },
     srcMix: 0.92, breath: 0.015, drone: 0.08,
     window: 'hann', reverse: 0.30, bpm: 76,
     base: { grainLen: 0.45, dens: 16, cutoff: 2600, q: 0.15, hp: 0.05, drive: 0.08,
@@ -59,8 +70,9 @@ const PRESETS = [
     lfo: [['cutoff', 0.05, 0.30], ['pan', 0.07, 0.5]]
   },
   {
-    id: 'GLASS', gain: 0.85, root: 440, bed: 'glass', voices: 2, detune: 6,
+    id: 'GLASS', gain: 0.85, root: 329.63, noteRoot: 329.63, bed: 'glass', voices: 2, detune: 6,
     chord: [0, 7], scale: [0, 7, 12, 19, 24, -12], pitchDetune: 6,
+    play: { modes: ['arp'], div: 2, prob: 0.5, oct: [0, 1], len: 0.7, win: 'perc', gain: 1.1 },
     srcMix: 0.95, breath: 0.0, drone: 0.03,
     window: 'hann', reverse: 0.20, bpm: 70,
     base: { grainLen: 0.12, dens: 10, cutoff: 9000, q: 0.10, hp: 0.30, drive: 0.0,
@@ -76,8 +88,9 @@ const PRESETS = [
     lfo: [['pan', 0.13, 0.7]]
   },
   {
-    id: 'PULSE', gain: 0.9, root: 98, bed: 'saw', voices: 3, detune: 14, harmonics: 9,
+    id: 'PULSE', gain: 0.9, root: 82.41, noteRoot: 164.81, bed: 'pulse', voices: 3, detune: 12, harmonics: 12,
     chord: [0, 7, 15], scale: [0, 12, 7, 19], pitchDetune: 6,
+    play: { modes: ['arp'], div: 2, oct: [0, 1], len: 0.22, win: 'tukey', gain: 1.0 },
     srcMix: 0.95, breath: 0.01, drone: 0.06,
     window: 'hann', reverse: 0.10, bpm: 84,
     seqDiv: 2, pattern: [1, 0.45, 0.8, 0.4, 1, 0.5, 0.7, 0.6],
@@ -94,8 +107,9 @@ const PRESETS = [
     lfo: [['pan', 0.09, 0.4]]
   },
   {
-    id: 'CHOIR', gain: 0.88, root: 130.81, bed: 'saw', voices: 3, detune: 14, harmonics: 10,
-    chord: [0, 7, 12], scale: [0, 0, 7, 12, -5], pitchDetune: 8,
+    id: 'CHOIR', gain: 0.88, root: 164.81, noteRoot: 164.81, bed: 'reed', voices: 3, detune: 14, harmonics: 11,
+    chord: [0, 7, 12, 15], scale: [0, 0, 7, 12, -5], pitchDetune: 8,
+    play: { modes: ['arp'], div: 1, prob: 0.8, oct: [0, 1], len: 1.4, win: 'hann', gain: 0.9 },
     srcMix: 0.92, breath: 0.02, drone: 0.06,
     window: 'hann', reverse: 0.25, bpm: 72,
     base: { grainLen: 0.60, dens: 14, cutoff: 3500, q: 0.15, hp: 0.15, drive: 0.05,
@@ -111,8 +125,9 @@ const PRESETS = [
     lfo: [['pitch', 0.21, 6], ['pan', 0.06, 0.5]]
   },
   {
-    id: 'TIDE', gain: 0.45, root: 55, bed: 'sine', voices: 2, detune: 8,
+    id: 'TIDE', gain: 0.45, root: 41.2, noteRoot: 82.41, bed: 'sine', voices: 2, detune: 8,
     chord: [0, 7, 12, 19], scale: [0, 12, 7, -12], pitchDetune: 5,
+    play: { modes: ['arp'], div: 1, prob: 0.7, oct: [0, 2], len: 1.0, win: 'hann', gain: 1.0 },
     srcMix: 0.95, breath: 0.01, drone: 0.22,
     window: 'hann', reverse: 0.50, bpm: 66,
     base: { grainLen: 1.2, dens: 8, cutoff: 900, q: 0.25, hp: 0, drive: 0.15,
@@ -128,8 +143,9 @@ const PRESETS = [
     lfo: [['pan', 0.04, 0.6]]
   },
   {
-    id: 'DUST', gain: 0.77, root: 174.61, bed: 'saw', voices: 2, detune: 8, harmonics: 6,
-    chord: [0, 4, 7, 11], scale: [0, 12, 7, -12, 5], pitchDetune: 10,
+    id: 'DUST', gain: 0.77, root: 164.81, noteRoot: 164.81, bed: 'triangle', voices: 2, detune: 8, harmonics: 9,
+    chord: [0, 3, 7, 10], scale: [0, 12, 7, -12, 5], pitchDetune: 10,
+    play: { modes: ['arp'], div: 2, prob: 0.4, oct: [0, 1], len: 0.45, win: 'perc', gain: 1.0 },
     srcMix: 0.65, breath: 0.04, drone: 0.05,
     window: 'hann', reverse: 0.20, bpm: 80,
     base: { grainLen: 0.30, dens: 12, cutoff: 2200, q: 0.20, hp: 0.10, drive: 0.25,
@@ -145,11 +161,12 @@ const PRESETS = [
     lfo: []
   },
   {
-    id: 'AURORA', gain: 1.05, root: 293.66, bed: 'glass', voices: 2, detune: 8,
-    chord: [0, 7, 14], scale: [0, 7, 12, 14, 19, 24, 19, 14], pitchDetune: 4,
+    id: 'AURORA', gain: 1.05, root: 329.63, noteRoot: 329.63, bed: 'bell', voices: 2, detune: 8,
+    chord: [0, 7, 12], scale: [0, 7, 12, 19, 24], pitchDetune: 4,
+    play: { modes: ['arp'], div: 4, oct: [-1, 1], len: 0.2, win: 'perc', gain: 1.0 },
     srcMix: 0.97, breath: 0.0, drone: 0.03,
     window: 'hann', reverse: 0.10, bpm: 90,
-    seqDiv: 4, arp: true,
+    seqDiv: 4,
     pattern: [1, 0, 0.6, 0, 0.8, 0, 0.5, 0.3, 1, 0, 0.6, 0.3, 0.8, 0, 0.5, 0],
     base: { grainLen: 0.18, dens: 4, cutoff: 7000, q: 0.10, hp: 0.25, drive: 0,
             crush: 0, formant: 0, chorus: 0.30, phaser: 0, seq: 0.8,
@@ -166,8 +183,9 @@ const PRESETS = [
 
   /* ── hyperpop / cloud rap ─────────────────────────────────────────── */
   {
-    id: 'HYPER', gain: 0.42, root: 220, bed: 'saw', voices: 5, detune: 30, harmonics: 10,
+    id: 'HYPER', gain: 0.42, root: 164.81, noteRoot: 164.81, bed: 'saw', voices: 5, detune: 30, harmonics: 10,
     chord: [0, 7, 12], scale: [0, 12, 7, 19, 24], pitchDetune: 8,
+    play: { modes: ['arp'], div: 4, prob: 0.75, oct: [0, 2], len: 0.1, win: 'square', gain: 1.2 },
     srcMix: 0.95, breath: 0.02, drone: 0,
     window: 'square', reverse: 0, bpm: 160,
     base: { grainLen: 0.035, dens: 45, cutoff: 9000, q: 0.20, hp: 0.45, drive: 0.50, fold: 0.25,
@@ -183,8 +201,9 @@ const PRESETS = [
     lfo: [['pan', 0.27, 0.5]]
   },
   {
-    id: 'CLOUD', gain: 1.15, root: 174.61, bed: 'saw', voices: 4, detune: 18, harmonics: 6,
+    id: 'CLOUD', gain: 1.15, root: 130.81, noteRoot: 164.81, bed: 'saw', voices: 4, detune: 18, harmonics: 6,
     chord: [0, 4, 7, 11], scale: [0, 12, 7, -12], pitchDetune: 12,
+    play: { modes: ['arp'], div: 1, prob: 0.5, oct: [-1, 1], len: 0.6, win: 'hann', gain: 0.8 },
     srcMix: 0.85, breath: 0.03, drone: 0.05,
     window: 'hann', reverse: 0.50, bpm: 135,
     base: { grainLen: 0.25, dens: 12, cutoff: 3500, q: 0.15, hp: 0.10, drive: 0.05, fold: 0,
@@ -208,6 +227,10 @@ const INPUT_REF = 0.06;
 const INPUT_MAX = 1.5;
 // level of a held K3 / touch "breath"
 const HOLD_LEVEL = 0.85;
+// E natural minor, in semitones above E
+const E_MINOR = [0, 2, 3, 5, 7, 8, 10];
+// one triad per bar: Em – C – G – D (i – VI – III – VII), semitones above E
+const PROGRESSION = [[0, 3, 7], [-4, 0, 3], [3, 7, 10], [-2, 2, 5]];
 // Latched amplifier for pressure-type input. The signal arrives AC-coupled:
 // a breath shows up as a one-sided (DC-like) pulse when it starts, an
 // opposite-polarity pulse when it stops, and little in between. The first
@@ -222,7 +245,9 @@ const AMP_CLOSE_RATIO = 0.5;
 // A very short puff can also end as a fast swing from the opening side across
 // zero; a swing of AMP_CLOSE_RATIO within this window closes too. The ring is
 // ~50 ms after the opening pulse has died away, so it never swings that far.
-const AMP_SWING_TIME = 0.012;   // s
+// The window is kept to ~2 blocks: an opening pulse that has merely decayed
+// over 10-20 ms, followed by a small blip of fed-back sound, is not a swing.
+const AMP_SWING_TIME = 0.005;   // s
 // The microphone is read without echo cancellation, so the synth's own output
 // comes back into it. The opening threshold is raised by this fraction of the
 // recent output level, so that returning sound cannot open the amplifier.
@@ -231,6 +256,16 @@ const AMP_HOLDOFF = 1.5;        // s after a close in which a new opening must b
 const AMP_REOPEN_RATIO = 0.3;   // ...at least this strong vs the last breath's pulse
 const AMP_MAX = 30;             // s; failsafe if the closing pulse is missed
 const PULSE_DC_RATIO = 0.5;     // |mean| / RMS above which a pulse is DC-like
+// A breath pulse stays on one side for 30-40 ms; the synth's own low notes
+// coming back through the microphone (E1-E2, 41-82 Hz) swing back within a
+// cycle. So a pulse also needs the mean over this window to share its sign
+// and reach PULSE_HOLD_RATIO of the pulse level, which a tone averages away.
+const PULSE_HOLD_TIME = 0.024;  // s
+const PULSE_HOLD_RATIO = 0.5;
+// A very short puff's closing pulse follows its opening one before that
+// window clears; for this long after opening, the raw block pulse may still
+// close (the synth has hardly started, so there is little feedback yet).
+const AMP_SHORT_TIME = 0.3;     // s
 // a breath ends after the input stays below half the trigger level this long
 const BREATH_GAP = 0.15;
 // breath length → tail scale: TAIL_MIN at or below SHORT_BREATH, TAIL_MAX at
@@ -330,6 +365,19 @@ function bedPartials(preset, sr) {
   else if (preset.bed === 'reed') {
     shape = [];
     for (let h = 1; h <= H; h += 2) shape.push([h, 1 / h]);
+  } else if (preset.bed === 'triangle') {
+    shape = [];
+    for (let h = 1; h <= H; h += 2) shape.push([h, 1 / (h * h)]);
+  } else if (preset.bed === 'pulse') {
+    // 25 % pulse: every fourth harmonic missing, a nasal, hollow buzz
+    shape = [];
+    for (let h = 1; h <= H; h++) {
+      const a = Math.abs(Math.sin(Math.PI * h * 0.25)) / h;
+      if (a > 1e-3) shape.push([h, a]);
+    }
+  } else if (preset.bed === 'organ') {
+    // drawbars 16' 8' 5⅓' 4' 2⅔' 2'
+    shape = [[1, 1], [2, 0.75], [3, 0.5], [4, 0.4], [6, 0.25], [8, 0.18]];
   } else {
     shape = [];
     for (let h = 1; h <= H; h++) shape.push([h, 1 / Math.pow(h, 1.15)]);
@@ -354,9 +402,12 @@ function bedPartials(preset, sr) {
 /* Chord beds are synthesised outside the audio thread: the page loads this
  * file as a plain script too, builds each bed in small chunks with
  * createBedJob / stepBedJob, and posts the finished buffer to the processor. */
-function createBedJob(preset, sr) {
+function createBedJob(preset, sr, note) {
   const n = Math.floor(TONE_SECONDS * sr);
-  const parts = preset.bed === 'noise' ? [] : bedPartials(preset, sr);
+  // note = true builds the player's source: one E (noteRoot) in the same
+  // waveform and detuned voices, instead of the chord
+  const src = note ? { ...preset, root: preset.noteRoot || preset.root, chord: [0] } : preset;
+  const parts = preset.bed === 'noise' ? [] : bedPartials(src, sr);
   const P = parts.length;
   const job = {
     buf: new Float32Array(n), i: 0, P, noise: preset.bed === 'noise', lp: 0,
@@ -423,6 +474,8 @@ class VapeGrainProcessor extends Processor {
     this.presetIndex = Math.max(0, Math.min(PRESETS.length - 1, opts.preset | 0));
     this.beds = [];
     this.bed = null;
+    this.notes = [];
+    this.note = null;
 
     this.targetMacros = { grain: 0.5, air: 0.5, tone: 0.5, space: 0.5 };
     this.macros = { grain: 0.5, air: 0.5, tone: 0.5, space: 0.5 };
@@ -437,7 +490,7 @@ class VapeGrainProcessor extends Processor {
 
     this.grains = [];
     for (let i = 0; i < MAX_GRAINS; i++) {
-      this.grains.push({ on: false, age: 0, dur: 1, pos: 0, rate: 1, rm: 1, amp: 1, panL: 0.7, panR: 0.7, buf: null });
+      this.grains.push({ on: false, age: 0, dur: 1, pos: 0, rate: 1, rm: 1, amp: 1, panL: 0.7, panR: 0.7, buf: null, win: 'hann' });
     }
 
     this.energy = 0;
@@ -454,6 +507,8 @@ class VapeGrainProcessor extends Processor {
     this.openPeak = 0;
     this.lastPeak = 0;
     this.dcHist = new Float32Array(8);
+    this.dcLong = new Float32Array(32);
+    this.dcLongAt = 0;
     this.dcHistAt = 0;
     this.latchAge = AMP_REFRACTORY;
     this.ampEnv = 0;
@@ -504,6 +559,9 @@ class VapeGrainProcessor extends Processor {
     this.seqPhase = 0;
     this.seqStep = -1;
     this.arpStep = 0;
+    this.playPhase = 0;
+    this.lastNote = 999;
+    this.lastOct = 99;
     this.motionAmp = 1;
 
     this.time = 0;
@@ -523,7 +581,9 @@ class VapeGrainProcessor extends Processor {
       if (next !== this.presetIndex) {
         this.presetIndex = next;
         this.bed = this.beds[next] || null;
+        this.note = this.notes[next] || null;
         this.beats = 0;
+        this.playPhase = 0;
         this.seqPhase = 0;
         this.seqStep = -1;
         this.arpStep = 0;
@@ -533,6 +593,12 @@ class VapeGrainProcessor extends Processor {
       if (data.buf instanceof Float32Array && index >= 0 && index < PRESETS.length) {
         this.beds[index] = data.buf;
         if (index === this.presetIndex) this.bed = data.buf;
+      }
+    } else if (data.type === 'note') {
+      const index = data.index | 0;
+      if (data.buf instanceof Float32Array && index >= 0 && index < PRESETS.length) {
+        this.notes[index] = data.buf;
+        if (index === this.presetIndex) this.note = data.buf;
       }
     } else if (data.type === 'mute') {
       this.muted = !!data.on;
@@ -570,7 +636,7 @@ class VapeGrainProcessor extends Processor {
     return p;
   }
 
-  spawn(preset, p, ampScale, semitone) {
+  spawn(preset, p, ampScale, semitone, note) {
     let g = null;
     let oldest = this.grains[0];
     for (let i = 0; i < this.grains.length; i++) {
@@ -582,25 +648,68 @@ class VapeGrainProcessor extends Processor {
 
     const scale = preset.scale;
     const semi = semitone !== undefined ? semitone : scale[(Math.random() * scale.length) | 0];
-    const reverse = Math.random() < preset.reverse;
-    const durSec = Math.max(0.012, p.grainLen * (0.6 + Math.random() * 0.8));
+    // player notes run forwards with their own length and window
+    const reverse = !note && Math.random() < preset.reverse;
+    const durSec = note ? note.len * (0.85 + Math.random() * 0.3)
+      : Math.max(0.012, p.grainLen * (0.6 + Math.random() * 0.8));
     let pan = (Math.random() * 2 - 1) * 0.9 + p.lfoPan;
     pan = pan < -1 ? -1 : pan > 1 ? 1 : pan;
 
     g.on = true;
     g.age = 0;
     g.dur = Math.max(64, durSec * this.sr);
-    const cents = p.lfoCents + (Math.random() - 0.5) * (preset.pitchDetune || 0);
+    const cents = p.lfoCents + (Math.random() - 0.5) * (note ? 4 : preset.pitchDetune || 0);
     g.rate = Math.pow(2, (semi + cents / 100) / 12) * (reverse ? -1 : 1);
     g.rm = (p.glide || 0) > 0.01 ? Math.pow(2, (p.glide * this.glideEnv) / 12) : 1;
     // until the page delivers this preset's bed, grains read the breath only
     const tone = this.bed !== null && Math.random() < preset.srcMix;
-    g.buf = tone ? this.bed : this.ring;
+    g.buf = note ? this.note : tone ? this.bed : this.ring;
+    g.win = note ? note.win : preset.window;
     g.pos = (g.buf.length * Math.random()) | 0;
     const angle = (pan + 1) * Math.PI * 0.25;
     g.panL = Math.cos(angle);
     g.panR = Math.sin(angle);
     g.amp = (0.5 + Math.random() * 0.5) * ampScale;
+  }
+
+  /** The E minor player: on each step, a random arpeggio note, an octave
+   *  leap, or a triad of the bar's chord, read from the single-E note buffer. */
+  play(preset, p, bps, dt) {
+    const pl = preset.play;
+    const level = preset.pattern ? p.seq : 1;
+    if (level <= 0.01) return;
+    this.playPhase += bps * pl.div * dt;
+    while (this.playPhase >= 1) {
+      this.playPhase -= 1;
+      this.seqStep = (this.seqStep + 1) % (preset.pattern ? preset.pattern.length : 64);
+      const vel = (preset.pattern ? preset.pattern[this.seqStep] : Math.random() < pl.prob ? 0.8 + Math.random() * 0.2 : 0) * level;
+      if (vel <= 0.02) continue;
+      const [lo, hi] = pl.oct;
+      const randOct = () => lo + Math.floor(Math.random() * (hi - lo + 1));
+      const mode = pl.modes[(Math.random() * pl.modes.length) | 0];
+      const amp = vel * (pl.gain || 1);
+      const note = { len: pl.len, win: pl.win };
+      if (mode === 'chord') {
+        // the bar's triad, voiced in one octave, plus its root an octave down
+        const bar = Math.floor(this.beats / 4) % PROGRESSION.length;
+        const oct = 12 * randOct();
+        for (const s of PROGRESSION[bar]) this.spawn(preset, p, amp * 0.6, s + oct, note);
+        this.spawn(preset, p, amp * 0.45, PROGRESSION[bar][0] + oct - 12, note);
+      } else if (mode === 'octave') {
+        // E (sometimes B) jumping to a different octave every time
+        let o = randOct();
+        if (hi > lo) while (o === this.lastOct) o = randOct();
+        this.lastOct = o;
+        const pc = Math.random() < 0.75 ? 0 : 7;
+        this.spawn(preset, p, amp, pc + 12 * o, note);
+      } else {
+        // a random note of E natural minor, never the same twice in a row
+        let s;
+        do { s = E_MINOR[(Math.random() * E_MINOR.length) | 0] + 12 * randOct(); } while (s === this.lastNote && hi >= lo);
+        this.lastNote = s;
+        this.spawn(preset, p, amp, s, note);
+      }
+    }
   }
 
   process(inputs, outputs) {
@@ -678,7 +787,15 @@ class VapeGrainProcessor extends Processor {
     // the feedback margin only guards opening, so a closing pulse is still
     // seen while the synth is loud
     const pulseLevel = Math.max((this.latched ? baseThreshold : threshold) * 1.5, rms * PULSE_DC_RATIO);
-    const pulse = this.dc > pulseLevel ? 1 : this.dc < -pulseLevel ? -1 : 0;
+    this.dcLongAt = (this.dcLongAt + 1) % this.dcLong.length;
+    this.dcLong[this.dcLongAt] = this.dc;
+    const nHold = Math.min(this.dcLong.length, Math.max(1, Math.round(PULSE_HOLD_TIME / dt)));
+    let held = 0;
+    for (let j = 0; j < nHold; j++) held += this.dcLong[(this.dcLongAt - j + this.dcLong.length) % this.dcLong.length];
+    held /= nHold;
+    const holdLevel = pulseLevel * PULSE_HOLD_RATIO;
+    const rawPulse = this.dc > pulseLevel ? 1 : this.dc < -pulseLevel ? -1 : 0;
+    const pulse = rawPulse > 0 && held > holdLevel ? 1 : rawPulse < 0 && held < -holdLevel ? -1 : 0;
     const strength = this.dc < 0 ? -this.dc : this.dc;
     this.latchAge += dt;
     if (!this.latched) {
@@ -689,11 +806,17 @@ class VapeGrainProcessor extends Processor {
         this.latched = true;
         this.latchSign = pulse;
         this.latchAge = 0;
-        this.openPeak = strength;
+        // the pulse has been building over the hold window: its peak so far
+        let peakSoFar = strength;
+        for (let j = 0; j < nHold; j++) {
+          const v = pulse * this.dcLong[(this.dcLongAt - j + this.dcLong.length) % this.dcLong.length];
+          if (v > peakSoFar) peakSoFar = v;
+        }
+        this.openPeak = peakSoFar;
       }
-    } else if (pulse === this.latchSign) {
+    } else if (pulse === this.latchSign || (rawPulse === this.latchSign && this.latchAge < AMP_SHORT_TIME)) {
       this.openPeak = Math.max(this.openPeak, strength);
-    } else if (pulse === -this.latchSign) {
+    } else if (pulse === -this.latchSign || (rawPulse === -this.latchSign && this.latchAge < AMP_SHORT_TIME)) {
       const n = Math.min(this.dcHist.length, Math.max(1, Math.round(AMP_SWING_TIME / dt)));
       let toward = 0;
       for (let j = 0; j < n; j++) {
@@ -716,7 +839,7 @@ class VapeGrainProcessor extends Processor {
     // tails only come from the effects, scaled by the breath's length.
     const envStart = this.env;
     // the switching pulses are control, not sound: they never reach the synth
-    let level = pulse !== 0 ? 0
+    let level = rawPulse !== 0 ? 0
       : Math.min(INPUT_MAX, Math.max(0, this.energy - threshold * 0.5) / INPUT_REF);
     // a held K3 / touch ramps like the input follower (20 ms), not a jump
     this.holdEnv += ((this.held ? HOLD_LEVEL : 0) - this.holdEnv) * (1 - Math.exp(-dt / 0.02));
@@ -739,6 +862,7 @@ class VapeGrainProcessor extends Processor {
         this.seqPhase = 1;
         this.seqStep = -1;
         this.arpStep = 0;
+        this.playPhase = 1;
       }
     }
     this.gate = gate;
@@ -766,20 +890,7 @@ class VapeGrainProcessor extends Processor {
         if (Math.random() < budget) this.spawn(preset, p, 1);
         budget -= 1;
       }
-      if (preset.pattern && p.seq > 0.01) {
-        this.seqPhase += bps * (preset.seqDiv || 4) * dt;
-        while (this.seqPhase >= 1) {
-          this.seqPhase -= 1;
-          this.seqStep = (this.seqStep + 1) % preset.pattern.length;
-          const vel = preset.pattern[this.seqStep] * p.seq;
-          if (vel > 0.02) {
-            if (preset.glideReset) this.glideEnv = 1;
-            let semi;
-            if (preset.arp) semi = preset.scale[this.arpStep++ % preset.scale.length];
-            this.spawn(preset, p, vel * 1.4, semi);
-          }
-        }
-      }
+      if (preset.play && this.note !== null) this.play(preset, p, bps, dt);
     }
 
     // ── per-sample ──────────────────────────────────────────────────────
@@ -876,9 +987,10 @@ class VapeGrainProcessor extends Processor {
         const s = buf[i0] * (1 - frac) + buf[i1] * frac;
         const x = g.age / g.dur;
         let w;
-        if (preset.window === 'tukey') w = Math.min(1, x * 5, (1 - x) * 5);
-        else if (preset.window === 'square') w = Math.min(1, x * 12, (1 - x) * 12);
-        else if (preset.window === 'perc') w = Math.min(1, g.age * percAttack, (1 - x) * 20) * Math.exp(-3 * x);
+        const win = g.win;
+        if (win === 'tukey') w = Math.min(1, x * 5, (1 - x) * 5);
+        else if (win === 'square') w = Math.min(1, x * 12, (1 - x) * 12);
+        else if (win === 'perc') w = Math.min(1, g.age * percAttack, (1 - x) * 20) * Math.exp(-3 * x);
         else w = 0.5 - 0.5 * Math.cos(TAU * x);
         const a = s * w * g.amp * grainGain;
         dryL += a * g.panL;

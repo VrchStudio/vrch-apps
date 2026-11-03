@@ -28,7 +28,7 @@
   const DEFAULTS = { grain: 0.42, air: 0.5, tone: 0.5, space: 0.55 };
   const SAVE_KEY = 'vape-grain';
 
-  const state = { preset: 0, macros: { ...DEFAULTS } };
+  const state = { preset: 0, macros: { ...DEFAULTS }, figure: 'cat' };
   let version = 0;
   let saveTimer = 0;
   let noticeTimer = 0;
@@ -61,7 +61,7 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       try {
-        const result = await sdk.data.set(SAVE_KEY, { preset: state.preset, macros: { ...state.macros } }, { expectedVersion: version });
+        const result = await sdk.data.set(SAVE_KEY, { preset: state.preset, macros: { ...state.macros }, figure: state.figure }, { expectedVersion: version });
         version = result.version;
       } catch (_) {
         /* saving is best effort; audio never waits for it */
@@ -124,18 +124,21 @@
     while (sent.size < PRESETS.length) {
       if (token !== epoch) return;
       const index = sent.has(state.preset) ? PRESETS.findIndex((_, i) => !sent.has(i)) : state.preset;
-      const key = sr + ':' + index;
-      let buf = bedCache.get(key);
-      if (!buf) {
-        const job = lib.createBedJob(lib.PRESETS[index], sr);
-        while (!lib.stepBedJob(job, 150000)) {
-          await new Promise((resolve) => setTimeout(resolve, 0));
-          if (token !== epoch) return;
+      // the chord bed, then the single-E note the player reads
+      for (const type of ['bed', 'note']) {
+        const key = sr + ':' + index + ':' + type;
+        let buf = bedCache.get(key);
+        if (!buf) {
+          const job = lib.createBedJob(lib.PRESETS[index], sr, type === 'note');
+          while (!lib.stepBedJob(job, 150000)) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            if (token !== epoch) return;
+          }
+          buf = job.buf;
+          bedCache.set(key, buf);
         }
-        buf = job.buf;
-        bedCache.set(key, buf);
+        e.node.port.postMessage({ type, index, buf });
       }
-      e.node.port.postMessage({ type: 'bed', index, buf });
       sent.add(index);
     }
   }
@@ -253,6 +256,7 @@
   function render() {
     const p = PRESETS[state.preset];
     $('preset').textContent = p.name;
+    $('figure').textContent = state.figure === 'cat' ? 'CAT' : 'MAN';
     const live = phase === 'live';
     const label = !live ? (phase === 'starting' ? 'STARTING' : phase === 'error' ? 'NO AUDIO' : 'READY')
       : muted ? 'MUTED'
@@ -318,6 +322,13 @@
     save();
   }
 
+  function toggleFigure() {
+    state.figure = state.figure === 'cat' ? 'stick' : 'cat';
+    particles.length = 0;
+    render();
+    save();
+  }
+
   function cyclePreset(direction = 1) {
     state.preset = (state.preset + direction + PRESETS.length) % PRESETS.length;
     pushPreset();
@@ -327,11 +338,12 @@
     notice(PRESETS[state.preset].name + ' — ' + PRESETS[state.preset].note);
   }
 
-  /* ── canvas: a stick figure with a vape, OP-1 style ──────────────────
-   * Flat line drawing on black: white strokes, the preset colour for the vape
-   * LED and the vapour, which is drawn as outlined circles. The figure lifts
-   * the vape to its mouth while you breathe and blows clouds as the sound
-   * rings out.                                                            */
+  /* ── canvas: a kitten with a vape ─────────────────────────────────────
+   * Unfilled line art in the manner of a Teenage Engineering screen: one
+   * line weight, circles and straight lines, filling the stage, the
+   * preset colour only on the vape's LED and the vapour. The kitten sits,
+   * lifts the vape to its mouth while you breathe (eyes flat, LED lit) and
+   * blows rings as the sound rings out.                                    */
   const canvas = $('canvas');
   const g = canvas.getContext('2d');
   let W = 480, H = 300, dpr = 1;
@@ -356,8 +368,242 @@
   const lerp = (a, b, k) => a + (b - a) * k;
   const ease = (k) => k * k * (3 - 2 * k);
 
-  /** Joint positions for this frame, in canvas pixels. */
+  /** Key points of the figure for this frame, in canvas pixels. A close-up:
+   *  head and shoulders fill the stage, the torso runs off the bottom. */
   function pose(t) {
+    const u = Math.min(W / 480, H / 320);
+    const k = ease(lift);
+    // the kitten spans about x -112..70 and y -70..152 in its own units;
+    // scale it to fill the stage, sitting on the bottom edge
+    const S = Math.min(H / 236, W / 196);
+    const bob = Math.sin(t * 1.8) * 1.2;
+    // drawing space: origin at the centre of the head, one unit = S pixels
+    const ox = W / 2 + 21 * S, oy = H - 4 - 152 * S + bob * S;
+    const local = (x, y) => ({ x: ox + x * S, y: oy + y * S });
+    const mouthL = { x: 0, y: 20 };
+    const handL = { x: lerp(18, 24, k), y: lerp(116, 21, k) };
+    const elbowL = { x: lerp(34, 54, k), y: lerp(96, 60, k) };
+    const angle = lerp(-Math.PI / 2, -Math.PI, k);
+    return { u, S, k, ox, oy, local, mouthL, handL, elbowL, angle, mouth: local(mouthL.x, mouthL.y) };
+  }
+
+  /** A line-art capsule: two parallel outlines with black between them. */
+  function tube(draw, width, lw) {
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.strokeStyle = INK;
+    g.lineWidth = width;
+    g.beginPath(); draw(); g.stroke();
+    g.strokeStyle = '#000';
+    g.lineWidth = width - 2 * lw;
+    g.beginPath(); draw(); g.stroke();
+  }
+
+  /** Rounded rectangle path (no reliance on ctx.roundRect). */
+  function rrect(x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  /* A geometric kitten, OP-1 style: circles, straight lines and one line
+   * weight, drawn in head-centred units. */
+  function drawFigure(t, P, hue) {
+    const { S, k, ox, oy, mouthL, handL, elbowL, angle } = P;
+    const lw = 1.5;
+    const accent = `hsl(${hue} 85% 66%)`;
+    g.save();
+    g.translate(ox, oy);
+    g.scale(S, S);
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.strokeStyle = INK;
+    g.lineWidth = lw;
+    g.fillStyle = '#000';
+
+    // while vaping (and blowing it out) the kitten sways side to side,
+    // pivoting on where it sits
+    const swayAmt = Math.max(k, Math.min(1, display.cloud * 1.5));
+    const rock = Math.sin(t * 2.4) * 0.07 * swayAmt;
+    const pivot = { x: 0, y: 152 };
+    const rot = (x, y) => {
+      const c = Math.cos(rock), s = Math.sin(rock), dx = x - pivot.x, dy = y - pivot.y;
+      return { x: pivot.x + dx * c - dy * s, y: pivot.y + dx * s + dy * c };
+    };
+    g.translate(pivot.x, pivot.y);
+    g.rotate(rock);
+    g.translate(-pivot.x, -pivot.y);
+
+    // tail: a quarter circle and a half circle, swinging slowly
+    const sw = Math.sin(t * 1.4) * 0.18;
+    g.save();
+    g.translate(-52, 148);
+    g.rotate(-sw);
+    g.beginPath();
+    g.moveTo(0, 0);
+    g.arc(-30, 0, 30, 0, -Math.PI / 2, true);
+    g.arc(-30, -45, 15, Math.PI / 2, -Math.PI / 2, false);
+    g.stroke();
+    g.restore();
+
+    // sitting body: arched back into a round haunch, chest dropping to the
+    // front paws; filled black so the tail tucks in behind it
+    g.beginPath();
+    g.moveTo(-18, 52);
+    g.bezierCurveTo(-36, 64, -58, 94, -58, 122);
+    g.bezierCurveTo(-58, 144, -48, 152, -34, 152);
+    g.lineTo(10, 152);
+    g.bezierCurveTo(12, 112, 30, 86, 18, 52);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    // thigh line across the haunch
+    g.beginPath();
+    g.moveTo(-30, 98);
+    g.bezierCurveTo(-52, 106, -52, 140, -36, 150);
+    g.stroke();
+    // hind paw
+    g.beginPath(); g.ellipse(-44, 150, 12, 4, 0, Math.PI, 0); g.stroke();
+    // standing front leg in front of the haunch, with a paw and two toes
+    g.beginPath(); g.rect(-21, 94, 15, 56); g.fill();
+    g.beginPath(); g.moveTo(-21, 98); g.lineTo(-21, 148); g.moveTo(-6, 102); g.lineTo(-6, 148); g.stroke();
+    g.beginPath(); g.ellipse(-13, 149, 10, 4.5, 0, Math.PI, 0); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(-16, 146); g.lineTo(-16, 150); g.moveTo(-10, 146); g.lineTo(-10, 150); g.stroke();
+    // chest fluff
+    g.beginPath();
+    g.moveTo(-8, 60); g.lineTo(-4, 70); g.lineTo(0, 62); g.lineTo(4, 72); g.lineTo(8, 62); g.lineTo(11, 70);
+    g.moveTo(-2, 78); g.lineTo(2, 86); g.lineTo(6, 78);
+    g.stroke();
+    // neck
+    g.beginPath();
+    g.moveTo(-14, 36); g.quadraticCurveTo(-15, 46, -18, 54);
+    g.moveTo(14, 36); g.quadraticCurveTo(15, 46, 18, 54);
+    g.stroke();
+
+    // head: a classic cartoon cat silhouette, wider than tall, ears grown
+    // out of the outline, a flat brow between them and tufted cheeks; one
+    // ear flicks now and then
+    const flick = (t % 5.3) < 0.2 ? Math.sin((t % 5.3) * 45) * 4 : 0;
+    g.beginPath();
+    g.moveTo(0, 40);
+    g.quadraticCurveTo(-34, 42, -50, 26);
+    g.lineTo(-62, 22);
+    g.lineTo(-53, 14);
+    g.quadraticCurveTo(-58, -6, -50, -22);
+    g.lineTo(-58, -68);
+    g.lineTo(-24, -38);
+    g.quadraticCurveTo(0, -44, 24, -38);
+    g.lineTo(58 + flick, -68);
+    g.lineTo(50, -22);
+    g.quadraticCurveTo(58, -6, 53, 14);
+    g.lineTo(62, 22);
+    g.lineTo(50, 26);
+    g.quadraticCurveTo(34, 42, 0, 40);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    // inner ears and three tabby stripes on the brow
+    g.beginPath();
+    g.moveTo(-47, -30); g.lineTo(-52, -56); g.lineTo(-32, -38);
+    g.moveTo(47, -30); g.lineTo(52 + flick * 0.8, -56); g.lineTo(32, -38);
+    g.moveTo(-8, -40); g.lineTo(-7, -30);
+    g.moveTo(0, -41); g.lineTo(0, -28);
+    g.moveTo(8, -40); g.lineTo(7, -30);
+    g.stroke();
+
+    // eyes: dots that blink; flat dashes while drawing on the vape
+    const blink = (t % 3.9) < 0.12;
+    for (const ex of [-20, 20]) {
+      if (k > 0.6 || blink) {
+        g.beginPath(); g.moveTo(ex - 6, 0); g.lineTo(ex + 6, 0); g.stroke();
+      } else {
+        g.beginPath(); g.arc(ex + 2 * k, 1, 5, 0, Math.PI * 2); g.stroke();
+        g.fillStyle = INK;
+        g.beginPath(); g.arc(ex + 1 + 2 * k, 1.5, 2, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#000';
+      }
+    }
+
+    // nose, mouth, whiskers
+    g.beginPath(); g.moveTo(-3.5, 11); g.lineTo(3.5, 11); g.lineTo(0, 15); g.closePath(); g.stroke();
+    const m = mouthL;
+    if (k > 0.5) {
+      g.beginPath(); g.arc(m.x, m.y + 1, 2.5, 0, Math.PI * 2); g.stroke();
+    } else if (display.cloud > 0.12) {
+      g.beginPath(); g.arc(m.x, m.y + 1, 3.5, 0, Math.PI * 2); g.stroke();
+    } else {
+      g.beginPath();
+      g.moveTo(0, 15); g.lineTo(0, 18);
+      g.arc(-3.5, 18, 3.5, 0, Math.PI);
+      g.moveTo(7, 18); g.arc(3.5, 18, 3.5, 0, Math.PI);
+      g.stroke();
+    }
+    const wv = Math.sin(t * 3) * 1.2;
+    g.beginPath();
+    for (const s of [-1, 1]) {
+      for (const dy of [-4, 2, 8]) {
+        g.moveTo(s * 30, 14 + dy * 0.4);
+        g.lineTo(s * 66, 10 + dy * 1.6 + wv);
+      }
+    }
+    g.stroke();
+
+    // the raised front leg: a capsule from the shoulder via the elbow
+    tube(() => {
+      g.moveTo(16, 64);
+      g.lineTo(elbowL.x, elbowL.y);
+      g.lineTo(handL.x, handL.y);
+    }, 14, lw);
+
+    // vape: a rounded-rectangle device with a mouthpiece and an LED dot in
+    // the preset colour, OP-1 style
+    g.strokeStyle = INK;
+    g.lineWidth = lw;
+    g.save();
+    g.translate(handL.x, handL.y);
+    g.rotate(angle);
+    // device body runs along -x from the paw, mouthpiece along +x
+    rrect(-30, -6, 34, 12, 6); g.fill(); g.stroke();
+    rrect(4, -3, 14, 6, 3); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(-14, -6); g.lineTo(-14, 6); g.stroke();
+    g.fillStyle = `hsla(${hue}, 100%, 70%, ${0.3 + display.env * 0.7})`;
+    g.beginPath(); g.arc(-22, 0, 2.4, 0, Math.PI * 2); g.fill();
+    if (display.env > 0.05) {
+      g.strokeStyle = accent;
+      g.globalAlpha = display.env * 0.7;
+      g.lineWidth = 1;
+      g.beginPath(); g.arc(-22, 0, 5 + display.env * 6, 0, Math.PI * 2); g.stroke();
+      g.globalAlpha = 1;
+      g.strokeStyle = INK;
+      g.lineWidth = lw;
+    }
+    g.restore();
+    const ledL = { x: handL.x + Math.cos(angle) * -22, y: handL.y + Math.sin(angle) * -22 };
+
+    // paw wrapped round the device
+    g.fillStyle = '#000';
+    g.strokeStyle = INK;
+    g.beginPath(); g.arc(handL.x, handL.y, 7.5, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.beginPath();
+    g.moveTo(handL.x - 2.5, handL.y - 7); g.lineTo(handL.x - 2.5, handL.y - 3);
+    g.moveTo(handL.x + 2.5, handL.y - 7); g.lineTo(handL.x + 2.5, handL.y - 3);
+    g.stroke();
+    g.restore();
+    // vapour leaves the swaying mouth
+    const mw = rot(mouthL.x, mouthL.y);
+    P.mouth = P.local(mw.x, mw.y);
+    const lw2 = rot(ledL.x, ledL.y);
+    return P.local(lw2.x, lw2.y);
+  }
+
+  /* ── the stick figure (OP-1 style) ─────────────────────────────────── */
+
+  /** Stick figure joint positions for this frame, in canvas pixels. */
+  function poseStick(t) {
     const u = Math.min(W / 420, H / 290);
     const groundY = H * 0.86;
     const cx = W * 0.36;
@@ -396,7 +642,7 @@
     for (const fx of [0.08, 0.92]) g.fillRect(W * fx, groundY - 4, 1, 9);
   }
 
-  function drawFigure(t, P, hue) {
+  function drawStick(t, P, hue) {
     const { u, groundY, hip, shoulder, head, r, hand, elbow, angle } = P;
     const w = Math.max(1.5, 2.2 * u);
     g.strokeStyle = INK;
@@ -511,13 +757,14 @@
       g.globalAlpha = a;
       g.beginPath();
       g.arc(p.x, p.y, rad, 0, Math.PI * 2);
-      if (p.filled) {
-        g.fillStyle = p.kind === 'cloud' ? `hsl(${hue} 85% 70%)` : INK;
-        g.fill();
-      } else {
-        g.strokeStyle = `hsl(${hue} 85% 70%)`;
-        g.lineWidth = 1.4;
+      if (p.kind === 'cloud') {
+        // line-art puff: an outline ring
+        g.strokeStyle = `hsla(${hue}, 70%, 88%, 0.9)`;
+        g.lineWidth = 1.2;
         g.stroke();
+      } else {
+        g.fillStyle = '#fff';
+        g.fill();
       }
     }
     g.globalAlpha = 1;
@@ -535,7 +782,7 @@
     display.env += (meter.env - display.env) * Math.min(1, dt * 9);
     display.cloud += (meter.cloud - display.cloud) * Math.min(1, dt * 4);
     // the vape comes up quickly with the breath and goes down slowly after it
-    const liftTarget = display.env > 0.08 ? 1 : 0;
+    const liftTarget = display.env > 0.15 ? 1 : 0;
     lift += (liftTarget - lift) * Math.min(1, dt * (liftTarget > lift ? 7 : 2.2));
     const hue = PRESETS[state.preset].hue;
     const t = now / 1000;
@@ -543,19 +790,26 @@
     g.fillStyle = '#000';
     g.fillRect(0, 0, W, H);
 
-    const P = pose(t);
-    drawGround(P);
-    const tip = drawFigure(t, P, hue);
+    // the cat or the stick figure, switched with a long K2 or the bar button
+    let P, tip;
+    if (state.figure === 'stick') {
+      P = poseStick(t);
+      drawGround(P);
+      tip = drawStick(t, P, hue);
+    } else {
+      P = pose(t);
+      tip = drawFigure(t, P, hue);
+    }
     stepParticles(dt, P, tip);
     drawParticles(hue);
 
-    // input level: a row of OP-1 style segments under the ground line
+    // input level: a row of OP-1 style segments in the lower right corner
     const lvl = Math.min(1, Math.max(meter.peak * 1.6, display.env * 0.7));
-    const n = 24;
-    const segW = (W * 0.5) / n;
+    const n = 16;
+    const segW = (W * 0.26) / n;
     for (let i = 0; i < n; i++) {
       g.fillStyle = i / n < lvl ? `hsl(${hue} 85% 66%)` : '#1c1c1c';
-      g.fillRect(W * 0.25 + i * segW, H - 12, segW - 2, 3);
+      g.fillRect(W * 0.7 + i * segW, H - 12, segW - 2, 3);
     }
   }
 
@@ -570,6 +824,10 @@
   }
 
   /* ── input ─────────────────────────────────────────────────────────── */
+  const K2_LONG_MS = 600;
+  let k2Timer = 0;
+  let k2Long = false;
+
   function handleControl(e) {
     if (e.type === 'rotate') {
       const m = MACROS.find((x) => x.enc === e.control);
@@ -586,11 +844,21 @@
         setTimeout(() => cell.classList.remove('touched'), 220);
         return;
       }
-      if (e.control === 'K2') cyclePreset(1);
+      if (e.control === 'K2') {
+        // short press: next preset (on release); hold: switch cat / stick figure
+        clearTimeout(k2Timer);
+        k2Long = false;
+        k2Timer = setTimeout(() => { k2Long = true; toggleFigure(); }, K2_LONG_MS);
+      }
       if (e.control === 'K3') hold('K3', true);
       if (e.control === 'K4') setMuted(true);
     }
     if (e.type === 'up' || e.type === 'cancel') {
+      if (e.control === 'K2' && k2Timer) {
+        clearTimeout(k2Timer);
+        k2Timer = 0;
+        if (!k2Long && e.type === 'up') cyclePreset(1);
+      }
       if (e.control === 'K3') hold('K3', false);
       if (e.control === 'K4') setMuted(false);
     }
@@ -612,6 +880,7 @@
       start();
     });
     $('preset').addEventListener('click', () => cyclePreset(1));
+    $('figure').addEventListener('click', toggleFigure);
 
     const k2 = $('k2'), k3 = $('k3'), k4 = $('k4');
     k2.addEventListener('click', () => cyclePreset(1));
@@ -633,6 +902,7 @@
       const value = result.value;
       if (value) {
         if (Number.isInteger(value.preset)) state.preset = clamp(value.preset, 0, PRESETS.length - 1);
+        if (value.figure === 'stick' || value.figure === 'cat') state.figure = value.figure;
         if (value.macros) {
           for (const m of MACROS) {
             if (Number.isFinite(value.macros[m.id])) state.macros[m.id] = clamp(value.macros[m.id]);
