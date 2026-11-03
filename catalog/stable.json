@@ -2660,7 +2660,7 @@
     },
     "d0d6f747-e3a9-4ab5-884e-4edb5ece58a4": {
       "slug": "vocal-chain",
-      "latest": "1.2.2",
+      "latest": "1.2.3",
       "versions": {
         "1.2.0": {
           "version": "1.2.0",
@@ -2718,6 +2718,25 @@
             "updateApi": 1
           },
           "notes": "- Use English controls, status messages and help throughout the App.\n- Preserve existing sounds, projects and saved settings."
+        },
+        "1.2.3": {
+          "version": "1.2.3",
+          "name": "Vocal Chain",
+          "tag": "vocal-chain-v1.2.3",
+          "sourceCommit": "e1c628841c4c45fea3e457f05bff069a849610d0",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/vocal-chain-v1.2.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/vocal-chain-v1.2.3/vocal-chain-1.2.3.vrchapp",
+          "size": 48645,
+          "sha256": "86f99f5889f63121affa13f9720d10c9c303f0d1668131d2b3bd2b55f4461545",
+          "packageDigest": "86f99f5889f63121affa13f9720d10c9c303f0d1668131d2b3bd2b55f4461545",
+          "revision": "c7426dceb6e58af472eada6c0ea036c1ced3ef76ae7ddc51a43e42fe199dd683",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Keep English parameter labels clear of their sliders."
         }
       },
       "guide": {
