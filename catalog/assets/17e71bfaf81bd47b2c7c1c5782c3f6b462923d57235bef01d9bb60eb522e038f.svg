@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <title>Magic Circle</title>
+  <path d="M16 1v4m0 22v4M1 16h4m22 0h4" stroke="#aaa9a5" stroke-width="2"/>
+  <circle cx="16" cy="16" r="11" stroke="#f0eee8" stroke-width="2"/>
+  <path d="m16 9 2.2 4.8L23 16l-4.8 2.2L16 23l-2.2-4.8L9 16l4.8-2.2Z" fill="#ff1493"/>
+</svg>

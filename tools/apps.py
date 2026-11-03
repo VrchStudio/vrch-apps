@@ -190,6 +190,38 @@ def catalog_metadata(catalog):
     return result
 
 
+def write_catalog_index(catalog, root=None):
+    """Keep the discovery index text-only; hash-addressed artwork/guides load later."""
+    root = root or ROOT
+    index = json.loads(json.dumps(catalog))
+    for app in index['apps'].values():
+        assets = {}
+        icon = app.pop('icon', None)
+        guide = app.pop('guide', None)
+        records = []
+        if icon:
+            prefix, encoded = icon.split(';base64,', 1)
+            mime = prefix.removeprefix('data:')
+            if mime not in ('image/svg+xml', 'image/png'):
+                raise ValueError('Unsupported catalog icon.')
+            records.append(('icon', base64.b64decode(encoded, validate=True), mime, 'svg' if mime == 'image/svg+xml' else 'png'))
+        if guide:
+            records.append(('guide', json.dumps(guide, ensure_ascii=False, separators=(',', ':')).encode(), 'application/json', 'json'))
+        for kind, data, mime, suffix in records:
+            if not 0 < len(data) <= (65536 if kind == 'icon' else 32768):
+                raise ValueError('Catalog asset is too large.')
+            digest = hashlib.sha256(data).hexdigest()
+            name = digest + '.' + suffix
+            path = root / 'catalog/assets' / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+            assets[kind] = {'url': f'https://raw.githubusercontent.com/{REPOSITORY}/main/catalog/assets/{name}',
+                            'sha256': digest, 'size': len(data), 'mediaType': mime}
+        app['assets'] = assets
+    (root / 'catalog/index.json').write_text(json.dumps(index, ensure_ascii=False, separators=(',', ':')) + '\n')
+    return index
+
+
 def published_metadata(catalog, release):
     """A catalog/tool-only commit must not manufacture a second source identity."""
     app=catalog['apps'].get(release['appId'],{})
@@ -277,10 +309,11 @@ def publish(app,version):
     path=ROOT/'catalog/stable.json'
     updated=catalog_metadata(update_catalog(read_json(path),release))
     save_json(path,updated)
-    if command('git','status','--porcelain','--','catalog/stable.json'):
+    write_catalog_index(updated)
+    if command('git','status','--porcelain','--','catalog/stable.json','catalog/index.json','catalog/assets'):
         command('git','config','user.name','github-actions[bot]')
         command('git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com')
-        command('git','add','--','catalog/stable.json')
+        command('git','add','--','catalog/stable.json','catalog/index.json','catalog/assets')
         command('git','commit','-m',f'release: publish {app} {version} in the catalog')
         command('git','push','origin','HEAD:main')
     print(json.dumps({'release':release['releaseUrl'],'catalog':'published','sha256':release['sha256']}))
@@ -288,10 +321,15 @@ def publish(app,version):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action',choices=['check','build','release','publish'])
-    parser.add_argument('app')
+    parser.add_argument('action',choices=['check','build','release','publish','index'])
+    parser.add_argument('app',nargs='?')
     parser.add_argument('--version')
     args=parser.parse_args()
+    if args.action=='index':
+        write_catalog_index(read_json(ROOT/'catalog/stable.json'))
+        return
+    if not args.app:
+        parser.error('App directory is required.')
     if args.action=='publish':
         publish(args.app,args.version or '')
     elif args.action=='release':

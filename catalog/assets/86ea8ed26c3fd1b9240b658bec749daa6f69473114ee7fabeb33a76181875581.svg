@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <title>Hardware Check</title>
+  <path d="M10 2v5m6-5v5m6-5v5M10 25v5m6-5v5m6-5v5M2 10h5m-5 6h5m-5 6h5m18-12h5m-5 6h5m-5 6h5" stroke="#aaa9a5" stroke-width="2"/>
+  <rect x="7" y="7" width="18" height="18" rx="1" stroke="#f0eee8" stroke-width="2"/>
+  <path d="m11 16 4 4 7-8" stroke="#ff1493" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
+</svg>

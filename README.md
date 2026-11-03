@@ -87,3 +87,7 @@ node tests/drum808_audio_browser.cjs
 ```
 
 It exercises the actual Player, SDK and PCM output bridge; browser audio devices are fixtures and newer `setSinkId` policy refusal is emulated on older Chrome. Physical sound still needs device acceptance.
+
+### Catalog loading
+
+Releases also generate `catalog/index.json`, a text-only discovery index. Icons and guides live in hash-addressed `catalog/assets/` files and load on demand. `catalog/stable.json` remains compatible with earlier clients. To regenerate discovery files from the published catalog, run `python3 tools/apps.py index`; this does not change any App package or version.

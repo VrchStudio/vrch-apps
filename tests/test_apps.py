@@ -158,6 +158,26 @@ class Packages(unittest.TestCase):
         with mock.patch.object(apps,'ROOT',self.root):
             self.assertEqual(apps.catalog_metadata(catalog),catalog)
 
+    def test_lightweight_index_externalizes_exact_assets(self):
+        _, release = self.build()
+        catalog = apps.update_catalog({'schemaVersion':1,'apps':{}}, release)
+        with mock.patch.object(apps, 'ROOT', self.root):
+            catalog = apps.catalog_metadata(catalog)
+        entry = catalog['apps'][release['appId']]
+        entry['guide'] = {'description': 'Test guide.', 'sections': []}
+        before = json.dumps(catalog)
+        index = apps.write_catalog_index(catalog, root=self.root)
+        self.assertEqual(json.dumps(catalog), before)
+        slim = index['apps'][release['appId']]
+        self.assertNotIn('icon', slim)
+        self.assertNotIn('guide', slim)
+        self.assertEqual(slim['versions'], entry['versions'])
+        for asset in slim['assets'].values():
+            data = (self.root/'catalog/assets'/asset['url'].rsplit('/', 1)[-1]).read_bytes()
+            self.assertEqual(len(data), asset['size'])
+            self.assertEqual(hashlib.sha256(data).hexdigest(), asset['sha256'])
+        self.assertEqual(apps.write_catalog_index(catalog, root=self.root), index)
+
     def test_catalog_rejects_downgrade(self):
         _,release=self.build()
         newer={**release,'version':'1.1.0','tag':'demo-v1.1.0'}

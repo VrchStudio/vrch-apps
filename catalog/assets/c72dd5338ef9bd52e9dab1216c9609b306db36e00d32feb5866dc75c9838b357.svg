@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <title>Flux FX</title>
+  <path d="M7 3v5m0 6v15M16 3v26M25 3v3m0 6v17" stroke="#858585" stroke-width="2"/>
+  <path d="M3 8h8v6H3zm18-2h8v6h-8z" stroke="#dedede" stroke-width="2"/>
+  <path d="M12 19h8v6h-8z" fill="#ff1493"/>
+</svg>

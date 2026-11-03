@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <title>PalmNotes Duo</title>
+  <path d="M9 29 3 19c-1-2 1-4 3-2l2 3V9a2 2 0 0 1 4 0v7-11a2 2 0 0 1 4 0v11-9a2 2 0 0 1 4 0v10-5a2 2 0 0 1 4 0v10c0 3-2 5-3 7" stroke="#dedede" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M17 24V20l5-1v4" stroke="#ff1493" stroke-width="2"/>
+  <path d="M14 23h4v3h-4zm5-1h4v3h-4z" fill="#ff1493"/>
+</svg>
