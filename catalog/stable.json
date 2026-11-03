@@ -2564,7 +2564,7 @@
     },
     "d0d6f747-e3a9-4ab5-884e-4edb5ece58a4": {
       "slug": "vocal-chain",
-      "latest": "1.2.0",
+      "latest": "1.2.1",
       "versions": {
         "1.2.0": {
           "version": "1.2.0",
@@ -2584,6 +2584,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "1.2.1": {
+          "version": "1.2.1",
+          "name": "Vocal Chain",
+          "tag": "vocal-chain-v1.2.1",
+          "sourceCommit": "97a84f40917d652ace737bcdd69c31c5d41d5d7f",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/vocal-chain-v1.2.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/vocal-chain-v1.2.1/vocal-chain-1.2.1.vrchapp",
+          "size": 49020,
+          "sha256": "bf46f6e573ef305602a397d8e0a8054c3c470213e92fb3023ddb1617f71f084a",
+          "packageDigest": "bf46f6e573ef305602a397d8e0a8054c3c470213e92fb3023ddb1617f71f084a",
+          "revision": "23f4b33afc1a55660865c2df071ed40491a5783efd106a7b9fc68302ed23df0d",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
         }
       },
       "guide": {
@@ -2736,7 +2755,8 @@
             "text": "所有页面的参数、页面位置、调性和开关都会自动保存，下次打开还在。退出 App 时释放麦克风和扬声器。"
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+Vm9jYWwgQ2hhaW48L3RpdGxlPgogIDxyZWN0IHg9IjYiIHk9IjkiIHdpZHRoPSIxNSIgaGVpZ2h0PSIyNiIgcng9IjcuNSIvPjxwYXRoIGQ9Ik0yIDI4djNhMTIgMTIgMCAwIDAgMjQgMHYtM00xNCA0M3YxMk03IDU1aDE0TTI3IDMxaDgiIHN0cm9rZT0iI2FhYTlhNSIvPjxyZWN0IHg9IjM1IiB5PSIyMCIgd2lkdGg9IjI1IiBoZWlnaHQ9IjI1IiByeD0iMyIvPjxwYXRoIGQ9Ik00MSAyN3YxMW03LTE0djE3bTYtMTF2NyIgc3Ryb2tlPSIjZmYxNDkzIi8+Cjwvc3ZnPgo="
     },
     "eff41831-449d-4e58-93ec-88aa610fb2c6": {
       "slug": "gm-studio",
