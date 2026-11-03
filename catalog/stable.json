@@ -2700,7 +2700,7 @@
     },
     "eff41831-449d-4e58-93ec-88aa610fb2c6": {
       "slug": "gm-studio",
-      "latest": "2.0.0",
+      "latest": "2.0.1",
       "versions": {
         "2.0.0": {
           "version": "2.0.0",
@@ -2720,10 +2720,29 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "2.0.1": {
+          "version": "2.0.1",
+          "name": "GM Studio",
+          "tag": "gm-studio-v2.0.1",
+          "sourceCommit": "97a84f40917d652ace737bcdd69c31c5d41d5d7f",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/gm-studio-v2.0.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/gm-studio-v2.0.1/gm-studio-2.0.1.vrchapp",
+          "size": 3263836,
+          "sha256": "699a9bf14cb2b2c70e34643e346e028dfa23a9aee4eba2465e30fd94684c3587",
+          "packageDigest": "699a9bf14cb2b2c70e34643e346e028dfa23a9aee4eba2465e30fd94684c3587",
+          "revision": "6369605c171bd00678a63482d063546b6b69ac32c8f0c3ac1ab6394cf57a9cbc",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
         }
       },
       "guide": {
-        "description": "用 Microsoft GS 波表（gm.sf2）编曲的小 DAW：编曲窗、钢琴卷帘、音序器和 128 个 GM 音色。",
+        "description": "用 Roland GS 波表（gm.sf2）编曲的小 DAW：编曲窗、钢琴卷帘、音序器和 128 个 GM 音色。",
         "sections": [
           {
             "title": "Quick start",
@@ -2826,7 +2845,8 @@
             "text": "速度、循环、6 条轨道的音色和音符都会自动保存，下次打开原样恢复。进入编曲窗就是保存下来的工程。"
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+R00gU3R1ZGlvPC90aXRsZT4KICA8cmVjdCB4PSI1IiB5PSIyNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjMxIiByeD0iMyIvPjxwYXRoIGQ9Ik0xOCAyOHYyOU0zMiAyOHYyOU00NiAyOHYyOSIgc3Ryb2tlPSIjYWFhOWE1Ii8+PHBhdGggZD0iTTE0IDI4djE0bTE0LTE0djE0bTE0LTE0djE0IiBzdHJva2Utd2lkdGg9IjYiLz48cGF0aCBkPSJNMzggMTlWNmwxNCAzdjEzIiBzdHJva2U9IiNmZjE0OTMiLz48ZWxsaXBzZSBjeD0iMzMiIGN5PSIyMCIgcng9IjUiIHJ5PSI0IiBmaWxsPSIjZmYxNDkzIiBzdHJva2U9Im5vbmUiLz48ZWxsaXBzZSBjeD0iNDciIGN5PSIyMyIgcng9IjUiIHJ5PSI0IiBmaWxsPSIjZmYxNDkzIiBzdHJva2U9Im5vbmUiLz4KPC9zdmc+Cg=="
     }
   }
 }
