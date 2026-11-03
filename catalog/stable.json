@@ -2040,7 +2040,7 @@
     },
     "debc92f2-613a-4e03-9f41-1f8c070debd1": {
       "slug": "wake-gate",
-      "latest": "1.0.3",
+      "latest": "1.0.4",
       "versions": {
         "1.0.2": {
           "version": "1.0.2",
@@ -2079,6 +2079,25 @@
             "updateApi": 1
           },
           "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
+        },
+        "1.0.4": {
+          "version": "1.0.4",
+          "name": "Wake Gate",
+          "tag": "wake-gate-v1.0.4",
+          "sourceCommit": "1953ba367140c9acdca443f360b97b3af7e0713b",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/wake-gate-v1.0.4",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/wake-gate-v1.0.4/wake-gate-1.0.4.vrchapp",
+          "size": 35586,
+          "sha256": "7d835bfcfa7462ff5983fe48cf671a52e752b3ddddb135bb3f68a7f68237c50f",
+          "packageDigest": "7d835bfcfa7462ff5983fe48cf671a52e752b3ddddb135bb3f68a7f68237c50f",
+          "revision": "d12fefc0d11bd66e3349e237f7ed01f1193e7bc6ac93f8d749e233cf60b67e41",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Use English controls, status messages and help throughout the App.\n- Preserve existing sounds, projects and saved settings."
         }
       },
       "guide": {
