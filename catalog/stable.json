@@ -2361,6 +2361,126 @@
           }
         ]
       }
+    },
+    "57e105f1-1e03-4283-8124-11020e5601d2": {
+      "slug": "pitch-shift",
+      "latest": "1.1.3",
+      "versions": {
+        "1.1.3": {
+          "version": "1.1.3",
+          "name": "Pitch Shift",
+          "tag": "pitch-shift-v1.1.3",
+          "sourceCommit": "96f1dbb4deba71b4c4c282b7ffa1315eae8abbb0",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/pitch-shift-v1.1.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/pitch-shift-v1.1.3/pitch-shift-1.1.3.vrchapp",
+          "size": 48380,
+          "sha256": "34e3fbd1ca308fa17311cfa33a7048ef8d02d36c838cf99d37cbdde7d497496d",
+          "packageDigest": "34e3fbd1ca308fa17311cfa33a7048ef8d02d36c838cf99d37cbdde7d497496d",
+          "revision": "462214ac48967d86cb19ce7c88cc4db42d9f584da5fc7a61f2770647aa9d78cb",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "guide": {
+        "description": "把输入的音频实时上下变调一个八度，并能和原声混合出和声。",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "开始 · Tap",
+                "action": "打开音频输入和输出，然后对着麦克风或线路输入演奏。"
+              },
+              {
+                "control": "E1 · Turn",
+                "action": "上下调音高：每格 1 个半音，范围 −12 到 +12。"
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "混合原声：100% 只有变调声，0% 只有原声。"
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "音高，1 个半音一格。"
+              },
+              {
+                "control": "E1 · Press",
+                "action": "音高回到 0（原声）。"
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "干湿混合 0–100%。"
+              },
+              {
+                "control": "E2 · Press",
+                "action": "混合回到 100%。"
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "微调音高，每格 2 个音分，范围 −50 到 +50。"
+              },
+              {
+                "control": "E3 · Press",
+                "action": "微调回到 0 音分。"
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "输出音量 0–100%。"
+              },
+              {
+                "control": "E4 · Press",
+                "action": "音量回到 75%。"
+              },
+              {
+                "control": "K2 · Press",
+                "action": "旁通：只输出原声，再按一次回到变调。"
+              },
+              {
+                "control": "K3 · Press",
+                "action": "切换预设：原声、+12、+7、−12、−5。"
+              },
+              {
+                "control": "K4 · Hold",
+                "action": "按住只听原声做对比，松开回到变调。"
+              },
+              {
+                "control": "音高条 · Drag",
+                "action": "在屏幕上左右拖动直接设置音高。"
+              },
+              {
+                "control": "预设按钮 · Tap",
+                "action": "直接选择预设音程。"
+              }
+            ]
+          },
+          {
+            "title": "音高与音程",
+            "text": "半音是音高的最小单位，12 个半音是一个八度。+7 是纯五度，−5 是纯四度，+12 和 −12 是八度。100 个音分等于 1 个半音，E3 用来和别的乐器对齐音准。混合调到中间会同时听到原声和变调声，像两个人一起唱；调到 0% 就是原样直通。"
+          },
+          {
+            "title": "调性检测",
+            "text": "顶部显示当前听到的调性（例如 A 小调）和置信度；下面 12 根柱子是各音级的能量，主音那根会高亮。读数做了稳定处理：换到别的调需要持续领先才会切换，所以不会在关系大小调或相邻调之间来回跳。单音、鼓点或噪声不足以判断调性，会显示“听不清调性”，不会硬给一个答案。变调后右侧会显示变调后的调性（输出），可以当作整首曲子的移调工具用。"
+          },
+          {
+            "title": "声音与延迟",
+            "text": "输入到输出大约 25 ms 延迟，这是按频段分析变调的代价。建议戴耳机：外放时变调后的声音会被麦克风再次收进去，容易产生回授。变调后音色会略微变薄，混回一点原声（E2）可以让声音更厚；大幅变调时低频会变松，属于正常现象。"
+          },
+          {
+            "title": "保存的设置",
+            "text": "音高、微调、混合、音量和旁通状态都会自动保存，下次打开还在。退出 App 时释放麦克风和扬声器。"
+          }
+        ]
+      }
     }
   }
 }
