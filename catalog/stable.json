@@ -2799,7 +2799,7 @@
     },
     "eff41831-449d-4e58-93ec-88aa610fb2c6": {
       "slug": "gm-studio",
-      "latest": "2.0.2",
+      "latest": "2.0.3",
       "versions": {
         "2.0.0": {
           "version": "2.0.0",
@@ -2857,110 +2857,129 @@
             "updateApi": 1
           },
           "notes": "- Make Retry restart interrupted audio cleanly."
+        },
+        "2.0.3": {
+          "version": "2.0.3",
+          "name": "GM Studio",
+          "tag": "gm-studio-v2.0.3",
+          "sourceCommit": "1953ba367140c9acdca443f360b97b3af7e0713b",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/gm-studio-v2.0.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/gm-studio-v2.0.3/gm-studio-2.0.3.vrchapp",
+          "size": 3264145,
+          "sha256": "361855ce99698c4d5833cc0566c78076852bdde986f4342bade7ca01e3769731",
+          "packageDigest": "361855ce99698c4d5833cc0566c78076852bdde986f4342bade7ca01e3769731",
+          "revision": "3df5919a3782d9118c4bd51af3c5fc0cb8105867adefc4fd319fdac357687c54",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Use English controls, status messages and help throughout the App.\n- Preserve existing sounds, projects and saved settings."
         }
       },
       "guide": {
-        "description": "用 Roland GS 波表（gm.sf2）编曲的小 DAW：编曲窗、钢琴卷帘、音序器和 128 个 GM 音色。",
+        "description": "Arrange music with the bundled Roland GS sound bank, a piano roll and a six-track sequencer.",
         "sections": [
           {
             "title": "Quick start",
             "controls": [
               {
-                "control": "开始 · Tap",
-                "action": "启用声音，然后点 ▶ 播放内置的 8 小节示例。"
+                "control": "Start · Tap",
+                "action": "Enable audio, then tap Play to hear the built-in eight-bar demo."
               },
               {
                 "control": "▶ / ■ · Tap",
-                "action": "播放 / 停止（停止会回到第 1 小节）。"
+                "action": "Play or stop; Stop returns to the first bar."
               },
               {
-                "control": "编曲 · Tap",
-                "action": "看 6 条轨道的分布，点某一格跳到那条轨那一小节。"
+                "control": "Arrange · Tap",
+                "action": "See all six tracks; tap a cell to open that track and bar."
               }
             ]
           },
           {
-            "title": "三个窗口",
+            "title": "Views",
             "controls": [
               {
-                "control": "编曲",
-                "action": "6 条轨道 × 8 小节的网格，有音符的小节显示色块；点色块进入该小节的钢琴窗。"
+                "control": "Arrange",
+                "action": "The six-track arrangement shows colored blocks in bars with notes. Tap a block to edit it."
               },
               {
-                "control": "钢琴窗",
-                "action": "16 分音符网格，点空格写音符，再点已有音符删除；左侧琴键可试听。"
+                "control": "Piano Roll",
+                "action": "Tap an empty sixteenth-note cell to add a note, or an existing note to delete it. Tap piano keys to audition."
               },
               {
-                "control": "音色",
-                "action": "给当前轨道挑 GM 音色，右上角按钮切鼓组。"
+                "control": "Sounds",
+                "action": "Choose a GM sound for the current track. The Drums button selects percussion."
               },
               {
                 "control": "K3 · Press",
-                "action": "在三个窗口之间轮换。"
+                "action": "Cycle Arrange, Piano Roll and Sounds."
               }
             ]
           },
           {
-            "title": "钢琴窗",
+            "title": "Piano Roll",
             "controls": [
               {
-                "control": "格子 · Tap",
-                "action": "写一个音符（长度取当前音符长度），或删掉点到的那一个。"
+                "control": "Grid · Tap",
+                "action": "Add a note at the current length, or delete the note in that cell."
               },
               {
                 "control": "◀ ▶ · Tap",
-                "action": "换小节。"
+                "action": "Move to the previous or next bar."
               },
               {
                 "control": "1/32 · 1/16 · 1/8 · 1/4",
-                "action": "设置新写音符的长度。"
+                "action": "Set the length of new notes."
               },
               {
-                "control": "八度 − / +",
-                "action": "上下移动可见的音域。"
+                "control": "Oct− / Oct+",
+                "action": "Move the visible pitch range down or up."
               }
             ]
           },
           {
-            "title": "运输与参数",
+            "title": "Transport and parameters",
             "controls": [
               {
                 "control": "E1 · Turn",
-                "action": "切换当前轨道（1–6）。"
+                "action": "Select track 1–6."
               },
               {
                 "control": "E2 · Turn",
-                "action": "速度 40–240 BPM。"
+                "action": "Tempo: 40–240 BPM."
               },
               {
                 "control": "E3 · Turn",
-                "action": "新音符的力度 1–127。"
+                "action": "Velocity of new notes: 1–127."
               },
               {
                 "control": "E4 · Turn",
-                "action": "新音符的长度（3/6/12/24 tick）。"
+                "action": "Length of new notes: 3, 6, 12 or 24 ticks."
               },
               {
                 "control": "K2 · Press",
-                "action": "播放 / 停止。"
+                "action": "Play or stop."
               },
               {
                 "control": "K4 · Press",
-                "action": "当前轨道静音。"
+                "action": "Mute or unmute the current track."
               },
               {
-                "control": "循环 · Tap",
-                "action": "打开时在最后一小节末尾回到第 1 小节。"
+                "control": "Loop · Tap",
+                "action": "When enabled, return to the first bar after the last bar."
               }
             ]
           },
           {
-            "title": "声音与限制",
-            "text": "音序器跑在音频线程里，音符按采样点触发，不会因为界面卡顿跑偏。6 条轨道共用 64 个复音，超出时抢占最老的音。gm.sf2 的采样、分层、循环点和包络都是原样播放；SF2 的滤波与 LFO 调制没有实现，所以部分合成音色比原版简单。鼓组按 GM 键位：36 底鼓、38 军鼓、42 闭镲。"
+            "title": "Audio and limits",
+            "text": "Notes are scheduled on the audio thread at sample boundaries. Six tracks share 64 voices; the oldest voice is stolen when needed. The SF2 samples, layers, loops and envelopes are used, but SF2 filters and LFO modulation are not implemented. GM drum keys include 36 kick, 38 snare and 42 closed hat."
           },
           {
-            "title": "保存",
-            "text": "速度、循环、6 条轨道的音色和音符都会自动保存，下次打开原样恢复。进入编曲窗就是保存下来的工程。"
+            "title": "Saved project",
+            "text": "Tempo, loop mode, track sounds and notes save automatically and return when you reopen the App. Existing projects and custom track names are preserved."
           }
         ]
       },
