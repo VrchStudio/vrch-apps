@@ -1066,7 +1066,7 @@
     },
     "13c783df-6a9a-4a60-80b1-1754d8293291": {
       "slug": "vape-grain",
-      "latest": "1.9.1",
+      "latest": "1.10.1",
       "versions": {
         "1.9.0": {
           "version": "1.9.0",
@@ -1105,10 +1105,29 @@
             "updateApi": 1
           },
           "notes": "- Add a VRCH-style vector grain-cloud icon for Launcher, My Apps and Guide.\n- Fix device audio initialization while retaining instruments and macro settings."
+        },
+        "1.10.1": {
+          "version": "1.10.1",
+          "name": "Vape Grain",
+          "tag": "vape-grain-v1.10.1",
+          "sourceCommit": "236e6b0e3c30f0784477148476e7f83834eb69d8",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/vape-grain-v1.10.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/vape-grain-v1.10.1/vape-grain-1.10.1.vrchapp",
+          "size": 99442,
+          "sha256": "5aa9b115c858007b254731ca4a0ae7b3ddf7efea1b8a28add4b0bcb754f303e5",
+          "packageDigest": "5aa9b115c858007b254731ca4a0ae7b3ddf7efea1b8a28add4b0bcb754f303e5",
+          "revision": "bda4ed4042345d9efed23c35f948a845176792702dd321869497d27f0474418b",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Keep the E minor arpeggios, individual waveforms and CAT/MAN controls from 1.10.0.\n- Add the official icon and retain device audio compatibility."
         }
       },
       "guide": {
-        "description": "A breath-played granular instrument driven directly by your exhale: ambient pads and shimmer, plus hyperpop and cloud rap voices.",
+        "description": "A breath-played granular instrument in E minor, driven directly by your exhale: nine voices with their own waveforms, each playing random E minor arpeggios over a chord bed.",
         "sections": [
           {
             "title": "Quick start",
@@ -1119,7 +1138,7 @@
               },
               {
                 "control": "K2 · Press",
-                "action": "Cycle the nine instruments: seven ambient, then two hyperpop / cloud rap."
+                "action": "Cycle the nine instruments; hold K2 to switch between the cat and the stick figure."
               },
               {
                 "control": "Vape · Breathe",
@@ -1152,7 +1171,11 @@
               },
               {
                 "control": "K2 · Press",
-                "action": "Next instrument."
+                "action": "Next instrument (on release)."
+              },
+              {
+                "control": "K2 · Hold",
+                "action": "Switch the character: cat or stick figure. The top-bar CAT / MAN button does the same."
               },
               {
                 "control": "K3 · Hold",
@@ -1177,31 +1200,31 @@
             "controls": [
               {
                 "control": "DRIFT",
-                "action": "Warm detuned chord pad with long, half-reversed grains and a breathing filter."
+                "action": "Organ waveform, Em9 bed, slow random arpeggio over two octaves."
               },
               {
                 "control": "GLASS",
-                "action": "Sparse glass partials into an octave-shimmer hall; E4 sets the shimmer."
+                "action": "Glass partials, E–B bed, sparse struck arpeggio; E4 sets the shimmer."
               },
               {
                 "control": "PULSE",
-                "action": "Minor chord pulsing in eighths at 84 BPM; E2 sets how deep the motion pumps."
+                "action": "25 % pulse wave, Em bed, arpeggio on an eighth-note groove at 84 BPM; E2 sets the motion."
               },
               {
                 "control": "CHOIR",
-                "action": "Formant voice pad; E1 morphs the vowel A–E–I–O–U."
+                "action": "Square wave through a vowel filter, Em bed, swelling arpeggio; E1 morphs the vowel."
               },
               {
                 "control": "TIDE",
-                "action": "Deep sub chord with very long grains and a slow swell every four bars."
+                "action": "Sine, deep E fifths bed, slow arpeggio rising from E2."
               },
               {
                 "control": "DUST",
-                "action": "Lo-fi maj7 haze with tape wow, grit and your breath in the grains."
+                "action": "Triangle wave, Em7 bed, lo-fi plucked arpeggio with tape wow."
               },
               {
                 "control": "AURORA",
-                "action": "Sixteenth-note shimmer arpeggio at 90 BPM; E2 sets its level."
+                "action": "Bell waveform, sixteenth-note arpeggio at 90 BPM; E2 sets its level."
               }
             ]
           },
@@ -1210,17 +1233,17 @@
             "controls": [
               {
                 "control": "HYPER",
-                "action": "Detuned supersaw pluck at 160 BPM with wavefold; E4 sets the sidechain pump."
+                "action": "Detuned supersaw, fast sixteenth-note arpeggio at 160 BPM with wavefold; E4 sets the pump."
               },
               {
                 "control": "CLOUD",
-                "action": "Reversed maj7 haze with a gentle 135 BPM pump and a deep room."
+                "action": "Cmaj7 haze (inside E minor), reversed grains, gentle arpeggio and a deep room."
               }
             ]
           },
           {
             "title": "Sound and timing",
-            "text": "The synth has no envelope of its own: its level is the level of your exhale, so it swells, holds and stops exactly as you breathe. How long you breathe sets the echo and reverb tails, from short after a quick puff to about five times longer after a breath of four seconds or more. Short wobbles inside one exhale do not end it. If your input only shows a jump when a breath starts and another when it stops, the first jump switches a steady amplifier on and the opposite jump switches it off. Grains come from a synthetic chord bed plus the captured breath, then pass through drive, filter, chorus, echo and reverb. Motion, pump and arpeggios follow each instrument's own tempo (66–160 BPM), not the outside session; a new breath after silence restarts them on the downbeat. HYPER clips by design. Silence stays silent. The microphone is read raw, without noise suppression or echo cancellation, so keep the speaker away from it or use headphones; hold K4 if the sound starts feeding back."
+            "text": "The synth has no envelope of its own: its level is the level of your exhale, so it swells, holds and stops exactly as you breathe. How long you breathe sets the echo and reverb tails, from short after a quick puff to about five times longer after a breath of four seconds or more. Short wobbles inside one exhale do not end it. If your input only shows a jump when a breath starts and another when it stops, the first jump switches a steady amplifier on and the opposite jump switches it off. Everything is in E minor: grains come from a chord bed plus the captured breath, while a second voice plays random notes of E natural minor in the instrument's own waveform; both then pass through drive, filter, chorus, echo and reverb. Motion, pump and arpeggios follow each instrument's own tempo (66–160 BPM), not the outside session; a new breath after silence restarts them on the downbeat. HYPER clips by design. Silence stays silent. The microphone is read raw, without noise suppression or echo cancellation, so keep the speaker away from it or use headphones; hold K4 if the sound starts feeding back."
           },
           {
             "title": "Saved settings",
