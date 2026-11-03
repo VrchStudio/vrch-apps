@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
@@ -12,42 +12,42 @@
   <header>
     <div id="readout">
       <b id="st">0</b>
-      <span id="interval">原声</span>
+      <span id="interval">Original</span>
     </div>
     <div id="side">
       <div id="ratio">×1.000</div>
-      <div id="lvl" title="输入电平"><i id="lvl-in"></i></div>
+      <div id="lvl" title="Input level"><i id="lvl-in"></i></div>
     </div>
     <div id="flags">
-      <span id="flag-bypass" class="flag" hidden>旁通</span>
-      <span id="flag-hold" class="flag hold" hidden>对比原声</span>
+      <span id="flag-bypass" class="flag" hidden>Bypass</span>
+      <span id="flag-hold" class="flag hold" hidden>Compare dry</span>
     </div>
   </header>
 
   <section id="keypanel">
     <div id="keymain">
       <b id="keyname">—</b>
-      <span id="keymeta">等待输入</span>
+      <span id="keymeta">Waiting for input</span>
     </div>
     <div id="chroma"></div>
   </section>
 
-  <div id="pitchbar" role="slider" aria-label="音高">
+  <div id="pitchbar" role="slider" aria-label="Pitch">
     <div id="track"><i id="zero"></i><i id="knob"></i></div>
   </div>
   <div id="scale"><span>−12</span><span>−6</span><span>0</span><span>+6</span><span>+12</span></div>
 
   <section id="rows">
-    <div class="meter" data-k="mix"><span>混合</span><i><b></b></i><em>100%</em></div>
-    <div class="meter" data-k="fine"><span>微调</span><i><b></b></i><em>0¢</em></div>
-    <div class="meter" data-k="vol"><span>音量</span><i><b></b></i><em>75%</em></div>
+    <div class="meter" data-k="mix"><span>Mix</span><i><b></b></i><em>100%</em></div>
+    <div class="meter" data-k="fine"><span>Fine</span><i><b></b></i><em>0¢</em></div>
+    <div class="meter" data-k="vol"><span>Volume</span><i><b></b></i><em>75%</em></div>
   </section>
 
   <section id="presets"></section>
 
   <footer id="status"></footer>
 
-  <div id="gate" hidden><div><p id="gate-msg"></p><button id="gate-btn">开始</button></div></div>
+  <div id="gate" hidden><div><p id="gate-msg"></p><button id="gate-btn">Start</button></div></div>
 </div>
 <script src="app.js"></script>
 </body>

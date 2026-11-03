@@ -20,7 +20,7 @@
     loop: true,
     vol: 0.8,
     tracks: Array.from({ length: 6 }, (_, i) => ({
-      name: '轨道 ' + (i + 1),
+      name: 'Track ' + (i + 1),
       bank: 0,
       program: 0,
       mute: false,
@@ -30,7 +30,7 @@
   };
   song.tracks[5].bank = 128;
   song.tracks[5].program = 0;
-  song.tracks[5].name = '鼓组';
+  song.tracks[5].name = 'Drums';
 
   const ui = { view: 'arrange', track: 0, bar: 0, len: COL, vel: 100, octave: 2 };
 
@@ -46,6 +46,7 @@
   let playing = false;
 
   const track = () => song.tracks[ui.track];
+  const trackName = (t) => t.name === '\u9f13\u7ec4' ? 'Drums' : String(t.name).replace(/^\u8f68\u9053 (\d+)$/, 'Track $1');
   const presetName = (t) => {
     if (!bank) return '—';
     const p = bank.presets.find((x) => x.bank === t.bank && x.program === t.program);
@@ -110,15 +111,15 @@
       pushSong();
       e.node.port.postMessage({ type: 'params', vol: song.vol });
       renderGate();
-      setStatus('就绪 · 点 ▶ 播放');
+      setStatus('Ready · Tap Play');
     } catch (error) {
       try { e.node?.disconnect(); e.outNode?.disconnect(); } catch (_) { /* startup did not finish */ }
       await Promise.allSettled([e.out?.close(), e.ctx?.close()]);
       if (token !== epoch) return;
       phase = 'error';
       const code = error.code || error.name;
-      $('gate-msg').textContent = code === 'interaction_required' ? '点“开始”启用声音。' : '声音无法启动，点重试。';
-      $('gate-btn').textContent = '重试';
+      $('gate-msg').textContent = code === 'interaction_required' ? 'Tap Start to enable audio.' : 'Audio unavailable. Tap Retry.';
+      $('gate-btn').textContent = 'Retry';
       $('gate-btn').disabled = false;
       renderGate();
     }
@@ -139,7 +140,7 @@
   /* ── view: arrangement ─────────────────────────────────────────────── */
   function renderArrange() {
     const barNow = meter.tick >= 0 ? Math.floor(meter.tick / BAR) : -1;
-    let html = '<div class="arr"><div class="arr-head"><span class="trk">轨道</span>';
+    let html = '<div class="arr"><div class="arr-head"><span class="trk">Track</span>';
     for (let b = 0; b < song.bars; b++) {
       html += `<span class="bar${b === barNow ? ' now' : ''}" data-bar="${b}">${b + 1}</span>`;
     }
@@ -147,7 +148,7 @@
 
     song.tracks.forEach((t, i) => {
       html += `<div class="arr-row${i === ui.track ? ' sel' : ''}" data-track="${i}">`;
-      html += `<span class="trk"><b>${t.name}</b><em>${presetName(t)}</em></span>`;
+      html += `<span class="trk"><b>${trackName(t)}</b><em>${presetName(t)}</em></span>`;
       for (let b = 0; b < song.bars; b++) {
         const n = t.notes.filter((x) => x.t >= b * BAR && x.t < (b + 1) * BAR);
         const on = n.length ? ' on' : '';
@@ -183,7 +184,7 @@
     let html = '<div class="roll">';
     html += '<div class="roll-head">';
     html += '<button class="xp-btn" data-act="prevbar">◀</button>';
-    html += `<span class="roll-title">${t.name} · 第 ${ui.bar + 1} 小节</span>`;
+    html += `<span class="roll-title">${trackName(t)} · Bar ${ui.bar + 1}</span>`;
     html += '<button class="xp-btn" data-act="nextbar">▶</button>';
     html += '</div>';
     html += '<div class="roll-tools">';
@@ -191,8 +192,8 @@
       const label = l === 3 ? '1/32' : l === 6 ? '1/16' : l === 12 ? '1/8' : '1/4';
       html += `<button class="xp-btn${ui.len === l ? ' on' : ''}" data-len="${l}">${label}</button>`;
     });
-    html += '<button class="xp-btn" data-act="oct-">八度−</button>';
-    html += '<button class="xp-btn" data-act="oct+">八度+</button>';
+    html += '<button class="xp-btn" data-act="oct-">Oct−</button>';
+    html += '<button class="xp-btn" data-act="oct+">Oct+</button>';
     html += '</div>';
 
     html += '<div class="grid">';
@@ -228,8 +229,8 @@
     const drums = t.bank === 128;
     const list = bank.presets.filter((p) => (drums ? p.bank === 128 : p.bank === 0));
     let html = '<div class="inst">';
-    html += `<div class="inst-head"><b>${t.name}</b> 的音色<span class="grow"></span>`;
-    html += `<button class="xp-btn${drums ? ' on' : ''}" data-act="drums">鼓组</button></div>`;
+    html += `<div class="inst-head"><b>${trackName(t)}</b> sounds<span class="grow"></span>`;
+    html += `<button class="xp-btn${drums ? ' on' : ''}" data-act="drums">Drums</button></div>`;
     html += '<div class="inst-list">';
     list.forEach((p) => {
       const on = p.program === t.program ? ' sel' : '';
@@ -255,7 +256,7 @@
     $('pos').textContent = (Math.floor(pos / BAR) + 1) + '.' + (Math.floor((pos % BAR) / PPQ) + 1);
 
     const t = track();
-    setStatus(`${t.name} · ${presetName(t)} · ${t.notes.length} 音符 · 复音 ${meter.voices}`);
+    setStatus(`${trackName(t)} · ${presetName(t)} · ${t.notes.length} notes · Voices ${meter.voices}`);
     renderMonitor();
   }
 
@@ -265,13 +266,13 @@
       try {
         const t = track();
         const pending = sdk.monitor.set({
-          E1: { label: '轨道', value: String(ui.track + 1) },
-          E2: { label: '速度', value: String(song.bpm) },
-          E3: { label: '力度', value: String(ui.vel) },
-          E4: { label: '长度', value: String(ui.len) + 't' },
-          K2: { label: playing ? '停止' : '播放' },
-          K3: { label: '窗口', value: ui.view === 'arrange' ? '编曲' : ui.view === 'roll' ? '钢琴窗' : '音色' },
-          K4: { label: '静音', pressed: t.mute }
+          E1: { label: 'Track', value: String(ui.track + 1) },
+          E2: { label: 'Tempo', value: String(song.bpm) },
+          E3: { label: 'Velocity', value: String(ui.vel) },
+          E4: { label: 'Length', value: String(ui.len) + 't' },
+          K2: { label: playing ? 'Stop' : 'Play' },
+          K3: { label: 'View', value: ui.view === 'arrange' ? 'Arrange' : ui.view === 'roll' ? 'Piano Roll' : 'Sounds' },
+          K4: { label: 'Mute', pressed: t.mute }
         });
         if (pending && typeof pending.catch === 'function') pending.catch(() => {});
       } catch (_) { /* optional */ }
@@ -318,7 +319,7 @@
     const t = track();
     t.bank = drums ? 128 : 0;
     t.program = program;
-    if (drums) t.name = '鼓组';
+    if (drums) t.name = 'Drums';
     pushSong();
     save();
     render();
@@ -432,14 +433,14 @@
   /* ── boot ──────────────────────────────────────────────────────────── */
   async function boot() {
     await load();
-    setStatus('正在载入 gm.sf2…');
+    setStatus('Loading gm.sf2...');
     try {
       const res = await fetch('gm.sf2');
       const buf = await res.arrayBuffer();
       bank = Bank.build(SF2.parse(buf));
-      setStatus('载入完成 · ' + bank.presets.length + ' 个预设');
+      setStatus('Loaded · ' + bank.presets.length + ' presets');
     } catch (error) {
-      setStatus('载入失败：' + error.message);
+      setStatus('Load failed: ' + error.message);
       return;
     }
     if (!song.tracks.some((t) => t.notes.length)) seedSong();

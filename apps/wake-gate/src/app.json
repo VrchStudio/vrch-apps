@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "debc92f2-613a-4e03-9f41-1f8c070debd1",
   "name": "Wake Gate",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "entry": "index.html",
   "sdk_version": 1,
   "data_schema_version": 1,

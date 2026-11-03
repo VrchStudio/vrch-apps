@@ -33,7 +33,7 @@
   function fmtSpan(ms) {
     const s = Math.max(0, Math.round(ms / 1000));
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
-    return h ? h + ' 小时 ' + m + ' 分' : m ? m + ' 分 ' + pad2(ss) + ' 秒' : ss + ' 秒';
+    return h ? h + 'h ' + m + 'm' : m ? m + 'm ' + pad2(ss) + 's' : ss + 's';
   }
   function shuffle(a) {
     const b = a.slice();
@@ -349,16 +349,16 @@
     $('alarmTime').textContent = pad2(st.hour) + ':' + pad2(st.minute);
     $('alarmTime').classList.toggle('off', !st.enabled);
     $('setStatus').classList.toggle('on', st.enabled);
-    $('statusText').textContent = st.enabled ? '闹钟已启用' : '闹钟已关闭';
+    $('statusText').textContent = st.enabled ? 'Alarm enabled' : 'Alarm disabled';
     $('rv1').textContent = pad2(st.hour);
     $('rv2').textContent = pad2(st.minute);
     $('rv3').textContent = Math.round(st.volume * 100) + '%';
-    $('rv4').textContent = st.gates + ' 关';
+    $('rv4').textContent = st.gates + ' gates';
     $('lastWake').textContent = st.lastWake
-      ? '上次 ' + new Date(st.lastWake.at).toTimeString().slice(0, 5) + ' 醒来 · 用时 ' +
-        fmtDur(st.lastWake.secs * 1000) + ' · 错 ' + st.lastWake.attempts + ' 次'
+      ? 'Last wake ' + new Date(st.lastWake.at).toTimeString().slice(0, 5) + ' · Duration ' +
+        fmtDur(st.lastWake.secs * 1000) + ' · Errors ' + st.lastWake.attempts + ''
       : '';
-    if (testAt) $('countdown').textContent = '测试将在 ' + Math.max(0, Math.ceil((testAt - Date.now()) / 1000)) + ' 秒后响铃';
+    if (testAt) $('countdown').textContent = 'Test rings in ' + Math.max(0, Math.ceil((testAt - Date.now()) / 1000)) + ' seconds';
     updateMonitor();
   }
 
@@ -371,34 +371,34 @@
     const now = Date.now();
     const g = $('gauges');
     $('ringView').classList.toggle('alert', intensity >= 2);
-    $('gateLabel').textContent = '第 ' + gateIdx + ' 关 / 共 ' + gateTotal;
+    $('gateLabel').textContent = 'Gate ' + gateIdx + ' / ' + gateTotal;
 
     if (gateIdx === 1) {
       $('taskMain').className = 'task';
       if (now < showUntil) {
         $('taskMain').textContent = seq.map((k) => SYM[k]).join('  ');
-        $('taskSub').textContent = '记住这个顺序，' + Math.ceil((showUntil - now) / 1000) + ' 秒后消失';
+        $('taskSub').textContent = 'Remember this order: ' + Math.ceil((showUntil - now) / 1000) + 's remaining';
       } else {
         $('taskMain').textContent = seq.map((_, i) => (i < step ? '✓' : '?')).join('  ');
-        $('taskSub').textContent = '依次按下第 ' + (step + 1) + ' 个键';
+        $('taskSub').textContent = 'Press key ' + (step + 1) + ' in the sequence';
       }
       g.innerHTML = '';
       $('ringHint').textContent = '◇ E1　▲ K2　● K3　■ K4';
     } else if (gateIdx === 2) {
       $('taskMain').className = 'task';
       $('taskMain').textContent = m.a + ' × ' + m.b + ' + ' + m.c + ' = ?';
-      $('taskSub').textContent = '旋 E1 到答案，再按 E1 · 当前 ' + m.val;
+      $('taskSub').textContent = 'Turn E1, then press E1 · Now ' + m.val;
       g.innerHTML = '';
-      $('ringHint').textContent = '先乘后加，算错要重来';
+      $('ringHint').textContent = 'Multiply before adding. A wrong answer restarts the gate.';
     } else {
       $('taskMain').className = 'task small';
-      $('taskMain').textContent = '按住 K2 + K4';
-      $('taskSub').textContent = '把 E2 保持在 ' + hold.win + ' ± ' + hold.tol + '，坚持 6 秒';
+      $('taskMain').textContent = 'Hold K2 + K4';
+      $('taskSub').textContent = 'Keep E2 at ' + hold.win + ' ± ' + hold.tol + ' for 6 seconds';
       const left = clamp(hold.win - hold.tol, 0, 100);
       const width = clamp(2 * hold.tol, 1, 100);
       const band = '<span class="band" style="left:' + left + '%;width:' + width + '%"></span>';
-      g.innerHTML = gauge(0, '保持时间', '') + gauge(1, 'E2 位置', band + '<span class="mark" id="gm1"></span>');
-      $('ringHint').textContent = '松开任一键即失败';
+      g.innerHTML = gauge(0, 'Hold time', '') + gauge(1, 'E2 position', band + '<span class="mark" id="gm1"></span>');
+      $('ringHint').textContent = 'Releasing either key resets the gate.';
     }
     updateMonitor();
   }
@@ -408,7 +408,7 @@
     const p = $('penalty');
     if (penaltyUntil > now) {
       p.hidden = false;
-      p.textContent = '错了 · ' + Math.ceil((penaltyUntil - now) / 1000) + ' 秒后继续';
+      p.textContent = 'Try again in ' + Math.ceil((penaltyUntil - now) / 1000) + ' seconds';
     } else {
       p.hidden = true;
     }
@@ -418,7 +418,7 @@
       if (f) f.style.width = clamp(hold.ms / 6000, 0, 1) * 100 + '%';
       if (v) v.textContent = (hold.ms / 1000).toFixed(1) + ' s';
       if (mark) mark.style.left = hold.val + '%';
-      if (v1) v1.textContent = Math.round(hold.val) + ' / 目标 ' + hold.win;
+      if (v1) v1.textContent = Math.round(hold.val) + ' / Target ' + hold.win;
     }
 
     if (gateIdx === 1 && !seqHidden && now >= showUntil) { seqHidden = true; renderTask(); }
@@ -428,24 +428,24 @@
     try {
       const v = {};
       if (!ringing) {
-        v.E1 = { label: '小时', value: pad2(st.hour) };
-        v.E2 = { label: '分钟', value: pad2(st.minute) };
-        v.E3 = { label: '音量', value: Math.round(st.volume * 100) + '%' };
-        v.E4 = { label: '关卡', value: st.gates + '' };
-        v.K2 = { label: st.enabled ? '停用' : '启用', pressed: st.enabled };
-        v.K3 = { label: '10 秒测试' };
-        v.K4 = { label: '试听' };
+        v.E1 = { label: 'Hour', value: pad2(st.hour) };
+        v.E2 = { label: 'Minute', value: pad2(st.minute) };
+        v.E3 = { label: 'Volume', value: Math.round(st.volume * 100) + '%' };
+        v.E4 = { label: 'Gates', value: st.gates + '' };
+        v.K2 = { label: st.enabled ? 'Disable' : 'Enable', pressed: st.enabled };
+        v.K3 = { label: '10s test' };
+        v.K4 = { label: 'Audition' };
       } else if (gateIdx === 1) {
-        v.E1 = { label: SYM.E1, value: '顺序' };
+        v.E1 = { label: SYM.E1, value: 'Order' };
         v.K2 = { label: SYM.K2 };
         v.K3 = { label: SYM.K3 };
         v.K4 = { label: SYM.K4 };
       } else if (gateIdx === 2) {
-        v.E1 = { label: '答案', value: String(m.val) };
+        v.E1 = { label: 'Answer', value: String(m.val) };
       } else {
-        v.E2 = { label: '位置', value: String(Math.round(hold.val)) };
-        v.K2 = { label: '按住', pressed: pressed.has('K2') };
-        v.K4 = { label: '按住', pressed: pressed.has('K4') };
+        v.E2 = { label: 'Position', value: String(Math.round(hold.val)) };
+        v.K2 = { label: 'Hold', pressed: pressed.has('K2') };
+        v.K4 = { label: 'Hold', pressed: pressed.has('K4') };
       }
       void sdk.monitor.set(v).catch(() => {});
     } catch (_) { /* ignore */ }
@@ -476,7 +476,7 @@
     $('ringView').hidden = false;
     beginGate(1);
     await armAudio();
-    if (!audio) $('ringHint').textContent = '没有音频输出：用 K1 菜单选择 OUT';
+    if (!audio) $('ringHint').textContent = 'No audio output. Choose OUT in the K1 Menu.';
   }
 
   function beginGate(n) {
@@ -601,7 +601,7 @@
     if (!d) return;
     if (gateIdx === 2 && e.control === 'E1') {
       m.val = clamp(m.val + d, 0, 150);
-      $('taskSub').textContent = '旋 E1 到答案，再按 E1 · 当前 ' + m.val;
+      $('taskSub').textContent = 'Turn E1, then press E1 · Now ' + m.val;
       updateMonitor();
     } else if (gateIdx === 3 && e.control === 'E2') {
       hold.val = clamp(hold.val + d * 1.2, 0, 100);
@@ -653,11 +653,11 @@
   function updateCountdown(now) {
     const el = $('countdown');
     if (testAt) {
-      el.textContent = '测试将在 ' + Math.max(0, Math.ceil((testAt - now) / 1000)) + ' 秒后响铃';
+      el.textContent = 'Test rings in ' + Math.max(0, Math.ceil((testAt - now) / 1000)) + ' seconds';
       return;
     }
     if (!st.enabled) { el.textContent = '—'; return; }
-    el.textContent = '距响铃 ' + fmtSpan(dueAt - now);
+    el.textContent = 'Alarm in ' + fmtSpan(dueAt - now);
   }
 
   function tick() {

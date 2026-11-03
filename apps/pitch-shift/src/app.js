@@ -9,7 +9,7 @@
 
   const RANGE = 12;                    // ±12 semitones (one octave each way)
   const PRESETS = [
-    { st: 0, name: '原声' },
+    { st: 0, name: 'Original' },
     { st: 12, name: '+12' },
     { st: 7, name: '+7' },
     { st: -12, name: '−12' },
@@ -17,8 +17,8 @@
   ];
   const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const INTERVAL = {
-    0: '原声', 1: '小二度', 2: '大二度', 3: '小三度', 4: '大三度', 5: '四度', 6: '三全音',
-    7: '五度', 8: '小六度', 9: '大六度', 10: '小七度', 11: '大七度', 12: '八度'
+    0: 'Original', 1: 'minor 2nd', 2: 'major 2nd', 3: 'minor 3rd', 4: 'major 3rd', 5: '4th', 6: 'tritone',
+    7: '5th', 8: 'minor 6th', 9: 'major 6th', 10: 'minor 7th', 11: 'major 7th', 12: 'octave'
   };
   const DEFAULTS = { st: 0, fine: 0, mix: 1, vol: 0.75, bypass: false };
   const state = { ...DEFAULTS };
@@ -38,13 +38,13 @@
   const signedCents = (v) => (v > 0 ? '+' + v + '¢' : v === 0 ? '0¢' : '−' + Math.abs(v) + '¢');
 
   function intervalName(st) {
-    if (st === 0) return '原声';
+    if (st === 0) return 'Original';
     const a = Math.abs(st);
-    const dir = st > 0 ? '高' : '低';
+    const dir = st > 0 ? 'Up ' : 'Down ';
     const oct = Math.floor(a / 12);
     const rest = a % 12;
     if (oct === 0) return dir + INTERVAL[rest];
-    const head = oct === 1 ? '八度' : oct === 2 ? '两个八度' : `${oct} 个八度`;
+    const head = oct === 1 ? 'octave' : oct === 2 ? '2 octaves' : `${oct} octaves`;
     return rest === 0 ? dir + head : `${dir}${head}+${INTERVAL[rest]}`;
   }
 
@@ -109,7 +109,7 @@
       phase = 'live';
       pushParams();
       e.ctx.onstatechange = () => {
-        if (engine === e && e.ctx.state !== 'running') fail('声音已暂停，点“开始”继续。');
+        if (engine === e && e.ctx.state !== 'running') fail('Audio paused. Tap Start to resume.');
       };
       renderGate();
       render();
@@ -118,10 +118,10 @@
       await release(e);
       if (token !== epoch) return;
       const code = error.code || error.name;
-      fail(code === 'permission_required' ? '请在 Device Access 中允许音频输入，然后点重试。'
-        : code === 'audio_device_unavailable' ? '请在 K1 菜单里选择可用的输入和输出，然后点重试。'
-          : code === 'interaction_required' ? '点“开始”启用声音。'
-            : '声音无法启动，点重试。');
+      fail(code === 'permission_required' ? 'Allow audio input in Device Access, then tap Retry.'
+        : code === 'audio_device_unavailable' ? 'Choose available IN and OUT in the K1 Menu, then tap Retry.'
+          : code === 'interaction_required' ? 'Tap Start to enable audio.'
+            : 'Audio unavailable. Tap Retry.');
     }
   }
 
@@ -145,7 +145,7 @@
     phase = 'error';
     void release(e);
     $('gate-msg').textContent = message;
-    $('gate-btn').textContent = '重试';
+    $('gate-btn').textContent = 'Retry';
     $('gate-btn').disabled = false;
     renderGate();
     render();
@@ -193,7 +193,7 @@
     state.bypass = !state.bypass;
     pushParams();
     save();
-    setStatus(state.bypass ? '旁通：只听原声。再按 K2 回到变调。' : defaultStatus());
+    setStatus(state.bypass ? 'Bypass: dry audio. Press K2 to return.' : defaultStatus());
     render();
   }
 
@@ -201,12 +201,12 @@
     let i = PRESETS.findIndex((p) => p.st === state.st);
     i = (i + 1) % PRESETS.length;
     setPitch(PRESETS[i].st);
-    setStatus(`预设：${PRESETS[i].name}（${intervalName(PRESETS[i].st)}）`);
+    setStatus(`Preset: ${PRESETS[i].name}(${intervalName(PRESETS[i].st)})`);
   }
 
   function defaultStatus() {
-    if (state.bypass) return '旁通中。按 K2 回到变调。';
-    return 'E1 调音高 · E2 混合 · K3 预设 · K4 按住对比原声';
+    if (state.bypass) return 'Bypassed. Press K2 to return.';
+    return 'E1 Pitch · E2 Mix · K3 Preset · K4 Hold dry';
   }
 
   /* ── persistence ───────────────────────────────────────────────────── */
@@ -247,13 +247,13 @@
     }
     if (e.type === 'down') {
       if (!engine && (e.control === 'K2' || e.control === 'K3' || e.control === 'K4')) { void start(); return; }
-      if (e.control === 'E1') { setPitch(0); setStatus('音高回到原声。'); }
-      else if (e.control === 'E2') { setMix(1); setStatus('混合回到 100%。'); }
-      else if (e.control === 'E3') { setFine(0); setStatus('微调回到 0 音分。'); }
-      else if (e.control === 'E4') { setVol(0.75); setStatus('音量回到 75%。'); }
+      if (e.control === 'E1') { setPitch(0); setStatus('Pitch reset to original.'); }
+      else if (e.control === 'E2') { setMix(1); setStatus('Mix reset to 100%.'); }
+      else if (e.control === 'E3') { setFine(0); setStatus('Fine tuning reset to 0 cents.'); }
+      else if (e.control === 'E4') { setVol(0.75); setStatus('Volume reset to 75%.'); }
       else if (e.control === 'K2') toggleBypass();
       else if (e.control === 'K3') nextPreset();
-      else if (e.control === 'K4') { compare = true; pushParams(); setStatus('对比：正在听原声…松开 K4 回到变调。'); render(); }
+      else if (e.control === 'K4') { compare = true; pushParams(); setStatus('Dry comparison... Release K4 to return.'); render(); }
       return;
     }
     if (e.type === 'up' || e.type === 'cancel') {
@@ -282,7 +282,7 @@
     if (!keyInfo || keyInfo.root < 0) {
       nameEl.textContent = '—';
       nameEl.className = '';
-      metaEl.textContent = keyInfo && keyInfo.weak ? '单音或噪声，听不清调性' : '等待音乐';
+      metaEl.textContent = keyInfo && keyInfo.weak ? 'Key unclear: single note or noise' : 'Waiting for music';
       for (const bar of bars) {
         bar.querySelector('i').style.height = '0%';
         bar.classList.remove('tonic');
@@ -290,20 +290,20 @@
       return;
     }
 
-    const minor = keyInfo.minor ? ' 小调' : ' 大调';
+    const minor = keyInfo.minor ? ' minor' : ' major';
     nameEl.textContent = NOTE_NAMES[keyInfo.root] + minor;
     nameEl.className = 'on';
 
-    let meta = '置信 ' + Math.round(keyInfo.r * 100) + '%';
+    let meta = 'Confidence ' + Math.round(keyInfo.r * 100) + '%';
     // relative major/minor share their notes; say so instead of pretending
     if (typeof keyInfo.margin === 'number' && keyInfo.margin < 0.05 &&
         typeof keyInfo.altRoot === 'number' && keyInfo.altRoot >= 0) {
-      meta += ' · 也像 ' + NOTE_NAMES[keyInfo.altRoot] + (keyInfo.altMinor ? ' 小调' : ' 大调');
+      meta += ' · Also ' + NOTE_NAMES[keyInfo.altRoot] + (keyInfo.altMinor ? ' minor' : ' major');
     }
     const shift = Math.round(state.st + state.fine / 100);
     if (shift !== 0) {
       const outRoot = (((keyInfo.root + shift) % 12) + 12) % 12;
-      meta += ' · 输出 ' + NOTE_NAMES[outRoot] + minor;
+      meta += ' · Out ' + NOTE_NAMES[outRoot] + minor;
     }
     metaEl.textContent = meta;
 
@@ -350,14 +350,14 @@
     const show = phase !== 'live';
     $('gate').hidden = !show;
     if (phase === 'starting') {
-      $('gate-msg').textContent = '正在启动声音…';
+      $('gate-msg').textContent = 'Starting audio...';
       $('gate-btn').disabled = true;
       return;
     }
     $('gate-btn').disabled = false;
     if (phase === 'idle') {
-      $('gate-btn').textContent = '开始';
-      $('gate-msg').textContent = preview ? '预览里没有麦克风，请在设备上打开这个 App。' : '点“开始”启用音频输入和输出。';
+      $('gate-btn').textContent = 'Start';
+      $('gate-msg').textContent = preview ? 'Microphone unavailable in preview. Launch on the device.' : 'Tap Start to enable audio input and output.';
     }
   }
 
@@ -366,13 +366,13 @@
     monitorTimer = setTimeout(() => {
       try {
         const pending = sdk.monitor.set({
-          E1: { label: '音高', value: signed(state.st) + ' st' },
-          E2: { label: '混合', value: Math.round(state.mix * 100) + '%' },
-          E3: { label: '微调', value: signedCents(state.fine) },
-          E4: { label: '音量', value: Math.round(state.vol * 100) + '%' },
-          K2: { label: '旁通', pressed: state.bypass },
-          K3: { label: '预设' },
-          K4: { label: '对比', pressed: compare }
+          E1: { label: 'Pitch', value: signed(state.st) + ' st' },
+          E2: { label: 'Mix', value: Math.round(state.mix * 100) + '%' },
+          E3: { label: 'Fine', value: signedCents(state.fine) },
+          E4: { label: 'Volume', value: Math.round(state.vol * 100) + '%' },
+          K2: { label: 'Bypass', pressed: state.bypass },
+          K3: { label: 'Preset' },
+          K4: { label: 'Compare', pressed: compare }
         });
         if (pending && typeof pending.catch === 'function') pending.catch(() => {});
       } catch (_) { /* monitor is optional */ }
@@ -393,7 +393,7 @@
       if (!engine) { void start(); }
       const p = PRESETS[Number(b.dataset.preset)];
       setPitch(p.st);
-      setStatus(`预设：${p.name}（${intervalName(p.st)}）`);
+      setStatus(`Preset: ${p.name}(${intervalName(p.st)})`);
     });
 
     const bar = $('pitchbar');
@@ -407,13 +407,13 @@
       dragging = true;
       try { bar.setPointerCapture(ev.pointerId); } catch (_) { /* older engine */ }
       setPitch(pitchAt(ev));
-      setStatus(`音高 ${signed(state.st)}（${intervalName(state.st)}）`);
+      setStatus(`Pitch ${signed(state.st)}(${intervalName(state.st)})`);
       ev.preventDefault();
     });
     bar.addEventListener('pointermove', (ev) => {
       if (!dragging) return;
       setPitch(pitchAt(ev));
-      setStatus(`音高 ${signed(state.st)}（${intervalName(state.st)}）`);
+      setStatus(`Pitch ${signed(state.st)}(${intervalName(state.st)})`);
     });
     const end = () => { dragging = false; };
     bar.addEventListener('pointerup', end);

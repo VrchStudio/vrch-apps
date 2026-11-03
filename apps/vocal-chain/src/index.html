@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
@@ -12,7 +12,7 @@
   <header>
     <div id="gainblock">
       <b id="gain">36</b><span>dB</span>
-      <small id="keyshow">A 小调</small>
+      <small id="keyshow">A minor</small>
     </div>
     <div id="side">
       <div id="tuner">
@@ -20,13 +20,13 @@
         <span id="hz"></span>
         <span id="to"></span>
       </div>
-      <div id="lvl" title="输入电平"><i id="lvl-in"></i></div>
+      <div id="lvl" title="Input level"><i id="lvl-in"></i></div>
     </div>
     <div id="flags">
-      <span id="flag-tune" class="flag on">修音</span>
-      <span id="flag-dn" class="flag on">降噪</span>
+      <span id="flag-tune" class="flag on">Tune</span>
+      <span id="flag-dn" class="flag on">Denoise</span>
       <span id="flag-ott" class="flag on">OTT</span>
-      <span id="flag-dist" class="flag off">失真</span>
+      <span id="flag-dist" class="flag off">Distortion</span>
     </div>
   </header>
 
@@ -35,24 +35,24 @@
   <section id="rows"></section>
 
   <section id="chain">
-    <div class="cnode on" id="n-pre">前级</div>
+    <div class="cnode on" id="n-pre">Preamp</div>
     <i>›</i>
-    <div class="cnode" id="n-dn">降噪</div>
+    <div class="cnode" id="n-dn">Denoise</div>
     <i>›</i>
-    <div class="cnode" id="n-tune">修音</div>
+    <div class="cnode" id="n-tune">Tune</div>
     <i>›</i>
-    <div class="cnode" id="n-dist">失真</div>
+    <div class="cnode" id="n-dist">Distortion</div>
     <i>›</i>
     <div class="cnode" id="n-ott">OTT</div>
     <i>›</i>
-    <div class="cnode on" id="n-lim">限幅</div>
+    <div class="cnode on" id="n-lim">Limiter</div>
   </section>
 
   <section id="presets"></section>
 
   <footer id="status"></footer>
 
-  <div id="gate" hidden><div><p id="gate-msg"></p><button id="gate-btn">开始</button></div></div>
+  <div id="gate" hidden><div><p id="gate-msg"></p><button id="gate-btn">Start</button></div></div>
 </div>
 <script src="app.js"></script>
 </body>

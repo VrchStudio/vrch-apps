@@ -9,16 +9,16 @@
 
   /* ── content ───────────────────────────────────────────────────────── */
   const SOUNDS = [
-    { id: 'B', zh: '动', role: '底鼓 Kick', group: 'B',
-      tip: '双唇轻闭，像说“不”但不出声：嘴里憋一点气，嘴唇猛地弹开，发出短促低沉的“噗”。' },
-    { id: 'Pf', zh: '次', role: '军鼓 Snare', group: 'S',
-      tip: '先发 P：双唇闭紧弹开，紧接着上齿抵下唇吐气“夫”，连成一个有爆破感的“噗夫”。' },
-    { id: 'K', zh: '咔', role: 'K 军鼓 Rim', group: 'S',
-      tip: '舌根顶住上颚后部，不出声地说“k”，用气猛地冲开，声音清脆短促，像舌头打响指。' },
-    { id: 't', zh: '嚓', role: '闭镲 Hi-hat', group: 'H',
-      tip: '舌尖抵住上齿后面，轻轻说“t”但不出声，只留下清脆的气声，越短越好。' },
-    { id: 'ts', zh: '嚓—', role: '开镲 Open hat', group: 'H',
-      tip: '说“t”后马上接一个拉长的“s”：“ts——”，牙齿合拢让气流嘶嘶作响，约半拍长。' }
+    { id: 'B', zh: 'boom', role: 'Kick', group: 'B',
+      tip: 'Close your lips, build a little pressure, then pop them open for a short, low B sound. Do not voice it.' },
+    { id: 'Pf', zh: 'pff', role: 'Snare', group: 'S',
+      tip: 'Pop a P with closed lips, then blow an F with your upper teeth against your lower lip: Pf.' },
+    { id: 'K', zh: 'ka', role: 'Rim', group: 'S',
+      tip: 'Press the back of your tongue against your palate, then release a short, crisp unvoiced K.' },
+    { id: 't', zh: 'tss', role: 'Closed hat', group: 'H',
+      tip: 'Place your tongue behind your upper teeth and release a very short, unvoiced T.' },
+    { id: 'ts', zh: 'tsss', role: 'Open hat', group: 'H',
+      tip: 'Follow T with a sustained S through closed teeth: ts. Keep it about half a beat long.' }
   ];
   // Must match DEFAULT_PROTOS in dsp.js: share of energy in 5 bands
   const DEFAULT_PROTOS = [
@@ -28,24 +28,24 @@
     [0.03, 0.06, 0.14, 0.32, 0.45],
     [0.03, 0.06, 0.13, 0.30, 0.48]
   ];
-  const BAND_NAMES = ['低', '中低', '中', '中高', '高'];
-  const KITS = ['经典', '808', '低保真', '人声'];
+  const BAND_NAMES = ['Low', 'Low-mid', 'Mid', 'High-mid', 'High'];
+  const KITS = ['Classic', '808', 'Lo-fi', 'Vocal'];
   const MODES = [
-    { id: 'transform', name: '变身' },
-    { id: 'lab', name: '单音' },
-    { id: 'rhythm', name: '节奏' }
+    { id: 'transform', name: 'Transform' },
+    { id: 'lab', name: 'Sound Lab' },
+    { id: 'rhythm', name: 'Rhythm' }
   ];
   const PATTERNS = [
-    { name: '动次打次', en: 'Boots & Cats', bpm: 80, steps: 'B . t . Pf . t . B . t . Pf . t .',
-      tip: '最经典的入门节奏：动 嚓 次 嚓。先慢慢来，每个声音都清楚了再加速。' },
-    { name: '嘻哈基础', en: 'Hip-hop', bpm: 85, steps: 'B . t . Pf . t B B . t . Pf . t .',
-      tip: '第二拍前多了一个连续的“动动”，注意第二个底鼓要落在拍子上。' },
-    { name: '十六分镲', en: 'Hat Groove', bpm: 75, steps: 'B t t t Pf t t t B t t B Pf t t t',
-      tip: '镲片要非常轻、非常短，舌尖只碰一下。底鼓和军鼓保持响亮。' },
-    { name: 'K 军鼓律动', en: 'K-Snare Funk', bpm: 90, steps: 'B . t K . t B . B . t K . t . t',
-      tip: 'K 军鼓落在反拍上，带来放克的弹跳感。K 要用舌根发，不要用嗓子。' },
-    { name: '开镲节奏', en: 'Open Hats', bpm: 100, steps: 'B . ts . Pf . ts . B . ts . Pf . ts .',
-      tip: '“ts——”要在下一个声音之前收住，长度大约半拍。' }
+    { name: 'Boots & Cats', en: 'Boots & Cats', bpm: 80, steps: 'B . t . Pf . t . B . t . Pf . t .',
+      tip: 'Start with B, t, Pf, t. Practice slowly and make each sound clear before speeding up.' },
+    { name: 'Hip-hop', en: 'Hip-hop', bpm: 85, steps: 'B . t . Pf . t B B . t . Pf . t .',
+      tip: 'Play the extra pair of kicks before beat two. Keep the second kick on the beat.' },
+    { name: 'Hat Groove', en: 'Hat Groove', bpm: 75, steps: 'B t t t Pf t t t B t t B Pf t t t',
+      tip: 'Keep hats light and short. Let the kick and snare stay loud.' },
+    { name: 'K-Snare Funk', en: 'K-Snare Funk', bpm: 90, steps: 'B . t K . t B . B . t K . t . t',
+      tip: 'Offbeat K snares add bounce. Use the back of your tongue, not your voice.' },
+    { name: 'Open Hats', en: 'Open Hats', bpm: 100, steps: 'B . ts . Pf . ts . B . ts . Pf . ts .',
+      tip: 'End each open hat before the next sound, after about half a beat.' }
   ].map((p) => ({ ...p, codes: p.steps.split(' ').map((s) => SOUNDS.findIndex((x) => x.id === s)) }));
 
   const DEFAULTS = { mode: 0, kit: 0, mix: 0, sens: 0.6, vol: 0.8, sound: 0, pattern: 0 };
@@ -158,7 +158,7 @@
       pushParams();
       if (metro && mode() === 'transform') send({ type: 'seq', kind: 'metro', bpm: state.bpm, steps: [] });
       e.ctx.onstatechange = () => {
-        if (engine === e && e.ctx.state !== 'running') fail('声音已暂停，点“开始”继续。');
+        if (engine === e && e.ctx.state !== 'running') fail('Audio paused. Tap Start to resume.');
       };
       renderGate();
       render();
@@ -166,10 +166,10 @@
       await release(e);
       if (token !== epoch) return;
       const code = error.code || error.name;
-      fail(code === 'permission_required' ? '请在 Device Access 中允许音频输入，然后点重试。'
-        : code === 'audio_device_unavailable' ? '请在 K1 菜单里选择可用的输入和输出，然后点重试。'
-          : code === 'interaction_required' ? '点“开始”启用声音。'
-            : '声音无法启动，点重试。');
+      fail(code === 'permission_required' ? 'Allow audio input in Device Access, then tap Retry.'
+        : code === 'audio_device_unavailable' ? 'Choose available IN and OUT in the K1 Menu, then tap Retry.'
+          : code === 'interaction_required' ? 'Tap Start to enable audio.'
+            : 'Audio unavailable. Tap Retry.');
     }
   }
 
@@ -193,7 +193,7 @@
     phase = 'error';
     void release(e);
     $('gate-msg').textContent = message;
-    $('gate-btn').textContent = '重试';
+    $('gate-btn').textContent = 'Retry';
     rhythm.status = rhythm.status === 'result' ? 'result' : 'idle';
     renderGate();
     render();
@@ -233,7 +233,7 @@
   function playDemo(sound, muteMic) {
     if (!engine) return;
     send({ type: 'trigger', sound, demo: true, mute: !!muteMic });
-    if (mode() === 'lab') { lab.waiting = true; setStatus(`听完示范后，模仿“${SOUNDS[sound].id}”`); }
+    if (mode() === 'lab') { lab.waiting = true; setStatus(`Listen, then imitate ${SOUNDS[sound].id}`); }
   }
 
   function onTake(d) {
@@ -257,17 +257,17 @@
       save();
     }
     const like = SOUNDS[d.cls];
-    setStatus(score >= 75 ? '很像了！再来几次让它更稳定。'
-      : score >= 45 ? `接近了。听起来有点像“${like.id}”，按 K4 对比一下。`
-        : `听起来更像“${like.id} ${like.zh}”，再听一遍示范。`);
+    setStatus(score >= 75 ? 'Great match! Repeat it for consistency.'
+      : score >= 45 ? `Close! It sounds like ${like.id}. Press K4 to compare.`
+        : `It sounds more like ${like.id}. Listen to the demo again.`);
     render();
   }
 
   function playAB() {
-    if (!engine || !lab.take) { setStatus('先模仿一次，再按 K4 对比。'); return; }
+    if (!engine || !lab.take) { setStatus('Imitate a sound first, then press K4 to compare.'); return; }
     const copy = lab.take.audio.slice();
     send({ type: 'ab', audio: copy, sound: state.sound }, [copy.buffer]);
-    setStatus('先播放你的声音，再播放示范。');
+    setStatus('Your recording plays first, then the demo.');
   }
 
   /* ── rhythm ────────────────────────────────────────────────────────── */
@@ -303,11 +303,11 @@
       if (idx < 16) {
         rhythm.status = 'count';
         rhythm.step = -1;
-        if (idx % 4 === 0) setStatus(`预备… ${4 - idx / 4}`);
+        if (idx % 4 === 0) setStatus(`Get ready... ${4 - idx / 4}`);
       } else {
         if (rhythm.status !== 'play') { rhythm.status = 'play'; render(); }
         rhythm.step = (idx - 16) % 16;
-        setStatus(`跟着拍子来！第 ${idx < 32 ? 1 : 2} / 2 小节`);
+        setStatus(`Follow the beat! Bar ${idx < 32 ? 1 : 2} / 2`);
       }
       renderPlayhead();
     }
@@ -353,11 +353,11 @@
     const wrong = results.flat().filter((r) => r === 'wrong').length;
     const miss = results.flat().filter((r) => r === 'miss').length;
     const tips = [];
-    if (miss) tips.push(`漏了 ${miss} 个`);
-    if (wrong) tips.push(`${wrong} 个声音不对`);
-    if (extra) tips.push(`多了 ${extra} 个`);
-    if (rhythm.offset !== null && Math.abs(rhythm.offset) > 25) tips.push(`整体偏${rhythm.offset < 0 ? '快' : '慢'} ${Math.abs(rhythm.offset)} 毫秒`);
-    setStatus(tips.length ? tips.join('，') + '。按 K4 再来一次。' : '完美！试试把速度调快一点（E2）。');
+    if (miss) tips.push(`${miss} missed`);
+    if (wrong) tips.push(`${wrong} wrong sounds`);
+    if (extra) tips.push(`${extra} extra`);
+    if (rhythm.offset !== null && Math.abs(rhythm.offset) > 25) tips.push(`Overall ${rhythm.offset < 0 ? 'early' : 'late'} by ${Math.abs(rhythm.offset)} ms`);
+    setStatus(tips.length ? tips.join(', ') + '. Press K4 to retry.' : 'Perfect! Try a faster tempo with E2.');
     render();
   }
 
@@ -481,9 +481,9 @@
   /* ── view ──────────────────────────────────────────────────────────── */
   function defaultStatus() {
     const m = mode();
-    if (m === 'transform') return preview ? '预览里没有麦克风：点鼓垫试听。' : '对着麦克风说“动 次 嚓”，变成鼓声。建议戴耳机。';
-    if (m === 'lab') return '按 K3 听示范，然后对着麦克风模仿。';
-    return '按 K3 听示范，按 K4 开始练习（先数 4 拍）。';
+    if (m === 'transform') return preview ? 'No microphone in preview. Tap a pad to listen.' : 'Say B, Pf, t into the mic to play drums. Use headphones.';
+    if (m === 'lab') return 'K3 Demo · Listen, then imitate into the mic.';
+    return 'K3 Demo · K4 Practice with a four-beat count-in.';
   }
 
   function setStatus(text) { $('status').textContent = text; }
@@ -504,10 +504,10 @@
     document.querySelectorAll('#tabs button').forEach((b, i) => b.classList.toggle('on', i === state.mode));
     for (const md of MODES) $('v-' + md.id).hidden = md.id !== m;
 
-    $('kit-name').textContent = '鼓组 · ' + KITS[state.kit];
-    $('tf-sub').textContent = `原声 ${Math.round(state.mix * 100)}%  灵敏度 ${Math.round(state.sens * 100)}%  音量 ${Math.round(state.vol * 100)}%`;
+    $('kit-name').textContent = 'Kit · ' + KITS[state.kit];
+    $('tf-sub').textContent = `Dry ${Math.round(state.mix * 100)}%  Sens ${Math.round(state.sens * 100)}%  Vol ${Math.round(state.vol * 100)}%`;
     $('metro-btn').classList.toggle('on', metro);
-    $('metro-btn').textContent = metro ? `■ 节拍器 ${state.bpm}` : `♩ 节拍器 ${state.bpm}`;
+    $('metro-btn').textContent = metro ? `■ Click ${state.bpm}` : `♩ Click ${state.bpm}`;
     $('v-transform').classList.toggle('muted', muted);
 
     const s = SOUNDS[state.sound];
@@ -516,7 +516,7 @@
     $('lab-tip').textContent = s.tip;
     $('match').textContent = lab.score === null ? '--' : lab.score + '%';
     $('match').className = lab.score === null ? '' : lab.score >= 75 ? 'good' : lab.score >= 45 ? 'ok' : 'bad';
-    $('match-sub').textContent = lab.take ? `像“${SOUNDS[lab.take.cls].id}” · ${Math.round(lab.take.dur * 1000)} ms` : '相似度';
+    $('match-sub').textContent = lab.take ? `Like ${SOUNDS[lab.take.cls].id} · ${Math.round(lab.take.dur * 1000)} ms` : 'Match';
     const target = DEFAULT_PROTOS[state.sound];
     for (let i = 0; i < 5; i++) {
       $('bt' + i).style.height = Math.round(target[i] * 160) + '%';
@@ -524,9 +524,9 @@
     }
 
     const pat = PATTERNS[state.pattern];
-    $('pat-name').innerHTML = `${pat.name} <small>${pat.en}</small>`;
+    $('pat-name').innerHTML = pat.name;
     const best = state.best[state.pattern];
-    $('pat-sub').textContent = `${state.bpm} BPM${best ? ` · 最佳 ${best}` : ''}`;
+    $('pat-sub').textContent = `${state.bpm} BPM${best ? ` · Best ${best}` : ''}`;
     for (let i = 0; i < 16; i++) {
       const cell = $('c' + i);
       const code = pat.codes[i];
@@ -536,12 +536,12 @@
       const dots = cell.querySelectorAll('i');
       for (let bar = 0; bar < 2; bar++) dots[bar].className = rhythm.results ? (rhythm.results[i][bar] || '') : '';
     }
-    $('rh-score').textContent = rhythm.score === null ? '' : rhythm.score + '分';
+    $('rh-score').textContent = rhythm.score === null ? '' : rhythm.score + ' pts';
     $('rh-tip').textContent = pat.tip;
-    $('rdemo-btn').textContent = rhythm.status === 'demo' ? '■ 停止示范' : '▶ 示范';
+    $('rdemo-btn').textContent = rhythm.status === 'demo' ? '■ Stop demo' : '▶ Demo';
     $('rdemo-btn').classList.toggle('on', rhythm.status === 'demo');
     const practicing = rhythm.status === 'count' || rhythm.status === 'play';
-    $('practice-btn').textContent = practicing ? '■ 停止' : '● 练习';
+    $('practice-btn').textContent = practicing ? '■ Stop' : '● Practice';
     $('practice-btn').classList.toggle('on', practicing);
     renderPlayhead();
     renderMonitor();
@@ -554,9 +554,9 @@
   function renderGate() {
     const show = phase !== 'live';
     $('gate').hidden = !show;
-    if (phase === 'starting') { $('gate-msg').textContent = '正在启动声音…'; $('gate-btn').disabled = true; }
+    if (phase === 'starting') { $('gate-msg').textContent = 'Starting audio...'; $('gate-btn').disabled = true; }
     else $('gate-btn').disabled = false;
-    if (phase === 'idle') { $('gate-msg').textContent = preview ? '预览里没有麦克风，可以试听示范和鼓声。' : '点“开始”启用麦克风和声音。'; $('gate-btn').textContent = '开始'; }
+    if (phase === 'idle') { $('gate-msg').textContent = preview ? 'No microphone in preview. Listen to demos and drum sounds.' : 'Tap Start to enable the microphone and audio.'; $('gate-btn').textContent = 'Start'; }
   }
 
   function renderMonitor() {
@@ -564,25 +564,25 @@
     monitorTimer = setTimeout(() => {
       const m = mode();
       const v = {
-        E3: { label: '灵敏度', value: Math.round(state.sens * 100) + '%' },
-        E4: { label: '音量', value: Math.round(state.vol * 100) + '%' },
-        K2: { label: '模式', value: MODES[state.mode].name }
+        E3: { label: 'Sensitivity', value: Math.round(state.sens * 100) + '%' },
+        E4: { label: 'Volume', value: Math.round(state.vol * 100) + '%' },
+        K2: { label: 'Mode', value: MODES[state.mode].name }
       };
       if (m === 'transform') {
-        v.E1 = { label: '鼓组', value: KITS[state.kit] };
-        v.E2 = { label: '原声', value: Math.round(state.mix * 100) + '%' };
-        v.K3 = { label: '节拍器', pressed: metro };
-        v.K4 = { label: muted ? '已静音' : '静音', pressed: muted };
+        v.E1 = { label: 'Kit', value: KITS[state.kit] };
+        v.E2 = { label: 'Original', value: Math.round(state.mix * 100) + '%' };
+        v.K3 = { label: 'Click', pressed: metro };
+        v.K4 = { label: muted ? 'Muted' : 'Mute', pressed: muted };
       } else if (m === 'lab') {
-        v.E1 = { label: '声音', value: SOUNDS[state.sound].id };
+        v.E1 = { label: 'Sound', value: SOUNDS[state.sound].id };
         v.E2 = { label: '', value: '' };
-        v.K3 = { label: '听示范' };
-        v.K4 = { label: '对比' };
+        v.K3 = { label: 'Demo' };
+        v.K4 = { label: 'Compare' };
       } else {
-        v.E1 = { label: '节奏', value: PATTERNS[state.pattern].name };
-        v.E2 = { label: '速度', value: String(state.bpm) };
-        v.K3 = { label: '示范', pressed: rhythm.status === 'demo' };
-        v.K4 = { label: '练习', pressed: rhythm.status === 'count' || rhythm.status === 'play' };
+        v.E1 = { label: 'Rhythm', value: PATTERNS[state.pattern].name };
+        v.E2 = { label: 'Speed', value: String(state.bpm) };
+        v.K3 = { label: 'Demo', pressed: rhythm.status === 'demo' };
+        v.K4 = { label: 'Practice', pressed: rhythm.status === 'count' || rhythm.status === 'play' };
       }
       void sdk.monitor.set(v).catch(() => {});
     }, 40);

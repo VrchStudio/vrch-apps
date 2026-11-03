@@ -22,58 +22,58 @@
 
   const PAGES = [
     {
-      name: '主控', toggle: 'tuneOn', toggleName: '修音',
+      name: 'Main', toggle: 'tuneOn', toggleName: 'Tune',
       knobs: [
-        { label: '增益', key: 'gainDb', min: 0, max: 60, step: 3, fmt: (v) => Math.round(v) + ' dB', reset: 36 },
-        { label: '修音', key: 'amt', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.5 },
-        { label: '速度', key: 'tuneSpeed', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.5 },
-        { label: '输出', key: 'vol', min: 0, max: 1.2, step: 0.05, fmt: pct, reset: 0.8 }
+        { label: 'Gain', key: 'gainDb', min: 0, max: 60, step: 3, fmt: (v) => Math.round(v) + ' dB', reset: 36 },
+        { label: 'Tune', key: 'amt', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.5 },
+        { label: 'Speed', key: 'tuneSpeed', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.5 },
+        { label: 'Output', key: 'vol', min: 0, max: 1.2, step: 0.05, fmt: pct, reset: 0.8 }
       ]
     },
     {
-      name: '降噪', toggle: 'dnOn', toggleName: '降噪',
+      name: 'Denoise', toggle: 'dnOn', toggleName: 'Denoise',
       knobs: [
-        { label: '强度', key: 'dnStrength', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.6 },
-        { label: '门限', key: 'dnThrDb', min: -80, max: -20, step: 2, fmt: (v) => Math.round(v) + ' dB', reset: -55 },
-        { label: '深度', key: 'dnDepth', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.85 },
-        { label: '释放', key: 'dnRelMs', min: 20, max: 600, step: 20, fmt: (v) => Math.round(v) + ' ms', reset: 120 }
+        { label: 'Amount', key: 'dnStrength', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.6 },
+        { label: 'Threshold', key: 'dnThrDb', min: -80, max: -20, step: 2, fmt: (v) => Math.round(v) + ' dB', reset: -55 },
+        { label: 'Depth', key: 'dnDepth', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.85 },
+        { label: 'Release', key: 'dnRelMs', min: 20, max: 600, step: 20, fmt: (v) => Math.round(v) + ' ms', reset: 120 }
       ]
     },
     {
       name: 'OTT', toggle: 'ottOn', toggleName: 'OTT',
       knobs: [
-        { label: '阈值', key: 'ottThrDb', min: -50, max: 0, step: 2, fmt: (v) => Math.round(v) + ' dB', reset: -26 },
-        { label: '上行', key: 'ottUp', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.7 },
-        { label: '下行', key: 'ottDown', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.6 },
-        { label: '速度', key: 'ottSpeed', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.4 }
+        { label: 'Threshold', key: 'ottThrDb', min: -50, max: 0, step: 2, fmt: (v) => Math.round(v) + ' dB', reset: -26 },
+        { label: 'Upward', key: 'ottUp', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.7 },
+        { label: 'Downward', key: 'ottDown', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.6 },
+        { label: 'Speed', key: 'ottSpeed', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.4 }
       ]
     },
     {
-      name: '失真', toggle: 'distOn', toggleName: '失真',
+      name: 'Distortion', toggle: 'distOn', toggleName: 'Distortion',
       knobs: [
-        { label: '推子', key: 'drive', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.35 },
-        { label: '音色', key: 'tone', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.5 },
-        { label: '混合', key: 'distMix', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.5 },
-        { label: '偏置', key: 'distBias', min: 0, max: 0.5, step: 0.02, fmt: pct2, reset: 0 }
+        { label: 'Drive', key: 'drive', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.35 },
+        { label: 'Tone', key: 'tone', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.5 },
+        { label: 'Mix', key: 'distMix', min: 0, max: 1, step: 0.05, fmt: pct, reset: 0.5 },
+        { label: 'Bias', key: 'distBias', min: 0, max: 0.5, step: 0.02, fmt: pct2, reset: 0 }
       ]
     }
   ];
 
   const PRESETS = [
     {
-      name: '清唱', v: { gainDb: 30, amt: 0.3, tuneSpeed: 0.5, vol: 0.8, dnOn: true, dnThrDb: -55, dnDepth: 0.8,
+      name: 'Clean', v: { gainDb: 30, amt: 0.3, tuneSpeed: 0.5, vol: 0.8, dnOn: true, dnThrDb: -55, dnDepth: 0.8,
         ottOn: true, ottThrDb: -26, ottUp: 0.4, ottDown: 0.4, distOn: false, drive: 0 }
     },
     {
-      name: '电台', v: { gainDb: 40, amt: 0.5, tuneSpeed: 0.5, vol: 0.85, dnOn: true, dnStrength: 0.85, dnThrDb: -50, dnDepth: 0.9,
+      name: 'Radio', v: { gainDb: 40, amt: 0.5, tuneSpeed: 0.5, vol: 0.85, dnOn: true, dnStrength: 0.85, dnThrDb: -50, dnDepth: 0.9,
         ottOn: true, ottThrDb: -30, ottUp: 0.8, ottDown: 0.7, distOn: false, drive: 0 }
     },
     {
-      name: '硬修音', v: { gainDb: 36, amt: 1, tuneSpeed: 0.9, vol: 0.8, dnOn: true, dnThrDb: -55, dnDepth: 0.85,
+      name: 'Hard Tune', v: { gainDb: 36, amt: 1, tuneSpeed: 0.9, vol: 0.8, dnOn: true, dnThrDb: -55, dnDepth: 0.85,
         ottOn: true, ottThrDb: -26, ottUp: 0.5, ottDown: 0.5, distOn: false, drive: 0 }
     },
     {
-      name: '失真', v: { gainDb: 36, amt: 0.6, vol: 0.7, dnOn: true, dnThrDb: -55, dnDepth: 0.85,
+      name: 'Distortion', v: { gainDb: 36, amt: 0.6, vol: 0.7, dnOn: true, dnThrDb: -55, dnDepth: 0.85,
         ottOn: true, ottThrDb: -26, ottUp: 0.7, ottDown: 0.6, distOn: true, drive: 0.7, tone: 0.6, distMix: 0.7, distBias: 0.1 }
     }
   ];
@@ -89,7 +89,7 @@
   const tune = { f0: 0, midi: 0, target: 0, voiced: false };
 
   const page = () => PAGES[state.page];
-  const keyName = (k) => NOTE[(k >> 1) % 12] + ((k & 1) ? ' 小调' : ' 大调');
+  const keyName = (k) => NOTE[(k >> 1) % 12] + ((k & 1) ? ' minor' : ' major');
   const noteName = (midi) => NOTE[((Math.round(midi) % 12) + 12) % 12] + (Math.floor(Math.round(midi) / 12) - 1);
 
   /* ── audio ─────────────────────────────────────────────────────────── */
@@ -158,7 +158,7 @@
       phase = 'live';
       pushParams();
       e.ctx.onstatechange = () => {
-        if (engine === e && e.ctx.state !== 'running') fail('声音已暂停，点“开始”继续。');
+        if (engine === e && e.ctx.state !== 'running') fail('Audio paused. Tap Start to resume.');
       };
       renderGate();
       render();
@@ -167,10 +167,10 @@
       await release(e);
       if (token !== epoch) return;
       const code = error.code || error.name;
-      fail(code === 'permission_required' ? '请在 Device Access 中允许音频输入，然后点重试。'
-        : code === 'audio_device_unavailable' ? '请在 K1 菜单里选择可用的输入和输出，然后点重试。'
-          : code === 'interaction_required' ? '点“开始”启用声音。'
-            : '声音无法启动，点重试。');
+      fail(code === 'permission_required' ? 'Allow audio input in Device Access, then tap Retry.'
+        : code === 'audio_device_unavailable' ? 'Choose available IN and OUT in the K1 Menu, then tap Retry.'
+          : code === 'interaction_required' ? 'Tap Start to enable audio.'
+            : 'Audio unavailable. Tap Retry.');
     }
   }
 
@@ -194,7 +194,7 @@
     phase = 'error';
     void release(e);
     $('gate-msg').textContent = message;
-    $('gate-btn').textContent = '重试';
+    $('gate-btn').textContent = 'Retry';
     $('gate-btn').disabled = false;
     renderGate();
     render();
@@ -216,7 +216,7 @@
     presetIndex = -1;
     pushParams();
     save();
-    setStatus(k.label + ' 回到默认值。');
+    setStatus(k.label + ' reset to default.');
     render();
   }
 
@@ -224,7 +224,7 @@
     state.page = (state.page + 1) % PAGES.length;
     pushParams();
     save();
-    setStatus('页面：' + page().name);
+    setStatus('Page: ' + page().name);
     buildRows();
     render();
   }
@@ -235,7 +235,7 @@
     presetIndex = -1;
     pushParams();
     save();
-    setStatus(p.toggleName + (state[p.toggle] ? ' 已开' : ' 已关'));
+    setStatus(p.toggleName + (state[p.toggle] ? ' On' : ' Off'));
     render();
   }
 
@@ -244,7 +244,7 @@
     presetIndex = -1;
     pushParams();
     save();
-    setStatus('修音调性：' + keyName(state.key));
+    setStatus('Tuning key: ' + keyName(state.key));
     render();
   }
 
@@ -253,13 +253,13 @@
     Object.assign(state, DEFAULTS, PRESETS[i].v);
     pushParams();
     save();
-    setStatus('预设：' + PRESETS[i].name);
+    setStatus('Preset: ' + PRESETS[i].name);
     buildRows();
     render();
   }
 
   function defaultStatus() {
-    return page().name + ' · E1–E4 调参数 · K2 换页 · K3 调性 · K4 开关';
+    return page().name + ' · E1–E4 Parameters · K2 Page · K3 Key · K4 Toggle';
   }
 
   /* ── persistence ───────────────────────────────────────────────────── */
@@ -335,7 +335,7 @@
     const toEl = $('to');
     if (!tune.voiced || !tune.f0) {
       noteEl.textContent = '—';
-      hzEl.textContent = preview ? '预览无输入' : '等待声音';
+      hzEl.textContent = preview ? 'No input in preview' : 'Waiting for audio';
       toEl.textContent = '';
       toEl.className = 'off';
       return;
@@ -347,14 +347,14 @@
       toEl.textContent = '→ ' + noteName(tune.target) + (Math.abs(semis) > 0.05 ? '' : ' ✓');
       toEl.className = '';
     } else {
-      toEl.textContent = '原声';
+      toEl.textContent = 'Original';
       toEl.className = 'off';
     }
   }
 
   function render() {
     $('gain').textContent = String(Math.round(state.gainDb));
-    $('keyshow').textContent = keyName(state.key) + (state.tuneOn ? '' : ' · 修音关');
+    $('keyshow').textContent = keyName(state.key) + (state.tuneOn ? '' : ' · Tune off');
 
     $('flag-tune').className = 'flag ' + (state.tuneOn ? 'on' : 'off');
     $('flag-dn').className = 'flag ' + (state.dnOn ? 'on' : 'off');
@@ -392,15 +392,15 @@
     const show = phase !== 'live';
     $('gate').hidden = !show;
     if (phase === 'starting') {
-      $('gate-msg').textContent = '正在启动声音…';
+      $('gate-msg').textContent = 'Starting audio...';
       $('gate-btn').disabled = true;
       return;
     }
     $('gate-btn').disabled = false;
     if (phase === 'idle') {
-      $('gate-btn').textContent = '开始';
-      $('gate-msg').textContent = preview ? '预览里没有麦克风，请在设备上打开这个 App。'
-        : '接上 SM58，点“开始”启用输入和输出（建议戴耳机）。';
+      $('gate-btn').textContent = 'Start';
+      $('gate-msg').textContent = preview ? 'Microphone unavailable in preview. Launch on the device.'
+        : 'Connect a microphone and tap Start. Headphones recommended.';
     }
   }
 
@@ -414,8 +414,8 @@
           E2: { label: knobs[1].label, value: knobs[1].fmt(state[knobs[1].key]) },
           E3: { label: knobs[2].label, value: knobs[2].fmt(state[knobs[2].key]) },
           E4: { label: knobs[3].label, value: knobs[3].fmt(state[knobs[3].key]) },
-          K2: { label: '分页', value: page().name },
-          K3: { label: '调性', value: keyName(state.key) },
+          K2: { label: 'Page', value: page().name },
+          K3: { label: 'Key', value: keyName(state.key) },
           K4: { label: page().toggleName, pressed: state[page().toggle] }
         });
         if (pending && typeof pending.catch === 'function') pending.catch(() => {});
@@ -435,7 +435,7 @@
       if (!b) return;
       state.page = Number(b.dataset.page);
       save();
-      setStatus('页面：' + page().name);
+      setStatus('Page: ' + page().name);
       buildRows();
       render();
     });

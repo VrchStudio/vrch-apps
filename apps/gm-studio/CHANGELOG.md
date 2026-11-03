@@ -1,5 +1,10 @@
 # GM Studio
 
+## 2.0.3
+
+- Use English controls, status messages and help throughout the App.
+- Preserve existing sounds, projects and saved settings.
+
 ## 2.0.2
 
 - Make Retry restart interrupted audio cleanly.
