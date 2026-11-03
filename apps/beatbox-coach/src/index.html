@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Beatbox Coach</title>
+<link rel="stylesheet" href="style.css">
+<script src="/apps/sdk/apps-v1.js"></script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <nav id="tabs"></nav>
+    <div id="lvl" title="麦克风电平"><i id="lvl-in"></i><i id="lvl-thr"></i></div>
+  </header>
+
+  <section id="v-transform" class="view">
+    <div class="row"><span class="tag" id="kit-name"></span><button id="metro-btn" data-act="metro"></button></div>
+    <div id="pads"></div>
+    <div class="sub" id="tf-sub"></div>
+  </section>
+
+  <section id="v-lab" class="view" hidden>
+    <div id="chips"></div>
+    <div class="lab-main">
+      <div class="lab-left"><h2 id="lab-title"></h2><p id="lab-tip"></p></div>
+      <div class="lab-right"><div id="match">--</div><div id="match-sub">相似度</div></div>
+    </div>
+    <div class="bars-wrap">
+      <div id="bars"></div>
+      <div class="legend"><span><i class="t"></i>目标</span><span><i class="u"></i>你</span></div>
+    </div>
+    <div class="actions"><button data-act="demo">▶ 听示范</button><button data-act="ab">⇄ 你 / 示范</button></div>
+  </section>
+
+  <section id="v-rhythm" class="view" hidden>
+    <div class="row"><h2 id="pat-name"></h2><span class="sub" id="pat-sub"></span></div>
+    <div id="grid"></div>
+    <div class="rh-info"><div id="rh-score"></div><p id="rh-tip"></p></div>
+    <div class="actions"><button id="rdemo-btn" data-act="rdemo">▶ 示范</button><button id="practice-btn" data-act="practice">● 练习</button></div>
+  </section>
+
+  <footer id="status"></footer>
+
+  <div id="gate" hidden><div><p id="gate-msg"></p><button id="gate-btn">开始</button></div></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

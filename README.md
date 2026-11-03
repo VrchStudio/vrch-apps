@@ -31,6 +31,13 @@ Update notifications require a My Apps platform release with official update sup
 
 - [Shader Editor](apps/shader-editor): edit and save visual presets with audio and image inputs.
 
+- [Beatbox Coach](apps/beatbox-coach): 把你的嘴巴声音实时变成鼓声，并用示范、对比和打分带你学会 Beatbox。.
+- [Disco Ball](apps/disco-ball): A spinning soccer-pattern mirror ball of 32 facets: every facet that lights up plays its own note, in time.
+- [Petal FM](apps/petal-fm): A six-operator FM synthesizer with classic-style voices and one-key chords.
+- [Pitch Shift](apps/pitch-shift): 把输入的音频实时上下变调一个八度，并能和原声混合出和声。.
+- [Vocal Chain](apps/vocal-chain): 给 SM58 这类动圈麦的人声通道：前级增益、降噪、自动修音、失真、OTT，参数分页可调。.
+- [Wake Gate](apps/wake-gate): An alarm you can only silence once you are genuinely awake.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.

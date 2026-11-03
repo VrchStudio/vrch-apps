@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Vocal Chain</title>
+<link rel="stylesheet" href="style.css">
+<script src="/apps/sdk/apps-v1.js"></script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div id="gainblock">
+      <b id="gain">36</b><span>dB</span>
+      <small id="keyshow">A 小调</small>
+    </div>
+    <div id="side">
+      <div id="tuner">
+        <b id="note">—</b>
+        <span id="hz"></span>
+        <span id="to"></span>
+      </div>
+      <div id="lvl" title="输入电平"><i id="lvl-in"></i></div>
+    </div>
+    <div id="flags">
+      <span id="flag-tune" class="flag on">修音</span>
+      <span id="flag-dn" class="flag on">降噪</span>
+      <span id="flag-ott" class="flag on">OTT</span>
+      <span id="flag-dist" class="flag off">失真</span>
+    </div>
+  </header>
+
+  <nav id="tabs"></nav>
+
+  <section id="rows"></section>
+
+  <section id="chain">
+    <div class="cnode on" id="n-pre">前级</div>
+    <i>›</i>
+    <div class="cnode" id="n-dn">降噪</div>
+    <i>›</i>
+    <div class="cnode" id="n-tune">修音</div>
+    <i>›</i>
+    <div class="cnode" id="n-dist">失真</div>
+    <i>›</i>
+    <div class="cnode" id="n-ott">OTT</div>
+    <i>›</i>
+    <div class="cnode on" id="n-lim">限幅</div>
+  </section>
+
+  <section id="presets"></section>
+
+  <footer id="status"></footer>
+
+  <div id="gate" hidden><div><p id="gate-msg"></p><button id="gate-btn">开始</button></div></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

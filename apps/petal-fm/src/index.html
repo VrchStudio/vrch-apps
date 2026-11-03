@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Petal FM</title>
+<link rel="stylesheet" href="style.css">
+<script src="/apps/sdk/apps-v1.js"></script>
+<script src="dsp.js"></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div class="brand"><b>PETAL</b><span>6-OPERATOR FM · CHORD SYNTHESIZER</span></div>
+    <div class="display">
+      <div class="lcd" id="lcd"><div id="lcd1">INT01 E.PIANO 1</div><div id="lcd2">ALG 05 KEY Em</div></div>
+      <canvas class="alg" id="alg" aria-label="Algorithm"></canvas>
+    </div>
+  </header>
+
+  <section class="play">
+    <div class="chordpad">
+      <div class="cbrow" id="cbTypes"></div>
+      <div class="cbrow" id="cbExts"></div>
+      <div class="chips">
+        <button class="chip" id="keymode" type="button">KEY Em</button>
+        <button class="chip" id="clear" type="button">CLEAR</button>
+        <button class="chip" id="tap" type="button">TAP</button>
+        <button class="chip" id="hold" type="button">HOLD</button>
+      </div>
+    </div>
+    <div class="keyside">
+      <div class="modes" id="modes"></div>
+      <div class="keys" id="keys"></div>
+    </div>
+  </section>
+
+  <section class="params">
+    <div class="tabs">
+      <button class="tab" type="button" data-page="0">PLAY</button>
+      <button class="tab" type="button" data-page="1">TEMPO</button>
+      <button class="tab" type="button" data-page="2">KEY</button>
+      <button class="tab" type="button" data-page="3">VOICE</button>
+      <button class="tab" type="button" data-page="4">EFFECT</button>
+    </div>
+    <div class="cells">
+      <div class="cell" id="p0"><span class="enc">E1</span><span class="lab"></span><span class="val"></span><span class="bar"><i></i></span></div>
+      <div class="cell" id="p1"><span class="enc">E2</span><span class="lab"></span><span class="val"></span><span class="bar"><i></i></span></div>
+      <div class="cell" id="p2"><span class="enc">E3</span><span class="lab"></span><span class="val"></span><span class="bar"><i></i></span></div>
+      <div class="cell" id="p3"><span class="enc">E4</span><span class="lab"></span><span class="val"></span><span class="bar"><i></i></span></div>
+    </div>
+  </section>
+
+  <section class="presets" id="presets"></section>
+  <p class="notice" id="notice" role="status" hidden></p>
+</main>
+</body>
+</html>

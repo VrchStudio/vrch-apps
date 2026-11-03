@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Wake Gate</title>
+<link rel="stylesheet" href="style.css">
+<script src="/apps/sdk/apps-v1.js"></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<main class="app" id="app">
+  <header class="top">
+    <span class="brand">Wake Gate <b>醒神闸</b></span>
+    <span class="clock" id="clock">--:--</span>
+  </header>
+
+  <section class="stage" id="stage">
+    <div class="setView" id="setView">
+      <div class="alarm" id="alarmTime">07:00</div>
+      <div class="status" id="setStatus"><i class="dot"></i><span id="statusText">闹钟已关闭</span></div>
+      <div class="count" id="countdown">—</div>
+
+      <div class="rows">
+        <div class="row"><b>E1</b><span>小时</span><em id="rv1">07</em></div>
+        <div class="row"><b>E2</b><span>分钟</span><em id="rv2">00</em></div>
+        <div class="row"><b>E3</b><span>音量</span><em id="rv3">70%</em></div>
+        <div class="row"><b>E4</b><span>关卡</span><em id="rv4">3 关</em></div>
+      </div>
+
+      <div class="hint">K2 启用 / 停用 · K3 10 秒后测试 · K4 试听铃声</div>
+      <div class="last" id="lastWake"></div>
+    </div>
+
+    <div class="ringView" id="ringView" hidden>
+      <div class="ringTop">
+        <span id="gateLabel">第 1 关</span>
+        <span id="ringTimer">0:00</span>
+      </div>
+      <div class="task" id="taskMain">—</div>
+      <div class="taskSub" id="taskSub"></div>
+      <div class="gauges" id="gauges"></div>
+      <div class="penalty" id="penalty" hidden></div>
+      <div class="ringHint" id="ringHint"></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "id": "d0d6f747-e3a9-4ab5-884e-4edb5ece58a4",
+  "name": "Vocal Chain",
+  "version": "1.2.0",
+  "entry": "index.html",
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "capabilities": {
+    "controls": true,
+    "audio_input": true,
+    "audio_output": true,
+    "websocket": []
+  },
+  "guide": {
+    "description": "给 SM58 这类动圈麦的人声通道：前级增益、降噪、自动修音、失真、OTT，参数分页可调。",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          {
+            "control": "开始 · Tap",
+            "action": "接上麦克风，点开始启用输入输出（建议戴耳机）。"
+          },
+          {
+            "control": "E1 · Turn",
+            "action": "主控页的增益：SM58 一般 30–45 dB 就够唱。"
+          },
+          {
+            "control": "K2 · Press",
+            "action": "切换页面：主控 → 降噪 → OTT → 失真。"
+          }
+        ]
+      },
+      {
+        "title": "Common controls",
+        "controls": [
+          {
+            "control": "E1–E4 · Turn",
+            "action": "调当前页面的四个参数。"
+          },
+          {
+            "control": "E1–E4 · Press",
+            "action": "该参数回到默认值。"
+          },
+          {
+            "control": "K2 · Press",
+            "action": "下一页，循环。"
+          },
+          {
+            "control": "K3 · Press",
+            "action": "切换修音调性（C 大调 … B 大调，然后 C 小调 … B 小调）。"
+          },
+          {
+            "control": "K4 · Press",
+            "action": "开/关当前页的模块（修音 / 降噪 / OTT / 失真）。"
+          },
+          {
+            "control": "顶部标签 · Tap",
+            "action": "直接跳到某个页面。"
+          },
+          {
+            "control": "预设按钮 · Tap",
+            "action": "清唱 / 电台 / 硬修音 / 失真。"
+          }
+        ]
+      },
+      {
+        "title": "主控页",
+        "controls": [
+          {
+            "control": "E1 · Turn",
+            "action": "输入增益 0–60 dB，每格 3 dB。"
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "修音强度 0–100%：越大吸得越死。"
+          },
+          {
+            "control": "E3 · Turn",
+            "action": "修音速度 0–100%：越大越快贴到音上，小一点更自然。"
+          },
+          {
+            "control": "E4 · Turn",
+            "action": "输出音量 0–120%。"
+          }
+        ]
+      },
+      {
+        "title": "降噪页",
+        "controls": [
+          {
+            "control": "E1 · Turn",
+            "action": "谱减强度 0–100%：越大嘶声越少，太大会伤到气声。"
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "门限 −80…−20 dB：说话停顿时低于它的算底噪，用来学习噪声谱。"
+          },
+          {
+            "control": "E3 · Turn",
+            "action": "门深度 0–100%：停顿处压到多静。"
+          },
+          {
+            "control": "E4 · Turn",
+            "action": "释放时间 20–600 ms：太短会抽气，太长会拖尾。"
+          }
+        ]
+      },
+      {
+        "title": "OTT 页",
+        "controls": [
+          {
+            "control": "E1 · Turn",
+            "action": "阈值 −50…0 dB：三条分频段共用的压缩起点。"
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "上行压缩：小声抬多少，越大越贴脸。"
+          },
+          {
+            "control": "E3 · Turn",
+            "action": "下行压缩：大声压多少，越大越平。"
+          },
+          {
+            "control": "E4 · Turn",
+            "action": "速度：压缩跟随的快慢，快=紧、慢=松。"
+          }
+        ]
+      },
+      {
+        "title": "失真页",
+        "controls": [
+          {
+            "control": "E1 · Turn",
+            "action": "推子 0–100%：进软削波的量。"
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "音色：500 Hz–9 kHz 的低通，越往右越亮。"
+          },
+          {
+            "control": "E3 · Turn",
+            "action": "混合：干声与失真声的比例。"
+          },
+          {
+            "control": "E4 · Turn",
+            "action": "偏置 0–100%：加入不对称，出偶次谐波（真空管味）。"
+          }
+        ]
+      },
+      {
+        "title": "自动修音与调性",
+        "text": "顶部显示检测到的音高（如 A3 220 Hz）和修过去的目标音，显示“✓”说明已经在音上。修音只对单声部有效：和弦、鼓、噪声会让检测变乱，此时可以按 K4（主控页）先关掉。唱偏超过一个半音时会先吸到最近的音阶音。"
+      },
+      {
+        "title": "声音与延迟",
+        "text": "修音的分析窗已缩到 10.7 ms，整条 DSP 链约 11 ms，加上设备输入输出通常 30 ms 上下。降噪分两级：频域谱减负责说话时的嘶声，时域门负责停顿时的余噪；谱减要在停顿里“听”到噪声才会起作用，所以先让门限刚好卡在底噪上、说一两句话停顿一下，它就会学会这间屋子的噪声。SM58 输出很小，增益开大后底噪也会被放大。外放会回授，请戴耳机。"
+      },
+      {
+        "title": "保存的设置",
+        "text": "所有页面的参数、页面位置、调性和开关都会自动保存，下次打开还在。退出 App 时释放麦克风和扬声器。"
+      }
+    ]
+  }
+}

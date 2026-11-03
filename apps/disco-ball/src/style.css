@@ -1,0 +1,23 @@
+:root{--bg:#0b0b12;--panel:#1c1c28;--line:#32324a;--text:#efecff;--dim:#8f8ca8;--pink:#ff4fa8;--violet:#8b5bff;--cyan:#39d7ff;--gap:6px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text)}
+body{font:700 14px/1.15 "Helvetica Neue",Helvetica,Arial,"Liberation Sans","DejaVu Sans",sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}
+main{height:100%;display:flex;flex-direction:column;gap:var(--gap);padding:8px 10px 10px calc(10px + var(--inset-left,0px))}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+small{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:.05em;text-transform:uppercase}
+header{flex:0 0 22px;display:flex;align-items:baseline;justify-content:space-between;gap:8px;white-space:nowrap}
+.brand strong{font-size:19px;font-style:italic;background:linear-gradient(90deg,var(--pink),var(--violet),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand span{margin-left:8px;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.14em}
+#status{font-size:12px;font-weight:600;color:var(--dim);overflow:hidden;text-overflow:ellipsis}
+#status.error{color:#ff7a8c}
+#stage{position:relative;flex:1 1 0;min-height:0;border-radius:10px;overflow:hidden;background:radial-gradient(120% 90% at 50% 38%,#181627 0%,#0b0b12 70%)}
+#ball{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:6px;right:6px;bottom:6px;display:grid;grid-template-columns:1.15fr 1fr 0.9fr 1fr;gap:5px}
+.chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:5px 9px;text-align:left;border-radius:7px;background:rgba(18,18,30,.72);border:1px solid var(--line);backdrop-filter:blur(2px)}
+.chip span{font-size:10px;color:var(--dim)}
+.chip strong{font-size:15px}
+.chip.primary{background:linear-gradient(135deg,rgba(255,79,168,.85),rgba(139,91,255,.85));border-color:transparent}
+.chip.primary span{color:#ffd9ef}
+.chip.primary.on{background:linear-gradient(135deg,rgba(255,60,80,.9),rgba(255,110,60,.9))}
+.chip:active{transform:translateY(1px)}
+.chip.off strong{color:var(--dim)}

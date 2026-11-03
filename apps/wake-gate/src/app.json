@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "debc92f2-613a-4e03-9f41-1f8c070debd1",
+  "name": "Wake Gate",
+  "version": "1.0.2",
+  "entry": "index.html",
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "capabilities": {
+    "controls": true,
+    "audio_input": false,
+    "audio_output": true,
+    "websocket": []
+  },
+  "guide": {
+    "description": "An alarm you can only silence once you are genuinely awake.",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          { "control": "E1 · Turn", "action": "Set the alarm hour." },
+          { "control": "E2 · Turn", "action": "Set the alarm minute." },
+          { "control": "K2 · Press", "action": "Arm the alarm; press again to disarm." }
+        ]
+      },
+      {
+        "title": "Common controls",
+        "controls": [
+          { "control": "E3 · Turn", "action": "Ring volume." },
+          { "control": "E4 · Turn", "action": "Number of gates, one to three." },
+          { "control": "K3 · Press", "action": "Test: ring in ten seconds." },
+          { "control": "K4 · Press", "action": "Preview the ring tone briefly." }
+        ]
+      },
+      {
+        "title": "Silencing it",
+        "text": "Three gates in order: repeat a hidden three-key order shown for three seconds, turn E1 to the answer of a two-step sum, then hold K2 and K4 together for six seconds while keeping E2 inside a narrow window. Every mistake adds an eight-second lockout and makes the ring louder and faster. There is no snooze."
+      },
+      {
+        "title": "Notes",
+        "text": "Tasks are regenerated after every mistake, so a task cannot be memorised. If you do not touch anything for twenty seconds the ring escalates on its own. The App only counts down while it is open in the foreground, and the shell Menu can still exit it."
+      },
+      {
+        "title": "Saved settings",
+        "text": "Alarm time, volume, gate count and the last wake-up time are saved automatically."
+      }
+    ]
+  }
+}

@@ -1,0 +1,242 @@
+:root {
+  --ink: #e9edf2;
+  --dim: #79828f;
+  --faint: #4a5361;
+  --red: #ff453a;
+  --amber: #ffb020;
+  --green: #31d07f;
+  --line: #1b2230;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  color: var(--ink);
+  font-family: "Helvetica Neue", "PingFang SC", "Arial", system-ui, sans-serif;
+  background: radial-gradient(120% 90% at 50% -10%, #131a26 0%, #07090d 62%);
+}
+
+.app { display: flex; flex-direction: column; height: 100%; }
+
+/* ── header ─────────────────────────────────────────────────────────── */
+.top {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 14px 0;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.brand b { color: var(--amber); font-weight: 600; letter-spacing: .08em; }
+.clock {
+  font-size: 13px;
+  letter-spacing: .04em;
+  color: var(--ink);
+  opacity: .7;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 2px 14px 10px;
+}
+
+/* ── set view ───────────────────────────────────────────────────────── */
+.setView {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.alarm {
+  font-size: clamp(52px, 16vh, 92px);
+  line-height: .92;
+  font-weight: 600;
+  letter-spacing: .01em;
+  font-variant-numeric: tabular-nums;
+}
+.alarm.off { color: #5d6673; }
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  letter-spacing: .06em;
+  color: var(--dim);
+  margin-top: 4px;
+}
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #39404d;
+  transition: background .2s, box-shadow .2s;
+}
+.status.on { color: #a9e8c8; }
+.status.on .dot { background: var(--green); box-shadow: 0 0 9px rgba(49,208,127,.75); }
+
+.count {
+  margin-top: 5px;
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 20px;
+  width: 100%;
+  max-width: 340px;
+  margin-top: 12px;
+}
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--dim);
+}
+.row b { color: var(--amber); font-weight: 600; width: 20px; }
+.row em {
+  margin-left: auto;
+  font-style: normal;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  margin-top: 12px;
+  font-size: 10px;
+  letter-spacing: .04em;
+  color: #5a6474;
+  text-align: center;
+  line-height: 1.5;
+}
+.last { margin-top: 3px; font-size: 9.5px; color: var(--faint); }
+
+/* ── ring view ──────────────────────────────────────────────────────── */
+.ringView {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+.ringTop {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+}
+.task {
+  font-size: clamp(26px, 7.4vh, 42px);
+  font-weight: 600;
+  line-height: 1.12;
+  text-align: center;
+  letter-spacing: .02em;
+  font-variant-numeric: tabular-nums;
+}
+.task.small { font-size: clamp(18px, 4.6vh, 26px); }
+.taskSub {
+  min-height: 15px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--dim);
+  text-align: center;
+  max-width: 330px;
+}
+.gauges {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gauge { display: flex; flex-direction: column; gap: 3px; }
+.gauge .lab {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  color: var(--faint);
+  text-transform: uppercase;
+}
+.track {
+  position: relative;
+  height: 7px;
+  border-radius: 4px;
+  background: #161c27;
+  overflow: hidden;
+}
+.track .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  background: linear-gradient(90deg, #ffb020, #ff453a);
+  transition: width .08s linear;
+}
+.track .band {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: rgba(49,208,127,.22);
+  border-left: 1px solid rgba(49,208,127,.7);
+  border-right: 1px solid rgba(49,208,127,.7);
+}
+.track .mark {
+  position: absolute;
+  top: -2px; bottom: -2px;
+  width: 3px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.penalty {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+}
+.ringHint {
+  font-size: 9.5px;
+  letter-spacing: .06em;
+  color: #565f6d;
+  text-align: center;
+}
+
+.ringView.alert .task { color: #fff; }
+.ringView.alert { animation: pulse 1s steps(2,end) infinite; }
+@keyframes pulse {
+  50% { background: rgba(255,69,58,.10); }
+}
+
+/* ── compact (480x432, bars shown) ──────────────────────────────────── */
+.compact .alarm { font-size: clamp(44px, 13.5vh, 68px); }
+.compact .rows { margin-top: 8px; }
+.compact .hint { margin-top: 8px; }
+.compact .ringView { gap: 6px; }
+.compact .task { font-size: clamp(22px, 6.2vh, 32px); }
