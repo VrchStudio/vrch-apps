@@ -2482,7 +2482,7 @@
     },
     "57e105f1-1e03-4283-8124-11020e5601d2": {
       "slug": "pitch-shift",
-      "latest": "1.1.5",
+      "latest": "1.1.6",
       "versions": {
         "1.1.3": {
           "version": "1.1.3",
@@ -2540,6 +2540,25 @@
             "updateApi": 1
           },
           "notes": "- Use English controls, status messages and help throughout the App.\n- Preserve existing sounds, projects and saved settings."
+        },
+        "1.1.6": {
+          "version": "1.1.6",
+          "name": "Pitch Shift",
+          "tag": "pitch-shift-v1.1.6",
+          "sourceCommit": "e1c628841c4c45fea3e457f05bff069a849610d0",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/pitch-shift-v1.1.6",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/pitch-shift-v1.1.6/pitch-shift-1.1.6.vrchapp",
+          "size": 48402,
+          "sha256": "402d44beb0fffd6601626e23aa5d1c1e2278f6fbb58e57d08be56cb4025f4b03",
+          "packageDigest": "402d44beb0fffd6601626e23aa5d1c1e2278f6fbb58e57d08be56cb4025f4b03",
+          "revision": "e59bb1abd89a9d6faf770a9a89eac52149b6ae015cd217ad243ede2d2e4c49c4",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Keep English parameter labels clear of their sliders."
         }
       },
       "guide": {
