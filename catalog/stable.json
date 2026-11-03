@@ -2021,7 +2021,7 @@
     },
     "debc92f2-613a-4e03-9f41-1f8c070debd1": {
       "slug": "wake-gate",
-      "latest": "1.0.2",
+      "latest": "1.0.3",
       "versions": {
         "1.0.2": {
           "version": "1.0.2",
@@ -2041,6 +2041,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "1.0.3": {
+          "version": "1.0.3",
+          "name": "Wake Gate",
+          "tag": "wake-gate-v1.0.3",
+          "sourceCommit": "97a84f40917d652ace737bcdd69c31c5d41d5d7f",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/wake-gate-v1.0.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/wake-gate-v1.0.3/wake-gate-1.0.3.vrchapp",
+          "size": 35637,
+          "sha256": "909c349fc30f555255ebe37d77b0a222a4938deee7c7a88d93669ac5e001b949",
+          "packageDigest": "909c349fc30f555255ebe37d77b0a222a4938deee7c7a88d93669ac5e001b949",
+          "revision": "bf05d1d392a6e1bd2ab2fc175cc1593a3fb8df745f59fe6eec5fc2460a57d403",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
         }
       },
       "guide": {
@@ -2097,7 +2116,8 @@
             "text": "Alarm time, volume, gate count and the last wake-up time are saved automatically."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+V2FrZSBHYXRlPC90aXRsZT4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjM0IiByPSIyMCIvPjxwYXRoIGQ9Ik0xMyAxNmMtNS01IDItMTMgMTAtOW0yOCA5YzUtNS0yLTEzLTEwLTlNMjAgNTJsLTUgOG0yOS04IDUgOCIgc3Ryb2tlPSIjYWFhOWE1Ii8+PHBhdGggZD0iTTMyIDIydjEzbDkgNSIgc3Ryb2tlPSIjZmYxNDkzIi8+PHBhdGggZD0iTTI0IDNoMTYiIHN0cm9rZT0iI2FhYTlhNSIvPgo8L3N2Zz4K"
     },
     "5b1752ad-ea1d-45cb-9ba1-9ad1dd89783f": {
       "slug": "disco-ball",
