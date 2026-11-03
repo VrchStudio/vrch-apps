@@ -2780,7 +2780,7 @@
     },
     "eff41831-449d-4e58-93ec-88aa610fb2c6": {
       "slug": "gm-studio",
-      "latest": "2.0.1",
+      "latest": "2.0.2",
       "versions": {
         "2.0.0": {
           "version": "2.0.0",
@@ -2819,6 +2819,25 @@
             "updateApi": 1
           },
           "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
+        },
+        "2.0.2": {
+          "version": "2.0.2",
+          "name": "GM Studio",
+          "tag": "gm-studio-v2.0.2",
+          "sourceCommit": "a6ea8b64753a8389f516cd2491b0d866f577dee0",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/gm-studio-v2.0.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/gm-studio-v2.0.2/gm-studio-2.0.2.vrchapp",
+          "size": 3264111,
+          "sha256": "73c980a8575a860c5019000ba880a98109ba7cdfae105f4e3d2a9f53a4edeaff",
+          "packageDigest": "73c980a8575a860c5019000ba880a98109ba7cdfae105f4e3d2a9f53a4edeaff",
+          "revision": "5734437b80e70347a1ec9e6b06c15f782a9b6b4f1a082c1bf4349fa69a86a1c2",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Make Retry restart interrupted audio cleanly."
         }
       },
       "guide": {
