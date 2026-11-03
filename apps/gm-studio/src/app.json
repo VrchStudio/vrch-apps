@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "id": "eff41831-449d-4e58-93ec-88aa610fb2c6",
+  "name": "GM Studio",
+  "version": "2.0.0",
+  "entry": "index.html",
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "capabilities": {
+    "controls": true,
+    "audio_input": false,
+    "audio_output": true,
+    "websocket": []
+  },
+  "guide": {
+    "description": "用 Microsoft GS 波表（gm.sf2）编曲的小 DAW：编曲窗、钢琴卷帘、音序器和 128 个 GM 音色。",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          {
+            "control": "开始 · Tap",
+            "action": "启用声音，然后点 ▶ 播放内置的 8 小节示例。"
+          },
+          {
+            "control": "▶ / ■ · Tap",
+            "action": "播放 / 停止（停止会回到第 1 小节）。"
+          },
+          {
+            "control": "编曲 · Tap",
+            "action": "看 6 条轨道的分布，点某一格跳到那条轨那一小节。"
+          }
+        ]
+      },
+      {
+        "title": "三个窗口",
+        "controls": [
+          {
+            "control": "编曲",
+            "action": "6 条轨道 × 8 小节的网格，有音符的小节显示色块；点色块进入该小节的钢琴窗。"
+          },
+          {
+            "control": "钢琴窗",
+            "action": "16 分音符网格，点空格写音符，再点已有音符删除；左侧琴键可试听。"
+          },
+          {
+            "control": "音色",
+            "action": "给当前轨道挑 GM 音色，右上角按钮切鼓组。"
+          },
+          {
+            "control": "K3 · Press",
+            "action": "在三个窗口之间轮换。"
+          }
+        ]
+      },
+      {
+        "title": "钢琴窗",
+        "controls": [
+          {
+            "control": "格子 · Tap",
+            "action": "写一个音符（长度取当前音符长度），或删掉点到的那一个。"
+          },
+          {
+            "control": "◀ ▶ · Tap",
+            "action": "换小节。"
+          },
+          {
+            "control": "1/32 · 1/16 · 1/8 · 1/4",
+            "action": "设置新写音符的长度。"
+          },
+          {
+            "control": "八度 − / +",
+            "action": "上下移动可见的音域。"
+          }
+        ]
+      },
+      {
+        "title": "运输与参数",
+        "controls": [
+          {
+            "control": "E1 · Turn",
+            "action": "切换当前轨道（1–6）。"
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "速度 40–240 BPM。"
+          },
+          {
+            "control": "E3 · Turn",
+            "action": "新音符的力度 1–127。"
+          },
+          {
+            "control": "E4 · Turn",
+            "action": "新音符的长度（3/6/12/24 tick）。"
+          },
+          {
+            "control": "K2 · Press",
+            "action": "播放 / 停止。"
+          },
+          {
+            "control": "K4 · Press",
+            "action": "当前轨道静音。"
+          },
+          {
+            "control": "循环 · Tap",
+            "action": "打开时在最后一小节末尾回到第 1 小节。"
+          }
+        ]
+      },
+      {
+        "title": "声音与限制",
+        "text": "音序器跑在音频线程里，音符按采样点触发，不会因为界面卡顿跑偏。6 条轨道共用 64 个复音，超出时抢占最老的音。gm.sf2 的采样、分层、循环点和包络都是原样播放；SF2 的滤波与 LFO 调制没有实现，所以部分合成音色比原版简单。鼓组按 GM 键位：36 底鼓、38 军鼓、42 闭镲。"
+      },
+      {
+        "title": "保存",
+        "text": "速度、循环、6 条轨道的音色和音符都会自动保存，下次打开原样恢复。进入编曲窗就是保存下来的工程。"
+      }
+    ]
+  }
+}

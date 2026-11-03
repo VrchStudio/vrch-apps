@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>GM Studio</title>
+<link rel="stylesheet" href="style.css">
+<script src="/apps/sdk/apps-v1.js"></script>
+</head>
+<body>
+<div id="desktop">
+  <div id="win" class="xp-window">
+    <div id="titlebar" class="xp-titlebar">
+      <span class="tb-icon">♪</span>
+      <span class="tb-text">GM Studio — 编曲</span>
+      <span class="tb-buttons"><i class="tb-min">_</i><i class="tb-max">□</i><i class="tb-close">✕</i></span>
+    </div>
+
+    <div id="client">
+      <div id="transport">
+        <button id="play" class="xp-btn tp">▶</button>
+        <button id="stop" class="xp-btn tp">■</button>
+        <div id="pos" class="xp-sunken">1.1</div>
+        <div id="tempo" class="xp-sunken"><b>120</b><small>BPM</small></div>
+        <button id="loop" class="xp-btn on">循环</button>
+      </div>
+
+      <div id="tabs">
+        <button data-view="arrange" class="on">编曲</button>
+        <button data-view="roll">钢琴窗</button>
+        <button data-view="inst">音色</button>
+      </div>
+
+      <div id="view"></div>
+
+      <div id="statusbar">
+        <span id="status">正在载入 gm.sf2…</span>
+        <span id="meter"><i></i></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="gate" hidden><div class="xp-window gate-win">
+    <div class="xp-titlebar"><span class="tb-text">提示</span></div>
+    <div class="gate-body"><p id="gate-msg">点“开始”启用声音。</p><button id="gate-btn" class="xp-btn">开始</button></div>
+  </div></div>
+</div>
+<script src="sf2.js"></script>
+<script src="bank.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

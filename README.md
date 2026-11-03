@@ -38,6 +38,8 @@ Update notifications require a My Apps platform release with official update sup
 - [Vocal Chain](apps/vocal-chain): 给 SM58 这类动圈麦的人声通道：前级增益、降噪、自动修音、失真、OTT，参数分页可调。.
 - [Wake Gate](apps/wake-gate): An alarm you can only silence once you are genuinely awake.
 
+- [GM Studio](apps/gm-studio): arrange music with the bundled General MIDI SoundFont.
+
 ## Develop
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.
