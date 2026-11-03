@@ -2101,7 +2101,7 @@
     },
     "5b1752ad-ea1d-45cb-9ba1-9ad1dd89783f": {
       "slug": "disco-ball",
-      "latest": "1.7.0",
+      "latest": "1.7.1",
       "versions": {
         "1.7.0": {
           "version": "1.7.0",
@@ -2121,6 +2121,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "1.7.1": {
+          "version": "1.7.1",
+          "name": "Disco Ball",
+          "tag": "disco-ball-v1.7.1",
+          "sourceCommit": "97a84f40917d652ace737bcdd69c31c5d41d5d7f",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/disco-ball-v1.7.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/disco-ball-v1.7.1/disco-ball-1.7.1.vrchapp",
+          "size": 51134,
+          "sha256": "223e2ded78bb7c90ec91323a9d55e9e95ce21a75ea41f1bf2a009120ab7b7c64",
+          "packageDigest": "223e2ded78bb7c90ec91323a9d55e9e95ce21a75ea41f1bf2a009120ab7b7c64",
+          "revision": "0682bff163b27c90424510092537018dc183afb0f090daf0e6e8344d957e1d3b",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
         }
       },
       "guide": {
@@ -2230,7 +2249,8 @@
             "text": "Tempo, rate, density, scale, colors, energy, drive, voice, groove and the acid layer save automatically. Reopening keeps them and starts stopped."
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+RGlzY28gQmFsbDwvdGl0bGU+CiAgPHBhdGggZD0iTTMyIDN2OCIgc3Ryb2tlPSIjYWFhOWE1Ii8+PGNpcmNsZSBjeD0iMzIiIGN5PSIzNCIgcj0iMjIiLz48cGF0aCBkPSJNMTAgMzRoNDRNMTUgMjFoMzRNMTUgNDdoMzRNMzIgMTJjLTE1IDEwLTE1IDM0IDAgNDRtMC00NGMxNSAxMCAxNSAzNCAwIDQ0TTMyIDEydjQ0IiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik0zMyAyM2g5djloLTl6IiBmaWxsPSIjZmYxNDkzIiBzdHJva2U9Im5vbmUiLz4KPC9zdmc+Cg=="
     },
     "b542c073-74de-4fd7-86a7-b9a5c025e130": {
       "slug": "petal-fm",
