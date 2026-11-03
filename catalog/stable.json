@@ -1854,7 +1854,7 @@
     },
     "e90b992f-10ca-4b5f-a583-5758179d7f10": {
       "slug": "beatbox-coach",
-      "latest": "1.0.0",
+      "latest": "1.0.1",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -1874,6 +1874,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "1.0.1": {
+          "version": "1.0.1",
+          "name": "Beatbox Coach",
+          "tag": "beatbox-coach-v1.0.1",
+          "sourceCommit": "97a84f40917d652ace737bcdd69c31c5d41d5d7f",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/beatbox-coach-v1.0.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/beatbox-coach-v1.0.1/beatbox-coach-1.0.1.vrchapp",
+          "size": 53971,
+          "sha256": "d2e1e2e7e1922da618c0b8f53f6141a42657f61b39151c645f38e59f535f054e",
+          "packageDigest": "d2e1e2e7e1922da618c0b8f53f6141a42657f61b39151c645f38e59f535f054e",
+          "revision": "84250b868117a13304e0c100d12eb2556417ec4c342c0c08b3efdf0ffbb879d8",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
         }
       },
       "guide": {
@@ -1997,7 +2016,8 @@
             "text": "模式、鼓组、旋钮、所选声音和节奏、速度、你的声音特征和最高分都会自动保存。退出 App 时释放麦克风。"
           }
         ]
-      }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+QmVhdGJveCBDb2FjaDwvdGl0bGU+CiAgPHJlY3QgeD0iMjEiIHk9IjciIHdpZHRoPSIyMiIgaGVpZ2h0PSIzMSIgcng9IjExIi8+PHBhdGggZD0iTTE0IDI5djNhMTggMTggMCAwIDAgMzYgMHYtM00zMiA1MHY4TTIzIDU4aDE4IiBzdHJva2U9IiNhYWE5YTUiLz48cGF0aCBkPSJNMjcgMTdoMTBtLTEwIDdoMTBtLTEwIDdoMTAiIHN0cm9rZT0iI2ZmMTQ5MyIvPgo8L3N2Zz4K"
     },
     "debc92f2-613a-4e03-9f41-1f8c070debd1": {
       "slug": "wake-gate",
