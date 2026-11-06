@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "categories": [
+    {
+      "id": "instruments",
+      "label": "Instruments"
+    },
+    {
+      "id": "rhythm",
+      "label": "Rhythm"
+    },
+    {
+      "id": "voice-fx",
+      "label": "Voice & FX"
+    },
+    {
+      "id": "visuals",
+      "label": "Visuals"
+    },
+    {
+      "id": "tools",
+      "label": "Tools"
+    }
+  ],
+  "apps": {
+    "disco-ball": {
+      "category": "instruments",
+      "featured": 1
+    },
+    "petal-fm": {
+      "category": "instruments",
+      "featured": 2
+    },
+    "drum-808": {
+      "category": "rhythm",
+      "featured": 3
+    },
+    "wavescape": {
+      "category": "instruments",
+      "featured": 4
+    },
+    "gm-studio": {
+      "category": "instruments",
+      "featured": 5
+    },
+    "magic-circle": {
+      "category": "visuals",
+      "featured": 6
+    },
+    "shaker-shaker": {
+      "category": "instruments"
+    },
+    "vape-grain": {
+      "category": "instruments"
+    },
+    "palmnotes-duo": {
+      "category": "instruments"
+    },
+    "vibelive-synth": {
+      "category": "instruments",
+      "tags": [
+        "Needs VibeLive on a Mac"
+      ]
+    },
+    "metronome": {
+      "category": "rhythm"
+    },
+    "beatbox-coach": {
+      "category": "rhythm"
+    },
+    "pitchplay": {
+      "category": "voice-fx"
+    },
+    "pitch-shift": {
+      "category": "voice-fx"
+    },
+    "vocal-chain": {
+      "category": "voice-fx"
+    },
+    "flux-fx": {
+      "category": "voice-fx"
+    },
+    "shader-editor": {
+      "category": "visuals"
+    },
+    "body-vibes": {
+      "category": "visuals"
+    },
+    "hardware-check": {
+      "category": "tools"
+    },
+    "wake-gate": {
+      "category": "tools"
+    }
+  }
+}

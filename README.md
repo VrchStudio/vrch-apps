@@ -44,6 +44,8 @@ Update notifications require a My Apps platform release with official update sup
 
 Python 3.10+ is sufficient for building; no private repository or package download is required.
 
+The vrch.io Playground reads `catalog/playground.json`. Edit `catalog/presentation.json` to set an App's group, featured order, extra tags or screenshots, then run `python3 tools/apps.py index`. Each listed App's latest release is described by a file list taken from its exact release commit; the browser downloads those files from GitHub and checks them against the published package before running. Publishing refreshes it automatically.
+
 ```sh
 python3 tools/apps.py check hardware-check
 python3 tools/apps.py build hardware-check

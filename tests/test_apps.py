@@ -178,6 +178,33 @@ class Packages(unittest.TestCase):
             self.assertEqual(hashlib.sha256(data).hexdigest(), asset['sha256'])
         self.assertEqual(apps.write_catalog_index(catalog, root=self.root), index)
 
+    def test_playground_catalog_uses_exact_committed_source(self):
+        import subprocess
+        def git(*args):
+            return subprocess.check_output(['git',*args],cwd=self.root,text=True).strip()
+        git('init','-q');git('-c','user.name=t','-c','user.email=t@example.test','add','apps')
+        git('-c','user.name=t','-c','user.email=t@example.test','commit','-q','-m','source')
+        commit=git('rev-parse','HEAD')
+        manifest,records,revision=apps.source('demo',root=self.root)
+        release={'version':'1.0.0','sourceCommit':commit,'revision':revision,'sha256':'a'*64,'size':10}
+        catalog={'schemaVersion':1,'apps':{self.manifest['id']:{'slug':'demo','latest':'1.0.0','versions':{'1.0.0':release}}}}
+        presentation={'schemaVersion':1,'categories':[{'id':'tools','label':'Tools'}],'apps':{'demo':{'category':'tools','featured':2,'tags':['Try me']}}}
+        # Later uncommitted edits must not leak into the published listing.
+        (self.src/'index.html').write_bytes(b'<p>changed</p>\n')
+        result=apps.write_playground_catalog(catalog,root=self.root,presentation=presentation)
+        entry=result['apps'][0]
+        self.assertEqual((entry['slug'],entry['category'],entry['featured'],entry['tags'],entry['capabilities']),('demo','tools',2,['Try me'],['controls']))
+        listing=json.loads((self.root/'catalog/assets'/(entry['assets']['files']['sha256']+'.json')).read_bytes())
+        self.assertEqual(listing['base'],f'https://raw.githubusercontent.com/VrchStudio/vrch-apps/{commit}/apps/demo/src/')
+        self.assertEqual([f['path'] for f in listing['files']],[name for name,_ in records])
+        self.assertEqual(apps.content_revision([(f['path'],dict(records)[f['path']]) for f in listing['files']]),revision)
+        self.assertEqual(entry['assets']['icon']['mediaType'],'image/svg+xml')
+        # A recorded revision the committed source cannot reproduce is never advertised.
+        with self.assertRaises(ValueError):
+            apps.write_playground_catalog({'schemaVersion':1,'apps':{self.manifest['id']:{**catalog['apps'][self.manifest['id']],'versions':{'1.0.0':{**release,'revision':'b'*64}}}}},root=self.root,presentation=presentation)
+        with self.assertRaises(ValueError):
+            apps.write_playground_catalog(catalog,root=self.root,presentation={**presentation,'apps':{'missing':{'category':'tools'}}})
+
     def test_catalog_rejects_downgrade(self):
         _,release=self.build()
         newer={**release,'version':'1.1.0','tag':'demo-v1.1.0'}
@@ -197,6 +224,7 @@ class Packages(unittest.TestCase):
         catalog={'schemaVersion':1,'apps':{}}
         (self.root/'catalog').mkdir()
         (self.root/'catalog/stable.json').write_text(json.dumps(catalog))
+        (self.root/'catalog/presentation.json').write_text(json.dumps({'schemaVersion':1,'categories':[{'id':'tools','label':'Tools'}],'apps':{}}))
         draft={'id':42,'draft':True,'tag_name':release['tag'],'target_commitish':'a'*40,'assets':[]}
         calls=[]
         def github(*args):
@@ -228,6 +256,7 @@ class Packages(unittest.TestCase):
         result=json.loads((self.root/'catalog/stable.json').read_text())
         self.assertEqual(result['apps'][release['appId']]['latest'],'1.0.0')
         self.assertEqual(sum('?per_page=' in str(c) for c in calls),1)
+        self.assertEqual(json.loads((self.root/'catalog/playground.json').read_text())['apps'],[])
 
     def test_publish_requires_workflow(self):
         with mock.patch.dict(os.environ, {'GITHUB_ACTIONS':'false'}), self.assertRaisesRegex(ValueError,'workflow'):

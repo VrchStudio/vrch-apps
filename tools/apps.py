@@ -21,6 +21,8 @@ STABLE_VERSION = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\
 UUID = re.compile(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\Z')
 SLUG = re.compile(r'[a-z0-9]+(?:-[a-z0-9]+)*\Z')
 MAX_PACKAGE, MAX_FILE, MAX_FILES = 128*1024**2, 64*1024**2, 4096
+PLAYGROUND_FILES_LIMIT, SCREENSHOT_LIMIT, SCREENSHOTS = 1024*1024, 512*1024, 4
+SCREENSHOT_TYPES = {'.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg'}
 
 
 def read_json(path):
@@ -94,11 +96,7 @@ def source(app, root=ROOT):
     channels=caps.get('websocket',[])
     if not isinstance(channels,list) or len(channels)>32 or any(not isinstance(c,dict) or type(c.get('channel')) is not int or not 1<=c['channel']<=8 or c.get('format') not in ('json','midi','audio','image') for c in channels):
         raise ValueError('Invalid WebSocket capability.')
-    revision=hashlib.sha256()
-    for name,data in records:
-        encoded=name.encode('utf-8')
-        revision.update(struct.pack('>I',len(encoded))+encoded+struct.pack('>Q',len(data))+hashlib.sha256(data).digest())
-    digest=revision.hexdigest()
+    digest=content_revision(records)
     baseline=legacy_baseline(root,app,manifest)
     icon=manifest.get('icon')
     historical=baseline is not None and baseline['revision']==digest
@@ -107,6 +105,121 @@ def source(app, root=ROOT):
     elif not isinstance(icon,str) or icon not in files or Path(icon).suffix.lower() not in ('.svg','.png') or not 0<len(files[icon])<=65536:
         raise ValueError('Every official App needs a packaged SVG or PNG icon (up to 64 KiB).')
     return manifest,records,digest
+
+
+def content_revision(records):
+    revision=hashlib.sha256()
+    for name,data in records:
+        encoded=name.encode('utf-8')
+        revision.update(struct.pack('>I',len(encoded))+encoded+struct.pack('>Q',len(data))+hashlib.sha256(data).digest())
+    return revision.hexdigest()
+
+
+def committed_source(slug, commit, root=ROOT):
+    """Exact App source files at a published commit, in package order (what raw GitHub serves)."""
+    if not SLUG.fullmatch(slug) or not re.fullmatch('[0-9a-f]{40}', commit or ''):
+        raise ValueError('Invalid published App source reference.')
+    prefix=f'apps/{slug}/src/'
+    listing=subprocess.check_output(['git','ls-tree','-r','-z','--full-tree',commit,'--',prefix],cwd=root)
+    records=[]
+    for entry in filter(None,listing.split(b'\0')):
+        meta,path=entry.split(b'\t',1)
+        mode,kind,obj=meta.split(b' ')
+        if kind!=b'blob' or mode not in (b'100644',b'100755'):
+            raise ValueError('Published App source contains a non-regular file.')
+        name=path.decode('utf-8')[len(prefix):]
+        records.append((name,subprocess.check_output(['git','cat-file','blob',obj.decode('ascii')],cwd=root)))
+    return sorted(records,key=lambda record:record[0].encode('utf-8'))
+
+
+def store_asset(root, data, suffix, limit):
+    if not 0 < len(data) <= limit:
+        raise ValueError('Catalog asset is too large.')
+    digest = hashlib.sha256(data).hexdigest()
+    name = digest + '.' + suffix
+    path = root / 'catalog/assets' / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return {'url': f'https://raw.githubusercontent.com/{REPOSITORY}/main/catalog/assets/{name}', 'sha256': digest, 'size': len(data)}
+
+
+def read_presentation(root):
+    value = read_json(root / 'catalog/presentation.json')
+    categories = value.get('categories') if value.get('schemaVersion') == 1 else None
+    if not isinstance(categories, list) or not categories or not isinstance(value.get('apps'), dict):
+        raise ValueError('Unsupported Playground presentation.')
+    ids = [c.get('id') for c in categories if isinstance(c, dict)]
+    if len(ids) != len(categories) or len(set(ids)) != len(ids) or any(not isinstance(i, str) or not SLUG.fullmatch(i) for i in ids) \
+            or any(not isinstance(c.get('label'), str) or not 0 < len(c['label']) <= 32 for c in categories):
+        raise ValueError('Invalid Playground categories.')
+    for slug, meta in value['apps'].items():
+        if not SLUG.fullmatch(slug) or not isinstance(meta, dict) or meta.get('category') not in ids:
+            raise ValueError('Invalid Playground entry: ' + slug)
+        featured, tags, shots = meta.get('featured'), meta.get('tags', []), meta.get('screenshots', [])
+        if featured is not None and (type(featured) is not int or not 1 <= featured <= 99):
+            raise ValueError('Invalid featured order: ' + slug)
+        if not isinstance(tags, list) or len(tags) > 4 or any(not isinstance(t, str) or not 0 < len(t) <= 32 for t in tags):
+            raise ValueError('Invalid Playground tags: ' + slug)
+        if not isinstance(shots, list) or len(shots) > SCREENSHOTS or any(not isinstance(s, str) or Path(s).suffix.lower() not in SCREENSHOT_TYPES or Path(s).is_absolute() or '..' in Path(s).parts for s in shots):
+            raise ValueError('Invalid Playground screenshots: ' + slug)
+    return value
+
+
+def write_playground_catalog(catalog, root=None, presentation=None, sources=committed_source):
+    """Browser Playground catalog: exact published source files, loaded directly from raw GitHub.
+
+    Device catalogs stay unchanged. A listed App is published only when its committed source
+    reproduces the recorded content revision.
+    """
+    root = root or ROOT
+    presentation = presentation or read_presentation(root)
+    order = {c['id']: i for i, c in enumerate(presentation['categories'])}
+    known = {app['slug'] for app in catalog['apps'].values()}
+    unknown = set(presentation['apps']) - known
+    if unknown:
+        raise ValueError('Playground lists unpublished Apps: ' + ', '.join(sorted(unknown)))
+    entries = []
+    for identifier, app in catalog['apps'].items():
+        meta = presentation['apps'].get(app['slug'])
+        if not meta:
+            continue
+        release = app['versions'][app['latest']]
+        records = sources(app['slug'], release['sourceCommit'], root)
+        files = dict(records)
+        manifest = json.loads(files['app.json'])
+        if content_revision(records) != release['revision'] or manifest.get('id') != identifier or manifest.get('version') != release['version']:
+            raise ValueError('Published source does not reproduce ' + app['slug'] + ' ' + release['version'])
+        listing = {'schemaVersion': 1, 'appId': identifier, 'version': release['version'], 'revision': release['revision'],
+                   'packageDigest': release['sha256'],
+                   'base': f'https://raw.githubusercontent.com/{REPOSITORY}/{release["sourceCommit"]}/apps/{app["slug"]}/src/',
+                   'files': [{'path': name, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()} for name, data in records]}
+        assets = {'files': store_asset(root, json.dumps(listing, ensure_ascii=False, separators=(',', ':')).encode(), 'json', PLAYGROUND_FILES_LIMIT)}
+        icon = manifest.get('icon')
+        if isinstance(icon, str) and icon in files and Path(icon).suffix.lower() in ('.svg', '.png'):
+            assets['icon'] = {**store_asset(root, files[icon], Path(icon).suffix.lower()[1:], 65536),
+                              'mediaType': 'image/svg+xml' if icon.lower().endswith('.svg') else 'image/png'}
+        shots = []
+        for relative in meta.get('screenshots', []):
+            path = root / relative
+            if path.is_symlink() or not path.is_file():
+                raise ValueError('Playground screenshot is missing: ' + relative)
+            suffix = path.suffix.lower()
+            shots.append({**store_asset(root, path.read_bytes(), suffix[1:], SCREENSHOT_LIMIT), 'mediaType': SCREENSHOT_TYPES[suffix]})
+        if shots:
+            assets['screenshots'] = shots
+        guide = manifest.get('guide') if isinstance(manifest.get('guide'), dict) else {}
+        summary = guide.get('description') if isinstance(guide.get('description'), str) else ''
+        caps = manifest.get('capabilities', {})
+        capabilities = sorted([key for key in ('controls', 'audio_input', 'audio_output', 'video_input', 'imu_input') if caps.get(key) is True]
+                              + (['websocket'] if caps.get('websocket') else []))
+        entries.append({'appId': identifier, 'slug': app['slug'], 'name': manifest['name'], 'version': release['version'],
+                        'summary': summary.strip()[:240], 'category': meta['category'], 'featured': meta.get('featured'),
+                        'tags': meta.get('tags', []), 'capabilities': capabilities, 'size': release['size'],
+                        'revision': release['revision'], 'packageDigest': release['sha256'], 'assets': assets})
+    entries.sort(key=lambda e: (order[e['category']], e['name'].casefold()))
+    result = {'schemaVersion': 1, 'categories': presentation['categories'], 'apps': entries}
+    (root / 'catalog/playground.json').write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')) + '\n')
+    return result
 
 
 def build(app, root=ROOT, output=None, source_commit=None):
@@ -310,10 +423,11 @@ def publish(app,version):
     updated=catalog_metadata(update_catalog(read_json(path),release))
     save_json(path,updated)
     write_catalog_index(updated)
-    if command('git','status','--porcelain','--','catalog/stable.json','catalog/index.json','catalog/assets'):
+    write_playground_catalog(updated)
+    if command('git','status','--porcelain','--','catalog/stable.json','catalog/index.json','catalog/playground.json','catalog/assets'):
         command('git','config','user.name','github-actions[bot]')
         command('git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com')
-        command('git','add','--','catalog/stable.json','catalog/index.json','catalog/assets')
+        command('git','add','--','catalog/stable.json','catalog/index.json','catalog/playground.json','catalog/assets')
         command('git','commit','-m',f'release: publish {app} {version} in the catalog')
         command('git','push','origin','HEAD:main')
     print(json.dumps({'release':release['releaseUrl'],'catalog':'published','sha256':release['sha256']}))
@@ -326,7 +440,9 @@ def main():
     parser.add_argument('--version')
     args=parser.parse_args()
     if args.action=='index':
-        write_catalog_index(read_json(ROOT/'catalog/stable.json'))
+        catalog=read_json(ROOT/'catalog/stable.json')
+        write_catalog_index(catalog)
+        write_playground_catalog(catalog)
         return
     if not args.app:
         parser.error('App directory is required.')
