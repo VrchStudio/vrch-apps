@@ -243,7 +243,7 @@
     },
     "ce96ad6b-8e44-4661-83f4-823bd546aa19": {
       "slug": "magic-circle",
-      "latest": "1.0.2",
+      "latest": "1.0.3",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -301,6 +301,25 @@
             "updateApi": 1
           },
           "notes": "- Fix sound startup on current device browsers."
+        },
+        "1.0.3": {
+          "version": "1.0.3",
+          "name": "Magic Circle",
+          "tag": "magic-circle-v1.0.3",
+          "sourceCommit": "0fdb8723deb545478cba8861c12eff8f4fad839e",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/magic-circle-v1.0.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/magic-circle-v1.0.3/magic-circle-1.0.3.vrchapp",
+          "size": 266879,
+          "sha256": "e5dc7545a5c1fc681691262b11b7df842747789b4ac8abbf24ef9d4012767f8c",
+          "packageDigest": "e5dc7545a5c1fc681691262b11b7df842747789b4ac8abbf24ef9d4012767f8c",
+          "revision": "04de5cec05a3e5cc5847fd9febe6aed3c8371a022ae7951921ac9e3094ce912a",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Start sound as soon as the App opens, without pressing E1 first."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPk1hZ2ljIENpcmNsZTwvdGl0bGU+CiAgPHBhdGggZD0iTTE2IDF2NG0wIDIydjRNMSAxNmg0bTIyIDBoNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxMSIgc3Ryb2tlPSIjZjBlZWU4IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJtMTYgOSAyLjIgNC44TDIzIDE2bC00LjggMi4yTDE2IDIzbC0yLjItNC44TDkgMTZsNC44LTIuMloiIGZpbGw9IiNmZjE0OTMiLz4KPC9zdmc+Cg==",
@@ -316,7 +335,7 @@
               },
               {
                 "control": "E1 press",
-                "action": "Turn synthesized sound on or off."
+                "action": "Turn synthesized sound off or on. Sound starts on when the App opens."
               },
               {
                 "control": "E3 press",
@@ -384,7 +403,7 @@
           },
           {
             "title": "Audio and saved settings",
-            "text": "Parameter values are saved automatically. Reopening starts on the Visual layer with SFX off; device audio input starts on. Choose input/output ports and their levels in Menu. Preview input is silent; enable Listen to preview before testing synthesized sound on the computer. Input-driven visual pulses do not retrigger impact sounds."
+            "text": "Parameter values are saved automatically. Opening starts on the Visual layer with sound on; device audio input starts on. If a browser holds sound until you touch the App, tap the screen once. Choose input/output ports and their levels in Menu. Preview input is silent; enable Listen to preview before testing synthesized sound on the computer. Input-driven visual pulses do not retrigger impact sounds."
           }
         ]
       }
