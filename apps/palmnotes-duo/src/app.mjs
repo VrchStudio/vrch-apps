@@ -3,7 +3,8 @@ import {createTracker} from './tracker.mjs';
 import {Tone} from './tone.mjs';
 
 const sdk = globalThis.VrchApp, $ = id => document.getElementById(id);
-const preview = sdk.context.mode === 'preview';
+// Preview means no camera: a browser Preview that hands this App its own camera plays like the device.
+let preview = sdk.context.mode === 'preview';
 let config, gate, phase = 'idle', current = null, epoch = 0, closed = false;
 let settings = {volume: 70, voice: 'soft', melodyHand: 'left'}, retained = {}, version = 0;
 let canSave = false, saving = false, edit = 0, savedEdit = 0, saveTimer;
@@ -11,7 +12,6 @@ let landmarks = [], lastResult = -Infinity, count = null, octave = null, soundin
 let previewPending = null, previewEndsAt = 0, watchdog, errorText = '', frames = 0, inferenceMs = 0, mappingRevision = 0;
 const pressed = new Set(), source = document.createElement('canvas'), ctx = $('camera').getContext('2d');
 const sourceCtx = source.getContext('2d');
-if(preview)document.body.classList.add('is-preview');
 
 function message(title = '', detail = '') {
   $('message').hidden = !title;
@@ -210,6 +210,8 @@ async function audition(n) {
 }
 
 async function initialize() {
+  if (preview) preview = !await sdk.ready().then(() => sdk.camera.devices()).then(() => true, () => false);
+  if (preview) document.body.classList.add('is-preview');
   config = await (await fetch(new URL('instrument.json', import.meta.url))).json(); gate = new NoteGate(config.tracking);
   for (const note of config.notes) {
     const element = document.createElement(preview ? 'button' : 'div');

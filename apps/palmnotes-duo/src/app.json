@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31",
   "name": "PalmNotes Duo",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "sdk_version": 1,
   "data_schema_version": 1,
   "entry": "index.html",
@@ -63,7 +63,7 @@
       },
       {
         "title": "Sound and settings",
-        "text": "Choose speaker or headphones in Menu. Tone, volume and hand roles save automatically. Preview offers short note auditions."
+        "text": "Choose speaker or headphones in Menu. Tone, volume and hand roles save automatically. Without a camera, Preview offers short note auditions."
       }
     ]
   }

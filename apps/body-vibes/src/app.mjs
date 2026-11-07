@@ -39,7 +39,8 @@ async function start(){
     await sdk.ready();resize();layoutCamera();const response=await fetch(new URL('instrument.json',import.meta.url));if(!response.ok)throw Error('Instrument unavailable');config=await response.json();instrument=new BodyInstrument(config.gestures);
     sensitivity=config.controls.toneSensitivity.default;instrument.setToneSensitivity(sensitivity/100);renderSensitivity();void loadSensitivity();
     for(const key of ['bass','synth','vocal'])document.documentElement.style.setProperty('--'+key,config.colors[key]);
-    if(sdk.context.mode==='preview'){phase='preview';prompt('Your body is the instrument.','Launch on the device to play with your arms.');return;}
+    // A browser Preview that hands this App its own camera plays like the device; without one it stays a preview.
+    if(sdk.context.mode==='preview'&&!await sdk.camera.devices().then(()=>true,()=>false)){phase='preview';prompt('Your body is the instrument.','Launch on the device to play with your arms.');return;}
     tracker=createTracker(result,fail);const trackingReady=tracker.ready;trackingReady.catch(()=>{});
     prompt('Make some room.','Allow camera and sound when asked.');
     camera=await sdk.camera.open({width:640,height:480,frameRate:24});if(closed||phase==='error'){await release();return;}camera.onError(fail);

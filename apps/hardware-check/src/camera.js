@@ -5,7 +5,9 @@ function createCameraTest(onChange) {
   const source=document.createElement('canvas'),raw=source.getContext('2d',{alpha:false}),modes=['off','face','body','hand'];
   let rotation=0,mirror=false,display='overlay',edited=false,save=Promise.resolve();
   let current=null,epoch=0,frames=0,measuredAt=0,starting=false,paintRequest=0;
-  const preview=VrchApp.context.mode!=='device';
+  // Outside the device the camera test runs when the host hands this App a browser camera.
+  let preview=VrchApp.context.mode!=='device';
+  const probing=preview?VrchApp.ready().then(()=>VrchApp.camera.devices()).then(()=>{preview=false;},()=>{}):Promise.resolve();
   const state=window.cameraCheck={state:'off',frames:0,width:0,height:0,fps:0,rotation:0,mirror:false};
   const tracker=createCameraTracking(()=>{trackingStatus();if(current)requestPaint();changed();});
   const changed=()=>{state.rotation=rotation;state.mirror=mirror;state.trackingMode=tracker.state.mode;state.display=display;state.handCount=tracker.state.handCount;onChange();};
@@ -55,6 +57,7 @@ function createCameraTest(onChange) {
     if(opened)await opened.close().catch(()=>{});
   }
   async function start(){
+    await probing;
     if(preview){show('Launch on the device to test its camera.');return;}
     const request=++epoch;starting=true;state.state='starting';clear();show('Opening camera…');changed();
     try{
@@ -83,7 +86,7 @@ function createCameraTest(onChange) {
       await failed(error,request);
     }
   }
-  if(preview)show('Launch on the device to test its camera.');
+  void probing.then(()=>{if(preview)show('Launch on the device to test its camera.');changed();});
   return {
     enter(){if(!current&&!starting)void start();},
     stop,

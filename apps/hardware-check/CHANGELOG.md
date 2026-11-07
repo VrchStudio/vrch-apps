@@ -1,5 +1,9 @@
 # Hardware Check
 
+## 1.6.5
+
+- Test the camera in a browser that allows it, such as the Playground.
+
 ## 1.6.4
 
 - Align the App icon beside the two-line name, version and status header.
