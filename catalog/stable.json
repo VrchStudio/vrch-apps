@@ -3193,6 +3193,75 @@
         ]
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+R00gU3R1ZGlvPC90aXRsZT4KICA8cmVjdCB4PSI1IiB5PSIyNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjMxIiByeD0iMyIvPjxwYXRoIGQ9Ik0xOCAyOHYyOU0zMiAyOHYyOU00NiAyOHYyOSIgc3Ryb2tlPSIjYWFhOWE1Ii8+PHBhdGggZD0iTTE0IDI4djE0bTE0LTE0djE0bTE0LTE0djE0IiBzdHJva2Utd2lkdGg9IjYiLz48cGF0aCBkPSJNMzggMTlWNmwxNCAzdjEzIiBzdHJva2U9IiNmZjE0OTMiLz48ZWxsaXBzZSBjeD0iMzMiIGN5PSIyMCIgcng9IjUiIHJ5PSI0IiBmaWxsPSIjZmYxNDkzIiBzdHJva2U9Im5vbmUiLz48ZWxsaXBzZSBjeD0iNDciIGN5PSIyMyIgcng9IjUiIHJ5PSI0IiBmaWxsPSIjZmYxNDkzIiBzdHJva2U9Im5vbmUiLz4KPC9zdmc+Cg=="
+    },
+    "b5ad6149-dc87-473a-87c0-c1a6cf3fdf6c": {
+      "slug": "visuals-player",
+      "latest": "0.1.3",
+      "versions": {
+        "0.1.3": {
+          "version": "0.1.3",
+          "name": "Visuals Player",
+          "tag": "visuals-player-v0.1.3",
+          "sourceCommit": "0679cadd6df306d4cf25879ae08a41f22d2164d8",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/visuals-player-v0.1.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/visuals-player-v0.1.3/visuals-player-0.1.3.vrchapp",
+          "size": 40094503,
+          "sha256": "fe27b0c18641fdeae95a6d5fedb7bdc1495d96521be077f1fda77d5c48d36164",
+          "packageDigest": "fe27b0c18641fdeae95a6d5fedb7bdc1495d96521be077f1fda77d5c48d36164",
+          "revision": "d192cc7432bd3c7a6f7aa8734962cc930f072549193cfc14db6f23d27b57f72b",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Curated visuals that move with four original songs, your microphone or line in, or play silently.\n- Control it like a Visual in Live Console: E1–E4 shape the picture in pages, K3 opens Visuals and Visual Settings, K4 opens the Player for sound, track, auto change and camera.\n- Auto change picks the next visual on a new section of the song; playing a visual yourself holds it.\n- Turn on the camera to steer visuals with your hands and see image visuals use your picture.\n- On a device with a second screen, the picture fills that screen while the touch screen keeps the controls."
+        }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPlZpc3VhbHMgUGxheWVyPC90aXRsZT4KICA8cmVjdCB4PSIzIiB5PSI1IiB3aWR0aD0iMjYiIGhlaWdodD0iMjIiIHJ4PSIyIiBzdHJva2U9IiNkZWRlZGUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik02IDIyYzMtNiA2LTYgOSAwczYgNiAxMCAwIiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNNiAxN2MzLTYgNi02IDkgMHM2IDYgMTAgMCIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTcgOC41djVsNC0yLjV6IiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo=",
+      "guide": {
+        "description": "Curated visuals that move with original music, your microphone or line in.",
+        "sections": [
+          {
+            "title": "Visual",
+            "controls": [
+              {
+                "control": "E1–E4 · Turn",
+                "action": "Change the four parameters on the current page."
+              },
+              {
+                "control": "E1–E4 · Press",
+                "action": "Turn faster: 1×, 2×, 4×."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Next page: parameters 1–4, 5–8, audio response."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Visuals: E1 chooses, E1 press plays, E2 changes the collection."
+              },
+              {
+                "control": "K3 · Hold",
+                "action": "Visual Settings."
+              }
+            ]
+          },
+          {
+            "title": "Player",
+            "controls": [
+              {
+                "control": "K4 · Press or tap the picture",
+                "action": "Sound (Music, Mic / Line in, Silent), track, auto change and camera. E1 chooses, E1 press selects."
+              }
+            ]
+          },
+          {
+            "title": "Auto change",
+            "text": "With Music, the next visual starts on a new section of the song. Playing a visual from Visuals holds it."
+          }
+        ]
+      }
     }
   }
 }
