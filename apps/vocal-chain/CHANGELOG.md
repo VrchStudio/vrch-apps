@@ -1,5 +1,9 @@
 # Vocal Chain
 
+## 1.2.4
+
+- Play through your own microphone in the browser Playground.
+
 ## 1.2.3
 
 - Keep English parameter labels clear of their sliders.

@@ -4,6 +4,8 @@
   const sdk = VrchApp;
   const $ = (id) => document.getElementById(id);
   const preview = sdk.context.mode === 'preview';
+  // A browser Preview that hands this App a real microphone plays like the device; a silent one stays a preview.
+  let mic = 'unknown';
   const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
   const SAVE_KEY = 'settings';
 
@@ -127,7 +129,7 @@
       e.out = await sdk.audio.openOutput({ channels: 2 });
       e.outNode = await e.out.createNode(e.ctx);
       e.node.connect(e.outNode);
-      if (!preview) {
+      {
         const attempts = [
           { channels: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
           { channels: 1, echoCancellation: true },
@@ -140,9 +142,15 @@
             if (error.code === 'permission_required' || i === attempts.length - 1) throw error;
           }
         }
-        if (e.in.silent) throw Object.assign(new Error('silent'), { code: 'audio_device_unavailable' });
-        e.inNode = await e.in.createNode(e.ctx);
-        e.inNode.connect(e.node);
+        if (e.in.silent && !preview) throw Object.assign(new Error('silent'), { code: 'audio_device_unavailable' });
+        mic = e.in.silent ? 'none' : 'live';
+        if (mic === 'live') {
+          e.inNode = await e.in.createNode(e.ctx);
+          e.inNode.connect(e.node);
+        } else {
+          await e.in.close();
+          e.in = null;
+        }
       }
       e.node.port.onmessage = ({ data }) => {
         if (engine !== e || !data || data.type !== 'meter') return;
@@ -167,8 +175,8 @@
       await release(e);
       if (token !== epoch) return;
       const code = error.code || error.name;
-      fail(code === 'permission_required' ? 'Allow audio input in Device Access, then tap Retry.'
-        : code === 'audio_device_unavailable' ? 'Choose available IN and OUT in the K1 Menu, then tap Retry.'
+      fail(code === 'permission_required' ? (preview ? 'Allow microphone access, then tap Retry.' : 'Allow audio input in Device Access, then tap Retry.')
+        : code === 'audio_device_unavailable' ? (preview ? 'Connect a microphone, then tap Retry.' : 'Choose available IN and OUT in the K1 Menu, then tap Retry.')
           : code === 'interaction_required' ? 'Tap Start to enable audio.'
             : 'Audio unavailable. Tap Retry.');
     }
@@ -335,7 +343,7 @@
     const toEl = $('to');
     if (!tune.voiced || !tune.f0) {
       noteEl.textContent = '—';
-      hzEl.textContent = preview ? 'No input in preview' : 'Waiting for audio';
+      hzEl.textContent = mic === 'none' ? 'No input in preview' : 'Waiting for audio';
       toEl.textContent = '';
       toEl.className = 'off';
       return;
@@ -399,7 +407,7 @@
     $('gate-btn').disabled = false;
     if (phase === 'idle') {
       $('gate-btn').textContent = 'Start';
-      $('gate-msg').textContent = preview ? 'Microphone unavailable in preview. Launch on the device.'
+      $('gate-msg').textContent = mic === 'none' ? 'Microphone unavailable in preview. Launch on the device.'
         : 'Connect a microphone and tap Start. Headphones recommended.';
     }
   }
@@ -459,10 +467,10 @@
     renderGate();
     requestAnimationFrame(drawMeter);
     sdk.audio.onAvailable(() => {
-      if (!preview && (phase === 'live' || phase === 'error')) void stop().then(() => start());
+      if (phase === 'live' || phase === 'error') void stop().then(() => start());
     });
     await sdk.ready();
-    if (!preview) void start();
+    void start();
   }
 
   addEventListener('pagehide', () => { void stop(); });

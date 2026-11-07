@@ -1,5 +1,9 @@
 # Pitch Shift
 
+## 1.1.7
+
+- Play through your own microphone in the browser Playground.
+
 ## 1.1.6
 
 - Keep English parameter labels clear of their sliders.
