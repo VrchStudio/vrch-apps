@@ -30,7 +30,7 @@ function build(app) {
   const results = {};
   try {
     for (const capture of [true, false]) for (const app of APPS) {
-      const context = await browser.newContext({permissions: ['camera', 'microphone'], viewport: {width: 1440, height: 900}});
+      const context = await browser.newContext({permissions: ['camera', 'microphone'], viewport: {width: 1440, height: 1100}});
       await context.addInitScript(capture => {
         if (window !== top) return;
         if (!capture) delete window.MediaStreamTrackProcessor;
@@ -49,8 +49,8 @@ function build(app) {
       await page.waitForTimeout(1500); if (await start.isVisible()) await start.click();
       // PalmNotes asks for sound on K2; an imported App confirms it in the host's Start audio dialog.
       if (app === 'palmnotes-duo' && capture) {await page.waitForTimeout(1500); await page.click('[data-input="K2"]'); await start.waitFor({state: 'visible', timeout: 10000}); await start.click();}
-      // The screen iframe is CSS-scaled into the shell, which Playwright's frame click coordinates ignore.
-      if (app === 'hardware-check') await frame.evaluate(() => cameraTab.click());
+      // 1440x1100 shows the 2D screen 1:1, where Playwright's clicks inside the App frame land where they aim.
+      if (app === 'hardware-check') await frame.click('#cameraTab');
       const live = () => page.waitForFunction(() => videoTracks.some(t => t.readyState === 'live'), null, {timeout: 45000});
       if (capture) {
         try{await live();}catch(e){console.error('camera did not open:',app,JSON.stringify(await frame.evaluate(()=>document.body.innerText.slice(0,400))),JSON.stringify(await page.evaluate(()=>({tracks:videoTracks.length,modal:document.querySelector('#modal')?.open,fb:document.getElementById('stageFeedback')?.textContent}))),errors);await page.screenshot({path:'/tmp/cam-debug.png'});throw e;}
