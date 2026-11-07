@@ -1293,7 +1293,7 @@
     },
     "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31": {
       "slug": "palmnotes-duo",
-      "latest": "0.1.1",
+      "latest": "0.1.2",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -1332,6 +1332,25 @@
             "updateApi": 1
           },
           "notes": "- Add a VRCH-style vector hand-and-notes icon for Launcher, My Apps and Guide.\n- Keep the existing audio, hand tracking and saved settings unchanged."
+        },
+        "0.1.2": {
+          "version": "0.1.2",
+          "name": "PalmNotes Duo",
+          "tag": "palmnotes-duo-v0.1.2",
+          "sourceCommit": "7a10e6c275bdc974ad55dfec01c2b2dc699e8d26",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/palmnotes-duo-v0.1.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/palmnotes-duo-v0.1.2/palmnotes-duo-0.1.2.vrchapp",
+          "size": 28011051,
+          "sha256": "cc9ba75ad2dbaba7b44fef27c0f1273f009d8b13a182397d5d6f8cb12c395bc0",
+          "packageDigest": "cc9ba75ad2dbaba7b44fef27c0f1273f009d8b13a182397d5d6f8cb12c395bc0",
+          "revision": "96045b358d6fe4dd73a5ef012b4b821b9d12425de98941c45ba3814159d3ced0",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Play with your hands in a browser that allows the camera, such as the Playground; without a camera, Preview still auditions notes."
         }
       },
       "guide": {
@@ -1385,7 +1404,7 @@
           },
           {
             "title": "Sound and settings",
-            "text": "Choose speaker or headphones in Menu. Tone, volume and hand roles save automatically. Preview offers short note auditions."
+            "text": "Choose speaker or headphones in Menu. Tone, volume and hand roles save automatically. Without a camera, Preview offers short note auditions."
           }
         ]
       },
