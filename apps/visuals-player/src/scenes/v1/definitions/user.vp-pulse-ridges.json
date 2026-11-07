@@ -1,0 +1,443 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-pulse-ridges",
+  "title": "Pulse Ridges",
+  "description": "White ridgelines recede to the horizon as solid, rim-lit terrain. Music swells and folds it; each raised hand on Source B lifts its own peak. Line colour is adjustable.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "vec3 ridgeHue(float z,vec3 ink){\n return ink*mix(1.0,.55,z);\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord){\n vec2 uv=fragCoord/iResolution.xy;\n float aspect=iResolution.x/iResolution.y;\n float px=(uv.x-.5)*aspect,y=uv.y;\n float t=vrchPhase_speed();\n float strike=smoothstep(0.0,.85,uParam_accent);\n float N=clamp(floor(uParam_lines+.5),10.0,36.0);\n float horizon=.80;\n float farBase=horizon-.84/4.2;\n vec2 lh=vec2((uParam_left_x-.5)*aspect,uParam_left_y),rh=vec2((uParam_right_x-.5)*aspect,uParam_right_y);\n // A visible hand leaves a small bump; raising it past the chest lifts the peak.\n float llift=uParam_lift*(.12*smoothstep(.02,.2,lh.y)+1.1*smoothstep(.35,.9,lh.y));\n float rlift=uParam_lift*(.12*smoothstep(.02,.2,rh.y)+1.1*smoothstep(.35,.9,rh.y));\n bool hands=llift+rlift>.001;\n float motion=clamp(uParam_motion,0.0,1.0);\n float lp=smoothstep(.02,.2,lh.y)*motion,rp=smoothstep(.02,.2,rh.y)*motion;\n bool ripples=lp+rp>.001;\n float env=.16+.84*exp(-px*px*1.8);\n // Highest lift any ridge can reach at this column (terrain <= 1.1, peak shape <= 1.3).\n float reach=uParam_height*1.3*env*1.1+.2*strike*env+.05*motion;\n float handReach=0.0;\n if(hands){float ul=abs(px-lh.x)/.17,ur=abs(px-rh.x)/.17;handReach=1.3*(llift*exp(-ul*sqrt(ul))+rlift*exp(-ur*sqrt(ur)));}\n reach+=handReach;\n float pix=1.0/iResolution.y;\n vec3 c=vec3(0.0);\n bool covered=false;\n // A ridge is skipped below when y-.82 > (reach*.56-.84)/D. Above the near\n // ridges that test holds for a run starting at the front, so the loop starts\n // past that run (one ridge early, to stay clear of rounding).\n float lowReach=reach*.56-.84,above=y-.82,first=0.0;\n if(lowReach<0.0)first=above>=0.0?36.0:max(floor((lowReach/above-1.0)*(N-1.0)/3.2-.01),0.0);\n // The coarse stage marks the ridges that can draw in this 4x4 block.\n vec4 reachable=vrchCoarseData(fragCoord);\n ivec2 reachBits=ivec2(reachable.xy+.5);\n first=max(first,reachable.z);\n for(int i=0;i<36;i++){\n  float fi=float(i)+first;\n  if(fi>=N)break;\n  int ri=int(fi+.5);\n  if(((ri<18?reachBits.x>>ri:reachBits.y>>(ri-18))&1)==0)continue;\n  float z=fi/(N-1.0);\n  float D=1.0+z*3.2;\n  float base=horizon-.84/D;\n  float scale=.56/D;\n  // Above its highest possible crest and glow this ridge adds nothing.\n  if(y>base+reach*scale+.02)continue;\n  // Per-ridge values that do not depend on the pixel come from the frame stage.\n  vec4 ridge=vrchFrameData(int(fi));\n  float xw=px*D*.8,zw=z*4.2+t*.3;\n  // Terrain, first stage: its dominant ridge term and slow swell bound the\n  // height before the remaining terms, hand peak and ripple are evaluated.\n  float xs=xw+.45*sin(zw*.7+xw*.37);\n  float ta=1.0-abs(sin(xs*1.1+zw*.8+ridge.x));\n  float ts=.5+.5*sin(xw*.62-zw*.47+t*.07);\n  float nPart=ta*ta*.46+ts*.26;\n  float nMax=nPart+.26+uParam_rough*.26;\n  float fz=ridge.y;\n  float hMax=uParam_height*1.3*env*pow(nMax,1.7)+handReach*fz*(.7+.6*nMax)+(.2*strike+.08*motion)*env;\n  if(y>base+hMax*scale+.02)continue;\n  float tb=1.0-abs(sin(xs*2.35-zw*1.05+t*.12+1.7));\n  float tc=.5+.5*sin(xs*5.3+zw*2.3-t*.4);\n  float n=nPart+tb*tb*.26+uParam_rough*tc*tc*.26;\n  float h=uParam_height*1.3*env*pow(n,1.7);\n  float peak=0.0;\n  if(hands){\n   float wide=.17/(1.0+z*1.2);\n   float ul=abs(px-lh.x)/wide,ur=abs(px-rh.x)/wide;\n   peak=(llift*exp(-ul*sqrt(ul))+rlift*exp(-ur*sqrt(ur)))*fz*(.7+.6*n);\n  }\n  float ripple=0.0;\n  if(ripples){\n   float rl=length(vec2(px-lh.x,(z-.2)*1.8)),rr=length(vec2(px-rh.x,(z-.2)*1.8));\n   ripple=lp*sin(rl*26.0-t*7.0)*exp(-rl*3.5)+rp*sin(rr*26.0-t*7.0)*exp(-rr*3.5);\n  }\n  float wave=ridge.w;\n  float lift=h+peak+(.10*wave+.04*ripple)*env;\n  float d=y-(base+lift*scale);\n  // Well above this crest the line and glow are negligible; skip their shading.\n  if(d>.03)continue;\n  float near=smoothstep(.03,.012,d);\n  float fade=ridge.z;\n  float w=(.55+.7*(1.0-z))*pix;\n  float line=w*w/(d*d+w*w);\n  float flow=.55+.45*sin(xw*1.4-t*.8+fi*1.7);\n  float sg=max(sin(xw*5.0-t*2.3+fi*2.39),0.0),sg3=sg*sg*sg,sg6=sg3*sg3,sg12=sg6*sg6;\n  float spark=uParam_glint>.01?uParam_glint*(sg12*sg12)*smoothstep(.15,.6,h+peak):0.0;\n  float energy=(.26+.85*lift)*flow+spark*2.5+wave*1.4+peak*.35;\n  vec3 hue=ridgeHue(z,uParam_color.rgb);\n  hue*=.6+.4*smoothstep(.05,.7,lift);\n  hue=mix(hue,vec3(1.0),clamp(peak*.1+spark*.45+wave*.25,0.0,.4));\n  if(d<0.0){\n   // Solid dark ridge face with a thin rim of light spilling below the crest.\n   float rim=exp(d/(.004+.012*(1.0-z)));\n   c+=hue*(rim*.12*(.4+lift)*flow+line*energy)*fade;\n   covered=true;\n   break;\n  }\n  float glow=exp(-d/(.004+.008*(1.0-z)))*.06*(.3+lift);\n  c+=hue*(line*energy+glow)*fade*near;\n }\n if(!covered){\n  vec2 cell=floor(vec2(px,y)*120.0);\n  float r=fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);\n  vec2 f=fract(vec2(px,y)*120.0)-.5;\n  float star=step(.988,r)*exp(-dot(f,f)*18.0)*(.35+.65*sin(t*2.0+r*60.0)*.5+.5*uParam_glint)*smoothstep(farBase,farBase+.12,y);\n  c+=uParam_color.rgb*star*.035;\n  float g=max(y-farBase,0.0);\n  c+=uParam_color.rgb*exp(-g*14.0)*.025*(.6+.4*exp(-px*px*.8));\n }\n c*=.55+uParam_light*1.1;\n fragColor=vec4(1.0-exp(-c),1.0);\n}\n"
+  },
+  "frame": {
+    "entry_point": "vrchFrame",
+    "source": "// Texel i: ridge i's slow swell offset, hand-peak depth falloff, distance fade\n// and accent wave, none of which depend on the pixel.\nvoid vrchFrame(in int texel,out vec4 value){\n float N=clamp(floor(uParam_lines+.5),10.0,36.0);\n float t=vrchPhase_speed();\n float strike=smoothstep(0.0,.85,uParam_accent);\n float z=float(texel)/(N-1.0);\n float zw=z*4.2+t*.3;\n float dz=(z-.2)/.2;\n float wz=(z-(1.0-strike))*6.0;\n value=vec4(1.5*sin(zw*.45+t*.04),exp(-dz*dz),mix(1.0,.12,pow(z,.7)),strike>0.0?strike*exp(-wz*wz):0.0);\n}\n",
+    "texels": 36
+  },
+  "coarse": {
+    "entry_point": "vrchCoarse",
+    "source": "// Per 4x4 block: which ridges can draw anything in the block. The main pass skips a ridge at a\n// pixel when the pixel is more than .03 above its crest; here each ridge's crest is bounded from\n// above over the block's columns (exact terrain at the block centre plus its slope bound over half\n// the block, hand peak and ripple at their maxima), so ridges skipped here are skipped there too.\n// x: bits of ridges 0-17, y: bits 18-35 (built and read as integers so no GPU's\n// approximate exp2 or division can flip a bit), z: first relevant ridge.\nvoid vrchCoarse(in vec2 blockOrigin,in float blockSize,out vec4 value){\n float aspect=iResolution.x/iResolution.y;\n float t=vrchPhase_speed();\n float strike=smoothstep(0.0,.85,uParam_accent);\n float N=clamp(floor(uParam_lines+.5),10.0,36.0);\n float horizon=.80;\n float x0=(blockOrigin.x+.5-.5*iResolution.x)/iResolution.y,x1=x0+(blockSize-1.0)/iResolution.y;\n float xc=.5*(x0+x1),hw=.5*(x1-x0);\n float y0=(blockOrigin.y+.5)/iResolution.y;\n vec2 lh=vec2((uParam_left_x-.5)*aspect,uParam_left_y),rh=vec2((uParam_right_x-.5)*aspect,uParam_right_y);\n float llift=uParam_lift*(.12*smoothstep(.02,.2,lh.y)+1.1*smoothstep(.35,.9,lh.y));\n float rlift=uParam_lift*(.12*smoothstep(.02,.2,rh.y)+1.1*smoothstep(.35,.9,rh.y));\n float motion=clamp(uParam_motion,0.0,1.0);\n float lp=smoothstep(.02,.2,lh.y)*motion,rp=smoothstep(.02,.2,rh.y)*motion;\n float pe=clamp(0.0,x0,x1);\n float envU=.16+.84*exp(-pe*pe*1.8);\n float hU=0.0;\n if(llift+rlift>.001){\n  float ul=abs(clamp(lh.x,x0,x1)-lh.x)/.17,ur=abs(clamp(rh.x,x0,x1)-rh.x)/.17;\n  hU=1.3*(llift*exp(-ul*sqrt(ul))+rlift*exp(-ur*sqrt(ur)));\n }\n // Slope bound of n per unit xw: dominant term 1.27, second 1.43, rough term 3.22 * rough.\n float slope=1.27+1.43+3.22*uParam_rough;\n int lo=0,hi=0;\n float first=N;\n for(int i=0;i<36;i++){\n  float fi=float(i);\n  if(fi>=N)break;\n  float z=fi/(N-1.0);\n  float D=1.0+z*3.2;\n  float base=horizon-.84/D;\n  float scale=.56/D;\n  float zw=z*4.2+t*.3;\n  float swell=1.5*sin(zw*.45+t*.04);\n  float dz=(z-.2)/.2,fz=exp(-dz*dz);\n  float wz=(z-(1.0-strike))*6.0,wave=strike>0.0?strike*exp(-wz*wz):0.0;\n  float xw=xc*D*.8;\n  float xs=xw+.45*sin(zw*.7+xw*.37);\n  float ta=1.0-abs(sin(xs*1.1+zw*.8+swell));\n  float ts=.5+.5*sin(xw*.62-zw*.47+t*.07);\n  float tb=1.0-abs(sin(xs*2.35-zw*1.05+t*.12+1.7));\n  float tc=.5+.5*sin(xs*5.3+zw*2.3-t*.4);\n  float nU=ta*ta*.46+ts*.26+tb*tb*.26+uParam_rough*tc*tc*.26+slope*D*.8*hw+.003;\n  float liftU=uParam_height*1.3*envU*pow(nU,1.7)+hU/1.3*fz*(.7+.6*nU)*1.3/1.3+(.10*wave+.04*(lp+rp))*envU;\n  // hU already holds 1.3 x the hand lift; the main pass's peak is lift * falloff * fz * (.7+.6n).\n  liftU=uParam_height*1.3*envU*pow(nU,1.7)+hU/1.3*fz*(.7+.6*nU)+(.10*wave+.04*(lp+rp))*envU;\n  if(y0-(base+liftU*scale)<=.03+.005){\n   first=min(first,fi);\n   if(i<18)lo|=1<<i;else hi|=1<<(i-18);\n  }\n }\n value=vec4(float(lo),float(hi),first,1.0);\n}\n\n",
+    "divisor": 4
+  },
+  "parameters": [
+    {
+      "key": "height",
+      "label": "Peak Height",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Terrain",
+      "description": "How high the ridges rise."
+    },
+    {
+      "key": "rough",
+      "label": "Roughness",
+      "type": "float",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Terrain",
+      "description": "Fine folds along each ridge."
+    },
+    {
+      "key": "glint",
+      "label": "Shimmer",
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Sparks travelling along the crests."
+    },
+    {
+      "key": "accent",
+      "label": "Pulse",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "A wave of light rolling from the front ridge to the horizon."
+    },
+    {
+      "key": "lines",
+      "label": "Ridges",
+      "type": "float",
+      "default": 26,
+      "min": 10,
+      "max": 36,
+      "widget": "slider",
+      "group": "Terrain",
+      "description": "Number of ridgelines.",
+      "step": 1
+    },
+    {
+      "key": "speed",
+      "label": "Flow",
+      "type": "float",
+      "default": 0.4,
+      "min": 0.05,
+      "max": 1.2,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "How fast the terrain flows toward the viewer."
+    },
+    {
+      "key": "color",
+      "label": "Line Color",
+      "type": "color",
+      "default": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "widget": "color",
+      "group": "Light",
+      "description": "Colour of every ridgeline."
+    },
+    {
+      "key": "light",
+      "label": "Glow",
+      "type": "float",
+      "default": 0.6,
+      "min": 0.1,
+      "max": 1,
+      "widget": "slider",
+      "group": "Light",
+      "description": "Overall brightness of the ridgelines."
+    },
+    {
+      "key": "lift",
+      "label": "Body Lift",
+      "type": "float",
+      "default": 0.8,
+      "min": 0,
+      "max": 1.5,
+      "widget": "slider",
+      "group": "Body",
+      "description": "How much each raised hand lifts its own peak."
+    },
+    {
+      "key": "left_x",
+      "label": "Left Hand X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked left hand position."
+    },
+    {
+      "key": "left_y",
+      "label": "Left Hand Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked left hand height."
+    },
+    {
+      "key": "right_x",
+      "label": "Right Hand X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked right hand position."
+    },
+    {
+      "key": "right_y",
+      "label": "Right Hand Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Tracked right hand height."
+    },
+    {
+      "key": "motion",
+      "label": "Hand Motion",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "widget": "slider",
+      "group": "Body",
+      "description": "Ripples from moving hands."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.left_hand_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.left_hand_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.right_hand_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.right_hand_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_speed",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-low-to-height",
+      "param_key": "height",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.45,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 45,
+      "release_ms": 320,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-mid-to-rough",
+      "param_key": "rough",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.4,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 80,
+      "release_ms": 420,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-high-to-glint",
+      "param_key": "glint",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.7,
+      "input_min": 0,
+      "input_max": 0.45,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 20,
+      "release_ms": 160,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-onset-to-accent",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.95,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 6,
+      "release_ms": 360,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-left-hand-x",
+      "param_key": "left_x",
+      "signal_id": "tracking.pose.left_hand_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 110,
+      "release_ms": 110,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-left-hand-y",
+      "param_key": "left_y",
+      "signal_id": "tracking.pose.left_hand_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 220,
+      "release_ms": 700,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-right-hand-x",
+      "param_key": "right_x",
+      "signal_id": "tracking.pose.right_hand_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 110,
+      "release_ms": 110,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-right-hand-y",
+      "param_key": "right_y",
+      "signal_id": "tracking.pose.right_hand_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 220,
+      "release_ms": 700,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "pose-hands-motion",
+      "param_key": "motion",
+      "signal_id": "tracking.pose.hands_speed",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 0.35,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 120,
+      "release_ms": 900,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1.0
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "pulse-ridges",
+      "stage",
+      "body"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": null,
+    "prompt_summary": "Stacked ridge lines in perspective: bass lifts the peaks, melody roughens the terrain, treble glints along the crests and attacks ripple from front to back.",
+    "created_at": "2026-09-26T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "height",
+      "color",
+      "light",
+      "lift"
+    ]
+  },
+  "analysis_requirements": [
+    {
+      "kind": "pose",
+      "source_input": 1,
+      "topology": "vrch.pose-landmarks@1",
+      "history_ms": 600
+    }
+  ]
+}

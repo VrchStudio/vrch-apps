@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-print-echo",
+  "title": "Print Echo",
+  "description": "Fixed ink impressions turn with music and make brief printing strokes at drum beats and rises in musical dynamics, then settle back.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 1,
+    "max_sources": 1,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float paperHash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }\nvec3 toDisplay(vec3 c) {return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}\nvec3 toLinear(vec3 c) { return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c)); }\nvec3 plateSource(vec2 uv) {\n vec2 mirrored=1.-abs(mod(uv,2.)-1.);\n return toDisplay(vrchSampleSource0(mirrored).rgb);\n}\nfloat impression(vec3 c) {return 1.-dot(c,vec3(.2126,.7152,.0722));}\nfloat screenInk(vec2 p,float coverage,float angle) {\n mat2 r=mat2(cos(angle),-sin(angle),sin(angle),cos(angle));\n vec2 cell=fract(r*p*uParam_density)-.5;\n float radius=sqrt(clamp(coverage,0.,1.))*.70;\n float aa=max(.012,uParam_density/min(iResolution.x,iResolution.y)*.7);\n return mix(coverage,1.-smoothstep(radius-aa,radius+aa,length(cell)),uParam_grain*.65);\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord) {\n vec2 uv=fragCoord/iResolution.xy;\n vec4 original=vrchSampleSource0(uv);\n vec2 ratio=vec2(min(iResolution.x,iResolution.y))/iResolution.xy;\n vec2 p=fragCoord/min(iResolution.x,iResolution.y);\n vec3 center=plateSource(uv);\n float ink=impression(center),gain=.88+uParam_pressure*.50;\n vec3 paper=vec3(.89,.82,.69),keyInk=vec3(.006,.015,.038);\n float push=max(smoothstep(.12,.70,uParam_accent),smoothstep(.025,.22,uParam_phrase));\n float drift=sin(vrchPhase_speed()*.45)*.004;\n float distance=uParam_registration+uParam_spread*(.12+.88*push)+drift;\n float angle=.07983+vrchPhase_turn();\n vec2 direction=vec2(cos(angle),sin(angle))*ratio;\n float warm=impression(plateSource(uv-direction*distance));\n float cold=impression(plateSource(uv+direction*distance*.72));\n // Three complete ink plates have fixed density. Only registration moves.\n float warmInk=screenInk(p,smoothstep(.08,.82,warm*gain),-.35);\n float coldInk=screenInk(p,smoothstep(.08,.82,cold*gain),.26);\n float mainInk=screenInk(p,smoothstep(.08,.76,ink*gain),.10);\n vec3 color=paper;\n color*=mix(vec3(1.),vec3(.025,.50,.55),coldInk*.64);\n color*=mix(vec3(1.),uParam_ink.rgb,warmInk*.62);\n color*=mix(vec3(1.),keyInk,mainInk*.70);\n color*=1.-(paperHash(floor(fragCoord))-.5)*uParam_grain*.08;\n fragColor=vec4(mix(original.rgb,toLinear(clamp(color,0.,1.)),uParam_amount),original.a);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Mix of the registration treatment."
+    },
+    {
+      "key": "spread",
+      "label": "Echo Distance",
+      "type": "float",
+      "default": 0.075,
+      "min": 0,
+      "max": 0.16,
+      "step": 0.005,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Spacing of fainter complete impressions along the image contours."
+    },
+    {
+      "key": "pressure",
+      "label": "Ink Pressure",
+      "type": "float",
+      "default": 0.12,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Ink coverage within the source-derived printing screen."
+    },
+    {
+      "key": "registration",
+      "label": "Registration",
+      "type": "float",
+      "default": 0.013,
+      "min": 0,
+      "max": 0.07,
+      "step": 0.001,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Continuous misalignment between the complete colored printing plates."
+    },
+    {
+      "key": "ink",
+      "label": "Rose Ink",
+      "type": "color",
+      "default": [
+        0.88,
+        0.045,
+        0.16,
+        1
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Warm ink that overlaps with the cyan impression."
+    },
+    {
+      "key": "grain",
+      "label": "Screen Detail",
+      "type": "float",
+      "default": 0.18,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the fixed printing screen and paper grain."
+    },
+    {
+      "key": "speed",
+      "label": "Drift",
+      "type": "float",
+      "default": 0.6,
+      "min": 0,
+      "max": 1.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Slow continuous impression drift; low frequencies gently vary its speed."
+    },
+    {
+      "key": "accent",
+      "label": "Beat Push",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Push the two complete ink impressions apart without changing their ink or exposure."
+    },
+    {
+      "key": "density",
+      "label": "Screen Density",
+      "type": "float",
+      "default": 95,
+      "min": 35,
+      "max": 160,
+      "step": 1,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Spacing of the printed halftone screen."
+    },
+    {
+      "key": "turn",
+      "label": "Turn",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Rotation speed of the separation direction; the music advances the angle continuously."
+    },
+    {
+      "key": "phrase",
+      "label": "Phrase Push",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Brief printing strokes at rises in musical dynamics; sustained notes settle back."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.beat",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.energy",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "low-to-drift",
+      "param_key": "speed",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.45,
+      "input_min": 0.02,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 400,
+      "release_ms": 900,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "beat-to-push",
+      "param_key": "accent",
+      "signal_id": "audio.v2.beat",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 55,
+      "release_ms": 110,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "mid-to-turn",
+      "param_key": "turn",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.6,
+      "input_min": 0.02,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 240,
+      "release_ms": 600,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "phrase-rise",
+      "param_key": "phrase",
+      "signal_id": "audio.v2.energy",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.9,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 65,
+      "release_ms": 100,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "phrase-settle",
+      "param_key": "phrase",
+      "signal_id": "audio.v2.energy",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.9,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "negative",
+      "attack_ms": 650,
+      "release_ms": 950,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Filter",
+    "tags": [
+      "aesthetic-study",
+      "print-echo"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.study-print-echo",
+      "content_hash": "sha256:eb0187c0a9bc0a2b1370aea1a23c3539e5a54d20ce94a55a617a2e05d47b286e"
+    },
+    "prompt_summary": "Fixed ink impressions turn with music and make brief printing strokes at drum beats and rises in musical dynamics, then settle back.",
+    "created_at": "2026-09-13T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "registration",
+      "spread",
+      "ink",
+      "amount"
+    ]
+  }
+}

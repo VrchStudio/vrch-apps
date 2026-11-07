@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en" class="vrch-foundation">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visuals Player</title>
+  <link rel="stylesheet" href="css/fontawesome-local.css">
+  <link rel="stylesheet" href="css/vrch_colors_and_styles.css">
+  <link rel="stylesheet" href="css/vrch_pages_v2.css">
+  <link rel="stylesheet" href="css/vrch_pages_scene_v2.css">
+  <link rel="stylesheet" href="css/vrch_pages_visual_settings.css">
+  <link rel="stylesheet" href="app.css">
+  <script src="/apps/sdk/apps-v1.js"></script>
+  <script src="scripts/vrch_pages_sha256_fallback.js"></script>
+  <script src="scripts/three.min.js"></script>
+  <script src="scripts/vrch_pages_visual_foundation.js"></script>
+  <script src="scripts/vrch_pages_dialogs.js"></script>
+  <script src="scripts/vrch_pages_live_console_action_popover.js"></script>
+  <script src="scripts/vrch_pages_scene_spec.js"></script>
+  <script src="scripts/vrch_pages_scene_contract.js"></script>
+  <script src="scripts/vrch_pages_scene_signal_bus.js"></script>
+  <script src="scripts/vrch_pages_scene_source_binding.js"></script>
+  <script src="scripts/vrch_pages_scene_runtime.js"></script>
+  <script src="scripts/vrch_pages_scene_catalog.js"></script>
+  <script src="scripts/vrch_pages_image_audio_reactivity.js"></script>
+  <script src="scripts/vrch_pages_scene_parameter_controls.js"></script>
+  <script src="scripts/vrch_pages_scene_frame_analysis.js"></script>
+  <script src="scripts/vrch_pages_scene_mirror.js"></script>
+  <script src="scripts/vrch_pages_scene_selection.js"></script>
+  <script src="scripts/vrch_pages_scene_picker.js"></script>
+  <script defer src="scripts/vrch_pages_visual_settings.js"></script>
+  <script defer src="camera.js"></script>
+  <script defer src="spectrum.js"></script>
+  <script defer src="music.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body class="ui-control-context">
+  <main id="stage" class="player"><div id="visual" class="player__visual"></div></main>
+  <div id="visual-settings" class="ui-modal" role="dialog" aria-modal="true" aria-label="Visual Settings" aria-describedby="visual-name" hidden>
+<section class="ui-modal__dialog scene-picker-dialog visual-settings-dialog">
+  <vrch-dialog-header icon="fa-image" label="Visual Settings"><nav slot="navigation" class="ui-tabs ui-tabs--navigation ui-tabs--edge ui-tabs--equal scene-picker-collections" role="tablist" aria-label="Visual Settings">
+      <button id="quick-tab" class="ui-tab" role="tab" type="button" aria-selected="true" aria-controls="quick-panel" data-tab="quick">Quick</button>
+      <button id="advanced-tab" class="ui-tab" role="tab" type="button" aria-selected="false" aria-controls="advanced-panel" tabindex="-1" data-tab="advanced">Advanced</button>
+    </nav><button slot="close" type="button" class="ui-icon-action ui-dialog__close" aria-label="Close Visual Settings"><i class="fas fa-xmark" aria-hidden="true"></i></button></vrch-dialog-header>
+  <div id="visual-name"></div>
+  <p id="visual-status" class="ui-dialog__note" role="status" hidden></p>
+  <div id="quick-panel" class="ui-dialog__body" role="tabpanel" aria-labelledby="quick-tab" data-page="quick">
+    <section data-image-settings aria-label="Image settings">
+      <div class="scene-param-row">
+        <span id="display-mode-label" class="scene-param-row__label">Image Display Mode</span>
+        <div id="display-mode" class="ui-grid-btn-group ui-grid-btn-group--settings" role="group" aria-labelledby="display-mode-label"></div>
+      </div>
+      <div class="scene-param-row">
+        <span id="blend-mode-label" class="scene-param-row__label">Blend Mode</span>
+        <div id="blend-mode" class="ui-grid-btn-group ui-grid-btn-group--settings" role="group" aria-labelledby="blend-mode-label"></div>
+      </div>
+      <div class="scene-param-row">
+        <div class="scene-param-row__heading"><span class="scene-param-row__label">Background Colour</span><span id="background-value" class="scene-param-row__value"></span><button id="background-reset" class="ui-reset-btn" type="button" aria-label="Reset background colour" title="Reset background colour"><i class="fas fa-rotate-left" aria-hidden="true"></i></button></div>
+        <div id="background-band" class="bg-control-belt bg-control-belt--compact" role="slider" tabindex="0" aria-label="Background colour spectrum" aria-valuemin="0" aria-valuemax="360" aria-valuenow="0" aria-orientation="horizontal"><div id="background-indicator" class="bg-control-indicator"></div></div>
+      </div>
+    </section>
+    <div data-empty hidden><p>No Visual running</p><button class="ui-btn--md" type="button" data-choose>Choose Visual</button></div>
+    <section data-sources hidden aria-label="Sources"><div data-source="A"><span>Source A</span><button class="ui-btn--md" type="button" aria-label="Source A channel" aria-haspopup="menu"></button></div><div data-source="B"><span>Source B</span><button class="ui-btn--md" type="button" aria-label="Source B channel" aria-haspopup="menu"></button></div></section>
+    <div data-parameters="quick"></div>
+  </div>
+  <div id="advanced-panel" class="ui-dialog__body" role="tabpanel" aria-labelledby="advanced-tab" data-page="advanced" hidden>
+    <section data-gestures><label class="ui-settings-row ui-settings-row--toggle"><span class="ui-settings-label">Swipe favourites</span><span class="ui-settings-control"><input id="swipe-favorites" type="checkbox" class="ui-switch" role="switch" aria-label="Swipe favourite visuals in fullscreen"></span></label></section>
+    <div data-parameters="advanced"></div>
+  </div>
+</section>
+</div>
+  <div id="player" class="ui-modal player-panel" role="dialog" aria-modal="true" aria-label="Player" hidden>
+    <section class="ui-modal__dialog scene-picker-dialog player-panel__dialog">
+      <vrch-dialog-header icon="fa-music" label="Player"><button slot="close" id="playerClose" type="button" class="ui-icon-action ui-dialog__close" aria-label="Close Player"><i class="fas fa-xmark" aria-hidden="true"></i></button></vrch-dialog-header>
+      <div id="playerBody" class="ui-dialog__body player-panel__body"></div>
+    </section>
+  </div>
+  <div id="message" class="player__message" role="status" hidden></div>
+</body>
+</html>

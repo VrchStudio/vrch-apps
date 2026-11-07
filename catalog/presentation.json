@@ -23,29 +23,33 @@
     }
   ],
   "apps": {
-    "disco-ball": {
-      "category": "instruments",
+    "visuals-player": {
+      "category": "visuals",
       "featured": 1
     },
-    "petal-fm": {
+    "disco-ball": {
       "category": "instruments",
       "featured": 2
     },
+    "petal-fm": {
+      "category": "instruments",
+      "featured": 3
+    },
     "drum-808": {
       "category": "rhythm",
-      "featured": 3
+      "featured": 4
     },
     "wavescape": {
       "category": "instruments",
-      "featured": 4
+      "featured": 5
     },
     "gm-studio": {
       "category": "instruments",
-      "featured": 5
+      "featured": 6
     },
     "magic-circle": {
       "category": "visuals",
-      "featured": 6
+      "featured": 7
     },
     "shaker-shaker": {
       "category": "instruments"

@@ -1,0 +1,9 @@
+# Visuals Player
+
+## 0.1.3
+
+- Curated visuals that move with four original songs, your microphone or line in, or play silently.
+- Control it like a Visual in Live Console: E1–E4 shape the picture in pages, K3 opens Visuals and Visual Settings, K4 opens the Player for sound, track, auto change and camera.
+- Auto change picks the next visual on a new section of the song; playing a visual yourself holds it.
+- Turn on the camera to steer visuals with your hands and see image visuals use your picture.
+- On a device with a second screen, the picture fills that screen while the touch screen keeps the controls.

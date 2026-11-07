@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "tracks": [
+    {
+      "id": "glass-engine",
+      "title": "Glass Engine",
+      "file": "glass-engine.mp3",
+      "duration": 150.76,
+      "bpm": 129.4,
+      "sections": [
+        7.56,
+        13.68,
+        22.32,
+        29.12,
+        45.04,
+        59.12,
+        75.64,
+        88.84,
+        102.48,
+        133.84,
+        150.72
+      ],
+      "features": "glass-engine.vpf"
+    },
+    {
+      "id": "velvet-motion",
+      "title": "Velvet Motion",
+      "file": "velvet-motion.mp3",
+      "duration": 149.56,
+      "bpm": 125,
+      "sections": [
+        14.6,
+        38.04,
+        45.12,
+        69.16,
+        76.32,
+        103.72,
+        122.4,
+        138.28
+      ],
+      "features": "velvet-motion.vpf"
+    },
+    {
+      "id": "long-way-home",
+      "title": "Take the Long Way Home",
+      "file": "long-way-home.mp3",
+      "duration": 168.92,
+      "bpm": 119.7,
+      "sections": [
+        12.24,
+        34.04,
+        60.92,
+        68.72,
+        82.28,
+        100.52,
+        121.8,
+        139.76,
+        152.52
+      ],
+      "features": "long-way-home.vpf"
+    },
+    {
+      "id": "prism-rush",
+      "title": "Prism Rush",
+      "file": "prism-rush.mp3",
+      "duration": 148.8,
+      "bpm": 131.4,
+      "sections": [
+        17.52,
+        22.88,
+        41.68,
+        52.32,
+        63.8,
+        78.44,
+        85.36,
+        98.28,
+        114.32,
+        130.96,
+        141.84
+      ],
+      "features": "prism-rush.vpf"
+    }
+  ]
+}

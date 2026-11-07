@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-tidal-light",
+  "title": "Tidal Light",
+  "description": "The original luminous wave field, with clearer musical expansion, curvature, filament detail and local crest accents.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 0,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "vec3 finish(vec3 c){return 1.0-exp(-max(c,vec3(0.0)));}\nfloat twoCos(float b){float b2=b*b;return 2.0-b2*(1.0-b2*(1.0/12.0-b2*(1.0/360.0-b2/20160.0)));}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord){\n vec2 p=(2.0*fragCoord-iResolution.xy)/min(iResolution.x,iResolution.y);\n float t=vrchPhase_speed(),hit=smoothstep(.0,.75,uParam_accent);\n float spin=.15*sin(t*.2);\n p=mat2(cos(spin),-sin(spin),sin(spin),cos(spin))*p;vec3 c=vec3(.001,.003,.009);\n // Layer i: depth=.6+1.8i/27. Every wave phase advances by a fixed step per layer,\n // so each sine follows s[i+1]=2cos(step)s[i]-s[i-1]: two instructions per layer.\n // 2cos(b) from its series: the recurrence amplifies any error in it, so avoid the approximate cosine.\n float kx=p.x/uParam_spread,dx=kx*1.8/27.0,x0=kx*.6;\n float a1=x0*1.5+t*.42,b1=dx*1.5+3.8/27.0,s1=sin(a1),q1=sin(a1-b1),m1=twoCos(b1);\n float a2=x0*2.7-t*.3,b2=dx*2.7+4.0/27.0,s2=sin(a2),q2=sin(a2-b2),m2=twoCos(b2);\n float a3=x0*3.1+t*.45,b3=dx*3.1+7.0/27.0,s3=sin(a3),q3=sin(a3-b3),m3=twoCos(b3);\n float a4=x0*5.8-t*.65,b4=dx*5.8,s4=sin(a4),q4=sin(a4-b4),m4=twoCos(b4);\n float a5=x0*1.5-t*.7,b5=dx*1.5+10.0/27.0,s5=sin(a5),q5=sin(a5-b5),m5=twoCos(b5);\n float sweepX=1.4*sin(t*.47);\n bool accent=hit>0.0;\n float spanY=1.0+uParam_mass*2.6;\n float y=p.y*.6,dy=p.y*1.8/27.0,center0=-.5*spanY,dCenter=spanY/27.0;\n float width=.004+uParam_ridges*.009,fall=12.0-uParam_mass*6.0,sharp=90.0/width;\n // sin(pi*layer) and the depth weight also advance by fixed steps.\n float arch=0.0,archPrev=-sin(3.14/27.0),depthWeight=.35;\n // Colour is linear in the layer and in its warmth weight: accumulate scalar\n // weights and assemble once. hue=cool+(warm-cool)*s, cool=C0+layer*dC, warm=W0+layer*dW.\n float sK=0.0,sKL=0.0,sKW=0.0,sKWL=0.0,sA=0.0;\n// Two layers per iteration: the recurrences alternate which variable holds the newer value, so no copies are needed.\n float yc=y-center0,dyc=dy-dCenter,dw=depthWeight,layer=0.0;\n float u0=(x0-sweepX)*1.2,du=dx*1.2;\n if(accent){\n  float sweep=exp(-u0*u0),sweepStep=exp(-du*(2.0*u0+du)),sweepCurve=exp(-2.0*du*du);\n  float crestS=sin(-t*.55),crestPrev=sin(-t*.55-11.0/27.0);\n  for(int i=0;i<14;i++){\n   {float d=abs(yc-(.36*s1+.22*s2+uParam_bend*(s3+.38*s4)));\n    float filament=1.0/(d*d*sharp+1.0);\n    float k=(filament*(.1265+.1035*s5)+exp(-d*fall)*.065)*dw;\n    float crest=.5+.5*crestS;crest*=crest*crest;float a=filament*hit*sweep*(.2+.8*crest)*.42;k+=.7*a;sA+=a;\n    sweep*=sweepStep;sweepStep*=sweepCurve;crestPrev=1.83630234*crestS-crestPrev;\n    float kw=k*(.35+.65*arch);sK+=k;sKL+=k*layer;sKW+=kw;sKWL+=kw*layer;\n    q1=m1*s1-q1;q2=m2*s2-q2;q3=m3*s3-q3;q4=m4*s4-q4;q5=m5*s5-q5;\n    archPrev=1.98649041*arch-archPrev;yc+=dyc;dw+=.65/27.0;layer+=1.0/27.0;}\n   {float d=abs(yc-(.36*q1+.22*q2+uParam_bend*(q3+.38*q4)));\n    float filament=1.0/(d*d*sharp+1.0);\n    float k=(filament*(.1265+.1035*q5)+exp(-d*fall)*.065)*dw;\n    float crest=.5+.5*crestPrev;crest*=crest*crest;float a=filament*hit*sweep*(.2+.8*crest)*.42;k+=.7*a;sA+=a;\n    sweep*=sweepStep;sweepStep*=sweepCurve;crestS=1.83630234*crestPrev-crestS;\n    float kw=k*(.35+.65*archPrev);sK+=k;sKL+=k*layer;sKW+=kw;sKWL+=kw*layer;\n    s1=m1*q1-s1;s2=m2*q2-s2;s3=m3*q3-s3;s4=m4*q4-s4;s5=m5*q5-s5;\n    arch=1.98649041*archPrev-arch;yc+=dyc;dw+=.65/27.0;layer+=1.0/27.0;}\n  }\n }else{\n  for(int i=0;i<14;i++){\n   {float d=abs(yc-(.36*s1+.22*s2+uParam_bend*(s3+.38*s4)));\n    float filament=1.0/(d*d*sharp+1.0);\n    float k=(filament*(.1265+.1035*s5)+exp(-d*fall)*.065)*dw;\n    float kw=k*(.35+.65*arch);sK+=k;sKL+=k*layer;sKW+=kw;sKWL+=kw*layer;\n    q1=m1*s1-q1;q2=m2*s2-q2;q3=m3*s3-q3;q4=m4*s4-q4;q5=m5*s5-q5;\n    archPrev=1.98649041*arch-archPrev;yc+=dyc;dw+=.65/27.0;layer+=1.0/27.0;}\n   {float d=abs(yc-(.36*q1+.22*q2+uParam_bend*(q3+.38*q4)));\n    float filament=1.0/(d*d*sharp+1.0);\n    float k=(filament*(.1265+.1035*q5)+exp(-d*fall)*.065)*dw;\n    float kw=k*(.35+.65*archPrev);sK+=k;sKL+=k*layer;sKW+=kw;sKWL+=kw*layer;\n    s1=m1*q1-s1;s2=m2*q2-s2;s3=m3*q3-s3;s4=m4*q4-s4;s5=m5*q5-s5;\n    arch=1.98649041*archPrev-arch;yc+=dyc;dw+=.65/27.0;layer+=1.0/27.0;}\n  }\n }\n float sKS=uParam_warmth*sKW,sKSL=uParam_warmth*sKWL;\n const vec3 C0=vec3(.015,.15,.65),dC=vec3(0.0,.80,.02),W0=vec3(.65,.025,.38),dW=vec3(.35,.415,-.325);\n c+=C0*sK+dC*sKL+(W0-C0)*sKS+(dW-dC)*sKSL+vec3(.8,.94,1.0)*(.3*sA);\n fragColor=vec4(finish(c*(.6+uParam_light*1.6)),1.0);\n}\n"
+  },
+  "parameters": [
+    {
+      "key": "mass",
+      "label": "Layer Spacing",
+      "type": "float",
+      "default": 0.45,
+      "min": 0.12,
+      "max": 0.85,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Distance and mass of the layered wave fronts."
+    },
+    {
+      "key": "bend",
+      "label": "Bend",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.04,
+      "max": 0.95,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Large-scale curvature of the current."
+    },
+    {
+      "key": "spread",
+      "label": "Wave Width",
+      "type": "float",
+      "default": 1.1,
+      "min": 0.6,
+      "max": 2.1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Reach of the diagonal composition."
+    },
+    {
+      "key": "warmth",
+      "label": "Crest Warmth",
+      "type": "float",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Color balance of the crest reflection."
+    },
+    {
+      "key": "light",
+      "label": "Crest Light",
+      "type": "float",
+      "default": 0.65,
+      "min": 0.1,
+      "max": 0.9,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Local crest light and water depth."
+    },
+    {
+      "key": "ridges",
+      "label": "Filaments",
+      "type": "float",
+      "default": 0.38,
+      "min": 0,
+      "max": 1.4,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Thickness and clarity of the luminous ridges."
+    },
+    {
+      "key": "speed",
+      "label": "Motion",
+      "type": "float",
+      "default": 0.55,
+      "min": 0.03,
+      "max": 1.3,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous flow speed."
+    },
+    {
+      "key": "accent",
+      "label": "Crest Accent",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "A short local highlight moving across a few wave crests."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "tidal-study-low",
+      "param_key": "spread",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.62,
+      "input_min": 0.02,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 55,
+      "release_ms": 280,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "tidal-study-mid",
+      "param_key": "bend",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.66,
+      "input_min": 0.02,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 60,
+      "release_ms": 300,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "tidal-study-high",
+      "param_key": "ridges",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.64,
+      "input_min": 0.02,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 20,
+      "release_ms": 180,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "tidal-study-onset",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.9,
+      "input_min": 0.02,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 7,
+      "release_ms": 180,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1.0
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "aesthetic-study",
+      "tidal-light"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.vp-tidal-light",
+      "content_hash": "sha256:84d8269720ed09f3af6956a567298a6e76cd47aa9a48396a9e6e47d795a94225"
+    },
+    "prompt_summary": "The original luminous wave field, with clearer musical expansion, curvature, filament detail and local crest accents.",
+    "created_at": "2026-09-11T17:12:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "spread",
+      "bend",
+      "ridges",
+      "accent"
+    ]
+  }
+}

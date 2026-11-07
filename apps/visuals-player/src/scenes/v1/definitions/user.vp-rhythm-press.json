@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-rhythm-press",
+  "title": "Rhythm Press",
+  "description": "A living cyberpunk collage: drifting paper, floating record machine, orbital rings and flowing print strips, with continuous vinyl rotation and four distinct musical movements.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 0,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "mat2 cutTurn(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}\nfloat cutDisc(vec2 p,float r,float aa){return 1.0-smoothstep(r-aa,r+aa,length(p));}\nfloat cutBox(vec2 p,vec2 b,float aa){return 1.0-smoothstep(-aa,aa,max(abs(p.x)-b.x,abs(p.y)-b.y));}\nfloat cutLine(vec2 p,vec2 a,vec2 b,float w,float aa){vec2 v=b-a;return 1.0-smoothstep(w-aa,w+aa,length(p-a-v*clamp(dot(p-a,v)/max(dot(v,v),.0001),0.0,1.0)));}\nfloat cutHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\nfloat cutThree(vec2 p,float aa){\n float m=cutBox(p-vec2(0.0,.068),vec2(.045,.010),aa);\n m=max(m,cutBox(p,vec2(.045,.010),aa));\n m=max(m,cutBox(p-vec2(0.0,-.068),vec2(.045,.010),aa));\n return max(m,cutBox(p-vec2(.035,0.0),vec2(.010,.068),aa));\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord){\n vec2 p=(2.0*fragCoord-iResolution.xy)/max(min(iResolution.x,iResolution.y),1.0);\n float aspect=iResolution.x/max(iResolution.y,1.0);\n float zoom=mix(.80,1.10,smoothstep(.8,1.65,aspect))*uParam_size;\n // Time-only turns and offsets come from the frame stage (see vrchFrame).\n vec4 f0=vrchFrameData(0),f1=vrchFrameData(1),f2=vrchFrameData(2),f3=vrchFrameData(3),f4=vrchFrameData(4),f5=vrchFrameData(5);\n vec2 q=mat2(f0.x,-f0.y,f0.y,f0.x)*p/zoom;\n float aa=max(length(vec2(dFdx(q.x),dFdy(q.y))),.001);\n float voice=uParam_ink,treble=uParam_etch;\n float hit=smoothstep(.16,.72,uParam_strike);\n float phase=vrchPhase_speed();\n vec3 black=vec3(.006,.005,.011),paper=vec3(.82,.79,.67);\n vec3 pink=uParam_color.rgb,acid=vec3(.56,.90,.008),blue=vec3(.026,.026,.40),cyan=vec3(.006,.55,.46);\n vec3 c=black;\n vec2 canvas=q;\n // Oversized torn paper fields create a flat stage backdrop.\n float tooth=.028*floor(fract(q.y*5.4)*3.0);\n float left=1.0-smoothstep(-1.00+tooth-aa,-1.00+tooth+aa,q.x+.27*q.y-f0.z);\n c=mix(c,paper,left);\n float leftInk=1.0-smoothstep(-1.52-aa,-1.52+aa,q.x-.18*q.y+f0.w);\n c=mix(c,pink,leftInk);\n vec2 field=mat2(f1.x,-f1.y,f1.y,f1.x)*(q-f1.zw);\n float poster=cutBox(field,vec2(.46+voice*.08,1.60),aa);\n c=mix(c,blue,poster);\n float tear=step(.53,fract((field.y+.018*sin(field.x*39.0))*9.0-phase*(.45+treble*.28)));\n c=mix(c,black,poster*step(.36,abs(field.x))*tear*.65);\n // An independent diagonal paper belt flows through the surrounding composition.\n vec2 belt=mat2(f2.x,-f2.y,f2.y,f2.x)*(q-vec2(0.0,f2.z));\n float tape=cutBox(belt,vec2(3.8,.075+treble*.035),aa);\n float blocks=step(.70,fract(belt.x*2.8-phase*.52));\n c=mix(c,mix(pink,acid,blocks),tape);\n // Chassis, arm and stylus float as one assembly, preserving the contact geometry.\n q=mat2(f3.x,-f3.y,f3.y,f3.x)*(q-f3.zw)/f2.w;\n aa=max(length(vec2(dFdx(q.x),dFdy(q.y))),.001);\n // A displaced acid plate orbits continuously and opens with the low end.\n vec2 center=vec2(-.34,.035),disc=q-center;\n float r=length(disc),a=atan(disc.y,disc.x);\n vec2 offset=f4.xy;\n float halo=cutDisc(disc-offset,.892,aa);\n c=mix(c,acid,halo);\n c=mix(c,black,cutDisc(disc-offset,.858,aa));\n // Angular chassis: bold cut planes, negative slots and deliberately offset registration.\n vec2 body=cutTurn(.025)*q;\n float deck=cutBox(body,vec2(1.24,.795),aa);\n float corner=step(1.70,body.x+body.y)*step(.62,body.x);\n deck*=1.0-corner;\n c=mix(c,pink,cutBox(body-f4.zw,vec2(1.24,.795),aa)*(1.0-corner));\n c=mix(c,black,deck);\n float side=cutBox(body-vec2(.99,.00),vec2(.19,.795),aa)*deck;\n c=mix(c,acid,side);\n float top=cutBox(body-vec2(.01,.726),vec2(1.19,.055),aa)*deck;\n c=mix(c,paper,top);\n float topBars=step(.5,fract((body.x+.014)*17.0-phase*(.50+treble*.60)));\n c=mix(c,black,top*topBars*step(.26,body.x));\n float notch=cutBox(body-vec2(1.14,.64),vec2(.10,.19),aa);\n c=mix(c,black,notch);\n // Platter and coarse interrupted tracks remain readable from the back of a room.\n c=mix(c,cyan,cutDisc(disc-vec2(.019+hit*.035,-.013),.844,aa));\n c=mix(c,black,cutDisc(disc,.828,aa));\n float teeth=step(.32,fract((a+3.14159)*7.0+phase*.58));\n float rim=cutDisc(disc,.817,aa)-cutDisc(disc,.792,aa);\n c=mix(c,paper,rim*teeth);\n // Screen derivatives stay in uniform control flow.\n float grooves=r*(7.0+uParam_rings*.56);\n float gaa=max(fwidth(grooves),.001);\n // Everything below until the face is composited lies inside the record (r < .777+aa).\n if(r<.777+aa+.002){\n vec2 spin=mat2(f5.x,-f5.y,f5.y,f5.x)*disc;\n float sa=atan(spin.y,spin.x);\n vec3 face=black;\n float groove=1.0-smoothstep(.035-gaa,.035+gaa,abs(fract(grooves)-.5));\n float tracks=smoothstep(.29,.32,r)*(1.0-smoothstep(.748,.766,r));\n float broken=step(.12,fract(sa*.63662+r*2.1));\n face=mix(face,paper*.28,groove*tracks*broken);\n // Printed color fragments orbit with the record; speech spreads their separated layers.\n vec2 printUV=mat2(f5.z,-f5.w,f5.w,f5.z)*spin;\n float slash=cutBox(printUV-vec2(.04+voice*.12,.50),vec2(.65,.065+voice*.035),aa);\n slash*=step(-.35,printUV.x)*tracks;\n face=mix(face,pink,slash);\n float slice=cutBox(printUV-vec2(-.22,-.44-voice*.075),vec2(.50,.035),aa)*tracks;\n face=mix(face,acid,slice);\n float echo=cutBox(printUV-vec2(.12+voice*.24,.34),vec2(.50,.018+voice*.017),aa)*tracks;\n face=mix(face,cyan,echo);\n // Treble opens coarse print hatching and circuit-shaped groove segments.\n float hatch=step(.50,fract((spin.x+spin.y*.36)*(21.0+uParam_rings)));\n float hatchField=cutBox(spin-vec2(-.41,.15),vec2(.16,.33),aa)*tracks;\n face=mix(face,paper,hatch*hatchField*(.12+treble*.88));\n float arcPattern=step(.68,fract(a*1.90986+floor(r*11.0)*.17-phase*.26));\n float neonGroove=1.0-smoothstep(.085,.085+gaa,abs(fract(grooves)-.5));\n face=mix(face,cyan,neonGroove*tracks*arcPattern*treble);\n c=mix(c,face,cutDisc(disc,.777,aa));\n if(r<.277+aa+.002){\n // Cut-paper label is asymmetric enough to make continuous rotation unmistakable.\n float label=cutDisc(disc,.277,aa);\n c=mix(c,pink,label);\n vec2 lp=cutTurn(-.18)*spin;\n float strip=cutBox(lp-vec2(.19,.0),vec2(.045,.30),aa)*label;\n c=mix(c,acid,strip);\n float type33=max(cutThree(lp-vec2(-.075,.025),aa),cutThree(lp-vec2(.035,.025),aa));\n c=mix(c,paper,type33*label);\n float rule=cutBox(lp-vec2(-.026,-.118),vec2(.129,.006),aa)*label;\n c=mix(c,black,rule);\n c=mix(c,paper,cutDisc(disc,.043,aa));\n c=mix(c,black,cutDisc(disc,.019,aa));\n }\n }\n // An articulated sci-fi arm has heavy flat rails and a recognizable stylus contact.\n vec2 pivot=vec2(.73,.51),elbow=vec2(.68,-.02),tip=vec2(.17,-.50);\n float pivotBase=cutBox(cutTurn(.7854)*(q-pivot),vec2(.135),aa);\n c=mix(c,black,pivotBase);\n c=mix(c,pink,cutDisc(q-pivot,.105,aa));\n c=mix(c,black,cutDisc(q-pivot,.070,aa));\n c=mix(c,acid,cutDisc(q-pivot,.029,aa));\n float arm=max(cutLine(q,pivot,elbow,.061,aa),cutLine(q,elbow,tip,.061,aa));\n c=mix(c,black,arm);\n float rail=max(cutLine(q,pivot,elbow,.035,aa),cutLine(q,elbow,tip,.035,aa));\n c=mix(c,paper,rail);\n float wire=max(cutLine(q+vec2(.011,.007),pivot,elbow,.007,aa),cutLine(q+vec2(.011,.007),elbow,tip,.007,aa));\n c=mix(c,blue,wire);\n c=mix(c,black,cutDisc(q-elbow,.064,aa));\n c=mix(c,acid,cutDisc(q-elbow,.032,aa));\n vec2 head=cutTurn(-.70)*(q-(tip+vec2(.012,.018)));\n c=mix(c,black,cutBox(head,vec2(.119,.067),aa));\n c=mix(c,pink,cutBox(head,vec2(.104,.048),aa));\n c=mix(c,paper,cutBox(head-vec2(.015,.012),vec2(.067,.010),aa));\n vec2 needle=tip-vec2(.085,.057);\n c=mix(c,acid,cutLine(q,tip-vec2(.035,.015),needle,.008,aa));\n // Percussive hits split two paper chips near the needle and light a local arc.\n float contact=atan(needle.y-center.y,needle.x-center.x);\n float impactArc=(cutDisc(disc,.771+hit*.030,aa)-cutDisc(disc,.741+hit*.030,aa));\n impactArc*=step(cos(.36),cos(a-contact));\n c=mix(c,acid,impactArc*hit);\n vec2 chip=q-needle-vec2(.15+hit*.11,-.12-hit*.035);\n float shard=cutBox(cutTurn(-.65)*chip,vec2(.13,.024),aa)*hit;\n c=mix(c,cyan,shard);\n float shard2=cutBox(cutTurn(.32)*(q-needle-vec2(.16+hit*.17,-.23)),vec2(.065,.026),aa)*hit;\n c=mix(c,pink,shard2);\n // Large faders and cut bars convey electronic hardware without fine UI lettering.\n vec2 f=q-vec2(1.01,-.21);\n c=mix(c,black,cutBox(f,vec2(.032,.30),aa));\n c=mix(c,pink,cutBox(f-vec2(.0,.10-voice*.26),vec2(.115,.052),aa));\n c=mix(c,paper,cutBox(f-vec2(.0,.10-voice*.26),vec2(.089,.008),aa));\n vec2 pads=q-vec2(.72,-.64);\n float pad=cutBox(pads,vec2(.27,.065),aa);\n float padDiv=step(.10,fract((pads.x+.27)*7.4));\n c=mix(c,pink,pad*padDiv);\n c=mix(c,paper,pad*padDiv*step(.08,pads.x)*hit);\n // Stable coarse ink dropout belongs to each paper surface; never animated noise.\n float grit=cutHash(floor(canvas*330.0));\n float scuff=step(.965,grit)*.34;\n c*=1.0-scuff;\n fragColor=vec4(c,1.0);\n}\n"
+  },
+  "frame": {
+    "entry_point": "vrchFrame",
+    "source": "// Turns (cos, sin) and offsets that depend only on time and parameters.\nvoid vrchFrame(in int texel,out vec4 value){\n float aspect=iResolution.x/max(iResolution.y,1.0);\n float portrait=1.0-smoothstep(.75,1.03,aspect);\n float bass=clamp((uParam_speed-.55)/.45,0.0,1.0);\n float voice=uParam_ink;\n float hit=smoothstep(.16,.72,uParam_strike);\n float phase=vrchPhase_speed();\n vec2 turn;\n if(texel==0){turn=vec2(cos(-.075+portrait*1.57),sin(-.075+portrait*1.57));value=vec4(turn,.22*sin(phase*.53)+voice*.12*sin(phase*.89),.27*sin(phase*.37)-hit*.15);}\n else if(texel==1){float a=-.20+.12*sin(phase*.43);value=vec4(cos(a),sin(a),1.17+.22*sin(phase*.61)+voice*.12,.05+.27*cos(phase*.47));}\n else if(texel==2){float a=.24+.07*sin(phase*.39);value=vec4(cos(a),sin(a),-.98+.12*sin(phase*.71),1.0+.025*sin(phase*.70)+bass*.038+hit*.012);}\n else if(texel==3){float sway=.055*sin(phase*.54)+.045*(voice-.22)*sin(phase*.91);value=vec4(cos(sway),sin(sway),.045*sin(phase*.47),.065*sin(phase*.63)+bass*.048);}\n else if(texel==4){value=vec4(-.030-bass*.065+.075*cos(phase*.57),.022+bass*.035+.075*sin(phase*.57),.043+.065*sin(phase*.80)+hit*.060,-.046-.045*cos(phase*.60));}\n else{float a=.38+uParam_fan*.18;value=vec4(cos(phase),sin(phase),cos(a),sin(a));}\n}\n",
+    "texels": 6
+  },
+  "parameters": [
+    {
+      "key": "speed",
+      "label": "Rotation",
+      "type": "float",
+      "default": 0.55,
+      "min": 0.1,
+      "max": 1.6,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous rotation and layered scene motion, with smooth bass acceleration and lift."
+    },
+    {
+      "key": "ink",
+      "label": "Color Split",
+      "type": "float",
+      "default": 0.22,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Material",
+      "description": "Spread of color cutouts, background sheets and the deck fader."
+    },
+    {
+      "key": "etch",
+      "label": "Signal Etch",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Material",
+      "description": "Strength and travel of print hatching, electronic rails and groove circuits."
+    },
+    {
+      "key": "strike",
+      "label": "Cut Impact",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Rhythm",
+      "description": "Percussive print-layer separation, chassis breath and needle fragments."
+    },
+    {
+      "key": "size",
+      "label": "Framing",
+      "type": "float",
+      "default": 1,
+      "min": 0.6,
+      "max": 1.4,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Material",
+      "description": "Scale of the record machine collage."
+    },
+    {
+      "key": "fan",
+      "label": "Cut Angle",
+      "type": "float",
+      "default": 2.4,
+      "min": 0,
+      "max": 5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Material",
+      "description": "Angle of the color fragments printed on the record."
+    },
+    {
+      "key": "rings",
+      "label": "Groove Density",
+      "type": "float",
+      "default": 6,
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "widget": "slider",
+      "group": "Material",
+      "description": "Spacing of the coarse grooves and print hatching."
+    },
+    {
+      "key": "color",
+      "label": "Accent Color",
+      "type": "color",
+      "default": [
+        0.88,
+        0.012,
+        0.19,
+        1
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Main cut-paper accent used for the label, chassis and print fragments."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "rhythm-low",
+      "param_key": "speed",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.45,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 100,
+      "release_ms": 380,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "rhythm-mid",
+      "param_key": "ink",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.62,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 90,
+      "release_ms": 260,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "rhythm-high",
+      "param_key": "etch",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.65,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 30,
+      "release_ms": 140,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "rhythm-onset",
+      "param_key": "strike",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.98,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 6,
+      "release_ms": 90,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "rhythm-press",
+      "stage"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.vp-rhythm-press",
+      "content_hash": "sha256:b13866b82ed3b04993e9ef39fee5b7728f9c39e6e9610fed297435ea6ab41434"
+    },
+    "prompt_summary": "Cyberpunk turntable collage with continuously moving paper layers, floating rigid machine, rotating vinyl, orbiting rings and flowing print. Preserve the four accepted musical actions.",
+    "created_at": "2026-09-12T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "speed",
+      "ink",
+      "etch",
+      "strike"
+    ]
+  }
+}

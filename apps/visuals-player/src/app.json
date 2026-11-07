@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "id": "b5ad6149-dc87-473a-87c0-c1a6cf3fdf6c",
+  "name": "Visuals Player",
+  "version": "0.1.3",
+  "icon": "assets/visuals-player.svg",
+  "entry": "index.html",
+  "roles": [
+    "output"
+  ],
+  "capabilities": {
+    "controls": true,
+    "audio_input": true,
+    "audio_output": true,
+    "video_input": true,
+    "websocket": []
+  },
+  "guide": {
+    "description": "Curated visuals that move with original music, your microphone or line in.",
+    "sections": [
+      {
+        "title": "Visual",
+        "controls": [
+          {
+            "control": "E1–E4 · Turn",
+            "action": "Change the four parameters on the current page."
+          },
+          {
+            "control": "E1–E4 · Press",
+            "action": "Turn faster: 1×, 2×, 4×."
+          },
+          {
+            "control": "K2 · Press",
+            "action": "Next page: parameters 1–4, 5–8, audio response."
+          },
+          {
+            "control": "K3 · Press",
+            "action": "Visuals: E1 chooses, E1 press plays, E2 changes the collection."
+          },
+          {
+            "control": "K3 · Hold",
+            "action": "Visual Settings."
+          }
+        ]
+      },
+      {
+        "title": "Player",
+        "controls": [
+          {
+            "control": "K4 · Press or tap the picture",
+            "action": "Sound (Music, Mic / Line in, Silent), track, auto change and camera. E1 chooses, E1 press selects."
+          }
+        ]
+      },
+      {
+        "title": "Auto change",
+        "text": "With Music, the next visual starts on a new section of the song. Playing a visual from Visuals holds it."
+      }
+    ]
+  }
+}

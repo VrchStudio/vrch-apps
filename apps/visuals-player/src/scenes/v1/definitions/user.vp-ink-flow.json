@@ -1,0 +1,512 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-ink-flow",
+  "title": "Ink Flow",
+  "description": "Ink sheets unfold into fine currents and diluted washes. Music carries the flow onward; hand sweeps gather and draw out the pigment.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 0,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "mat2 turn(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}\nfloat hash21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}\nfloat noise21(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash21(i),hash21(i+vec2(1.,0.)),f.x),mix(hash21(i+vec2(0.,1.)),hash21(i+1.),f.x),f.y);}\nconst mat2 FBM_TURN=mat2(.90044710,-.43496553,.43496553,.90044710);\nfloat fbm(vec2 p,int octaves){float n=0.,a=.5;for(int i=0;i<4;i++){if(i>=octaves)break;n+=a*noise21(p);p=FBM_TURN*p*2.01+vec2(3.4,1.7);a*=.5;}return n;}\nvec2 eddy(vec2 p,vec2 c,float a,float r){vec2 d=p-c;return c+turn(a*exp(-dot(d,d)/(r*r)))*d;}\nfloat inkFlowClock(){return vrchPhase_speed()*.32+vrchPhase_accent()*.85+vrchPhase_motion()*uParam_pull*1.4;}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord){\n vec2 scale=iResolution.xy/min(iResolution.x,iResolution.y);\n vec2 p=(2.*fragCoord-iResolution.xy)/min(iResolution.x,iResolution.y);\n // Both clocks only advance. Musical accents carry material forwards;\n // there is no amplitude-driven expansion/retraction of the silhouette.\n\n vec2 hand=(clamp(vec2(uParam_touch_x,uParam_touch_y)/max(uParam_contact,1e-8),0.,1.)*2.-1.)*scale;\n vec2 wake=(clamp(vec2(uParam_wake_x,uParam_wake_y)/max(uParam_wake,1e-8),0.,1.)*2.-1.)*scale;\n vec2 stroke=hand-wake;\n stroke*=min(1.,.8/max(length(stroke),1e-6));\n float contact=smoothstep(.03,.75,min(uParam_contact,uParam_wake));\n float motion=smoothstep(.008,.18,uParam_motion);\n float force=uParam_pull*contact*motion;\n vec2 tail=hand-stroke;\n float along=clamp(dot(p-tail,stroke)/max(dot(stroke,stroke),1e-6),0.,1.);\n vec2 d=p-mix(tail,hand,along);\n float sweep=exp(-dot(d,d)/.24);\n // A sweep carries a broad, tapering sheet of ink; the lagged location leaves\n // a decaying wake rather than a tiny distortion tied to the fingertip.\n vec2 carried=p-stroke*force*sweep*1.4;\n float density=0.;\n // Overlapping parcels enter, roll forward and disperse. Each parcel has a\n // finite advection age, so curls never wind into an ever-finer fixed spiral.\n // Crossfades are pigment turnover, not reversing geometry.\n for(int i=0;i<3;i++){\n  // Each parcel's age, seed, placement and turn do not depend on the pixel: the frame stage computes them.\n  vec4 placed=vrchFrameData(2*i),turned=vrchFrameData(2*i+1);\n  float age=turned.z,seed=placed.w,life=placed.z;\n  vec2 parcel=(carried-placed.xy)*1.22;\n  vec2 q=mat2(turned.x,-turned.y,turned.y,turned.x)*parcel;\n  q=eddy(q,vec2(-.10,.16),(.5+age*2.8)*(.6+uParam_curve),.95);\n  q=eddy(q,vec2(.32,-.32),-.7-age*.8,.7);\n  float river=q.x+(fbm(q*1.2+seed,2)-.5)*.20;\n  float width=(.095+.065*noise21(vec2(q.y*1.5+seed,2.)))*(.70+uParam_fold*.8);\n  float ty=q.y/1.12,ty2=ty*ty;\n  float taper=exp(-ty2*ty2);\n  float wx=(river-.03)/(width*2.4);\n  float wash=exp(-wx*wx)*taper;\n  // Cloud shifts the edge by at most .06; body <= 4.36*mainInk and the fringe term <= .88*wash.\n  float reach=exp(-pow(max(abs(river)-.06,0.)/width,3.2))*taper*4.36+wash*.88;\n  if(reach*life<1e-4)continue;\n  vec2 fibers=vec2(river*8.,q.y*2.4-age*1.1+seed*2.);\n  float cloud=fbm(fibers,2);\n  float edge=river+(cloud-.5)*.12;\n  float mainInk=exp(-pow(abs(edge)/width,3.2))*taper;\n  float front=noise21(vec2(q.y*2.5-age*1.6+seed*3.,1.));\n  float body=mainInk*(.16+4.2*smoothstep(.30,.70,front)*(.6+.4*cloud));\n  float fringe=wash*(1.-mainInk*.98);\n  density+=(body+fringe*.045)*life;\n  // Threads only show where the ink is not yet saturated: skip them where they cannot change the colour.\n  float threadMax=fringe*life*(.18+.65*uParam_relief);\n  if(threadMax*exp(-1.8*density)>.002){\n   float grain=noise21(fibers*2.3+vec2(5.7,-age))*.5;\n   float tangled=fbm(vec2(river*(22.+uParam_bands*3.),q.y*3.-age)+vec2(cloud*2.5,grain),2);\n   float th=clamp(1.-abs(tangled-.48)*9.,0.,1.);\n   density+=threadMax*th*th*th;\n  }\n\n }\n float paper=noise21(fragCoord*.72);\n vec3 paperColor=vec3(.87,.855,.815)+(paper-.5)*.007;\n vec3 ink=max(uParam_ink.rgb*.18,vec3(.001));\n fragColor=vec4(mix(paperColor,ink,1.-exp(-density*1.8)),1.);\n}\n"
+  },
+  "frame": {
+    "entry_point": "vrchFrame",
+    "source": "// Texels 2i and 2i+1 hold parcel i: offset (centre plus drift), life and seed;\n// then the parcel's turn as cos and sin, and its age.\nvoid vrchFrame(in int texel,out vec4 value){\n int i=texel/2;\n float clock=inkFlowClock()*.22+float(i)/3.;\n float cycle=floor(clock);\n float age=fract(clock);\n float seed=cycle*3.-float(i);\n if(texel==2*i){\n  float life=sin(age*3.14159265);life*=life;\n  vec2 center=vec2((hash21(vec2(seed,2.))-.5)*.7,(hash21(vec2(seed,7.))-.5)*.65);\n  vec2 drift=turn((hash21(vec2(seed,9.))-.5)*1.6)*vec2(.25,.8);\n  value=vec4(center+drift*(age-.5),life,seed);\n }else{\n  float a=-.45+(hash21(vec2(seed,5.))-.5)*2.4;\n  value=vec4(cos(a),sin(a),age,0.0);\n }\n}\n",
+    "texels": 6
+  },
+  "parameters": [
+    {
+      "key": "fold",
+      "label": "Ink Spread",
+      "type": "float",
+      "default": 0.46,
+      "min": 0.1,
+      "max": 0.85,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Coverage of the dense ink pools."
+    },
+    {
+      "key": "curve",
+      "label": "Eddy",
+      "type": "float",
+      "default": 0.48,
+      "min": 0.05,
+      "max": 0.85,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Strength of the layered rolling currents."
+    },
+    {
+      "key": "bands",
+      "label": "Ink Veins",
+      "type": "float",
+      "default": 5.4,
+      "min": 2.5,
+      "max": 10,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Density of the fine strands following the ink currents."
+    },
+    {
+      "key": "ink",
+      "label": "Ink Color",
+      "type": "color",
+      "default": [
+        0.012,
+        0.018,
+        0.027,
+        1
+      ],
+      "widget": "color",
+      "group": "Color",
+      "description": "Ink Color of the composition."
+    },
+    {
+      "key": "relief",
+      "label": "Capillary Detail",
+      "type": "float",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Look",
+      "description": "Weight of the fine ink threads around the pool edges."
+    },
+    {
+      "key": "speed",
+      "label": "Flow",
+      "type": "float",
+      "default": 0.35,
+      "min": 0.03,
+      "max": 1.2,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Continuous movement of the ink streams."
+    },
+    {
+      "key": "accent",
+      "label": "Ink Impulse",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Musical impulses advance pigment along the flow."
+    },
+    {
+      "key": "pull",
+      "label": "Hand Pull",
+      "type": "float",
+      "default": 0.75,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Strength of the local brush pulling the ink in the direction of hand movement."
+    },
+    {
+      "key": "touch_x",
+      "label": "Brush X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Horizontal brush position, driven by Source B."
+    },
+    {
+      "key": "touch_y",
+      "label": "Brush Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Vertical brush position, driven by Source B."
+    },
+    {
+      "key": "contact",
+      "label": "Brush Contact",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Contact with the hand-driven brush."
+    },
+    {
+      "key": "wake_x",
+      "label": "Trail X",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Horizontal trailing end of the brush stroke."
+    },
+    {
+      "key": "wake_y",
+      "label": "Trail Y",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Vertical trailing end of the brush stroke."
+    },
+    {
+      "key": "wake",
+      "label": "Trail Fade",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "The trailing influence fades after the hand leaves."
+    },
+    {
+      "key": "motion",
+      "label": "Hand Motion",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Gesture",
+      "description": "Movement of the Source B hand; a still hand applies no force."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_x",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_y",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_confidence",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "tracking.pose.hands_speed",
+      "type": "scalar",
+      "optional": false,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.beat",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-high-to-relief",
+      "param_key": "relief",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.15,
+      "input_min": 0.03,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 160,
+      "release_ms": 700,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-onset-to-accent",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.35,
+      "input_min": 0.03,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 60,
+      "release_ms": 600,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-mid-to-speed",
+      "param_key": "speed",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.2,
+      "input_min": 0.03,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 650,
+      "release_ms": 1800,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "ink-hand-touch_x",
+      "param_key": "touch_x",
+      "signal_id": "tracking.pose.hands_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 200,
+      "release_ms": 200,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "ink-hand-touch_y",
+      "param_key": "touch_y",
+      "signal_id": "tracking.pose.hands_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 200,
+      "release_ms": 200,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "ink-hand-contact",
+      "param_key": "contact",
+      "signal_id": "tracking.pose.hands_confidence",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0.05,
+      "input_max": 0.2,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 200,
+      "release_ms": 200,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "ink-hand-wake_x",
+      "param_key": "wake_x",
+      "signal_id": "tracking.pose.hands_x",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 1500,
+      "release_ms": 1500,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "ink-hand-wake_y",
+      "param_key": "wake_y",
+      "signal_id": "tracking.pose.hands_y",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 1500,
+      "release_ms": 1500,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "ink-hand-wake",
+      "param_key": "wake",
+      "signal_id": "tracking.pose.hands_confidence",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0.05,
+      "input_max": 0.2,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 1500,
+      "release_ms": 1500,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-low-to-impulse",
+      "param_key": "accent",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.1,
+      "input_min": 0.03,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 180,
+      "release_ms": 800,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "ink-hand-motion",
+      "param_key": "motion",
+      "signal_id": "tracking.pose.hands_speed",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 1,
+      "input_min": 0,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 180,
+      "release_ms": 1400,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "audio-v2-beat-to-accent",
+      "param_key": "accent",
+      "signal_id": "audio.v2.beat",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.95,
+      "input_min": 0.03,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 35,
+      "release_ms": 420,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "medium",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1.0
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Generate",
+    "tags": [
+      "ink-flow",
+      "stage"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.study-ink-flow",
+      "content_hash": "sha256:49c1d6ab1ea322225698f2fe7d62532534f8942821555ff1008774ab43869456"
+    },
+    "prompt_summary": "Approved Ink Flow: overlapping ink currents unfold and disperse; beat and Source B hand sweeps advance the flow with retained momentum.",
+    "created_at": "2026-09-12T00:00:00Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "pull",
+      "fold",
+      "bands",
+      "ink"
+    ]
+  },
+  "analysis_requirements": [
+    {
+      "kind": "pose",
+      "source_input": 1,
+      "topology": "vrch.pose-landmarks@1",
+      "history_ms": 600
+    }
+  ]
+}

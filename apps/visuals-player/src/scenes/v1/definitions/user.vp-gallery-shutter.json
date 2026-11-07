@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "scene_id": "user.vp-gallery-shutter",
+  "title": "Gallery Shutter",
+  "description": "Choose fragment count and fracture pattern. Each cycle reassembles the scene, then opens new crack paths in new directions and order, with musical stage exposures.",
+  "runtime": {
+    "abi": "vrch-mainimage",
+    "abi_version": 1,
+    "glsl": "300-es",
+    "min_sources": 2,
+    "max_sources": 2,
+    "alpha_mode": "straight",
+    "working_color_space": "linear-srgb",
+    "missing_source_policy": "defined-fallback"
+  },
+  "fragment": {
+    "entry_point": "mainImage",
+    "source": "float stageHash(vec2 p) {\n return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);\n}\nvec2 shardSeed(int i,float layoutId,mat2 turnLayout) {\n vec2 seed=vec2(.04,.15);\n if(i==0)seed=vec2(.51,.49);\n if(i==1)seed=vec2(.09,.61);\n if(i==2)seed=vec2(.30,.89);\n if(i==3)seed=vec2(.77,.86);\n if(i==4)seed=vec2(.94,.48);\n if(i==5)seed=vec2(.80,.08);\n if(i==6)seed=vec2(.36,.10);\n if(i==8)seed=vec2(.52,.78);\n if(i==9)seed=vec2(.57,.18);\n float variation=step(.5,layoutId),fi=float(i);\n vec2 jitter=vec2(stageHash(vec2(fi+7.0,layoutId+51.0)),stageHash(vec2(fi+37.0,layoutId+83.0)))-.5;\n vec2 p=seed-vec2(.5);\n vec2 turned=turnLayout*p;\n vec2 changed=clamp(vec2(.5)+turned*.86+jitter*.16,vec2(.035),vec2(.965));\n return mix(seed,changed,variation);\n}\n// Distance from p to the bisector between a shard and one candidate neighbour\n// (shard 0 is slightly larger). Unused or identical candidates never limit it.\nfloat shardBisect(vec2 p,vec2 seed,float fi,vec2 other,float fj,float aspect) {\n if(fj<0.0||fj==fi)return 10.0;\n vec2 k=vec2(aspect,1.0),a=seed*k,b=other*k;\n float weighted=(fi==0.0?.028:0.0)-(fj==0.0?.028:0.0);\n return dot((a+b)*.5-p*k,normalize(b-a))+weighted;\n}\nmat2 shardRotation(float a) {\n float c=cos(a),s=sin(a);return mat2(c,-s,s,c);\n}\nvec3 filmDisplay(vec3 c) {\n c=max(c,vec3(0.0));\n return mix(c*12.92,1.055*pow(c,vec3(1.0/2.4))-.055,step(vec3(.0031308),c));\n}\nfloat filmDisplay1(float c) {\n c=max(c,0.0);\n return c<.0031308?c*12.92:1.055*pow(c,1.0/2.4)-.055;\n}\nvec3 filmLinear(vec3 c) {\n c=clamp(c,0.0,1.0);\n return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));\n}\nvec3 dreamTap(vec2 p,float dream) {\n if(dream>=1.0)return vrchSampleSource0(p).rgb;\n if(dream<=0.0)return vrchSampleSource1(p).rgb;\n return mix(vrchSampleSource1(p).rgb,vrchSampleSource0(p).rgb,dream);\n}\nvoid mainImage(out vec4 fragColor,in vec2 fragCoord) {\n vec2 uv=fragCoord/iResolution.xy;\n float aspect=clamp(iResolution.x/iResolution.y,.75,2.5);\n vec2 scale=vec2(aspect,1.0);\n float phase=vrchPhase_speed(),hit=clamp(uParam_accent,0.0,1.0);\n float pulse=smoothstep(.22,.72,hit),gate=smoothstep(.30,.44,pulse);\n // Accumulated attacks form a performance phrase, with an unfiltered return at its end.\n float phrase=vrchPhase_accent()*4.0,act=mod(floor(phrase),6.0);\n float count=clamp(floor(uParam_shards+.5),3.0,10.0),groups=min(count,4.0);\n float group=mod(floor(phrase/2.0),groups),epoch=floor(phrase/6.0);\n // A layout is held for the entire opening. New paths are chosen while the scene is reassembled.\n float cycleTime=phase*.22+.45,cyclePhase=fract(cycleTime);\n float layoutId=floor(cycleTime)+floor(uParam_fracture+.5)*67.0;\n float variation=step(.5,layoutId);\n float fractureWindow=smoothstep(.04,.18,cyclePhase)*(1.0-smoothstep(.84,.98,cyclePhase));\n float separation=uParam_pressure,slip=uParam_bend;\n float nearest=-100.0,faceId=0.0,faceEdge=0.0,faceDepth=0.0,faceStagger=0.0,faceOpening=0.0;\n vec2 faceUV=uv,faceSeed=vec2(.5);\n // Select the visible shard before sampling either live image. A fragment moves\n // at most a fraction of a cell, so the three layout seeds nearest to this\n // pixel cover it, and only they bound each other's cells.\n vec2 s0=vec2(0.0),s1=vec2(0.0),s2=vec2(0.0);\n float i0=-1.0,i1=-1.0,i2=-1.0,d0=1e9,d1=1e9,d2=1e9;\n for(int k=0;k<10;k++) {\n  if(float(k)>=count)break;\n  // Seeds and every per-shard value come from this frame's frame stage.\n  vec2 seed=vrchFrameData(k*3).xy;\n  vec2 delta=(seed-uv)*scale;\n  float dd=dot(delta,delta),fk=float(k);\n  if(dd<d2) {\n   if(dd<d1) {\n    d2=d1;s2=s1;i2=i1;\n    if(dd<d0){d1=d0;s1=s0;i1=i0;d0=dd;s0=seed;i0=fk;}\n    else{d1=dd;s1=seed;i1=fk;}\n   } else {d2=dd;s2=seed;i2=fk;}\n  }\n }\n for(int c=0;c<3;c++) {\n  float fi=c==0?i0:c==1?i1:i2;\n  if(fi<0.0)continue;\n  vec2 seed=c==0?s0:c==1?s1:s2;\n  int ki=int(fi+.5)*3;\n  vec4 shard=vrchFrameData(ki);\n  float depth=shard.z,opening=shard.w;\n  // A farther shard can never replace the current face, so skip its cell test.\n  if(depth<=nearest)continue;\n  vec4 motion=vrchFrameData(ki+1),shape=vrchFrameData(ki+2);\n  vec2 local=seed+(mat2(motion.z,-motion.w,motion.w,motion.z)*((uv-seed)*scale-motion.xy))/scale/shape.x;\n  local.x+=(local.y-seed.y)*shape.y;\n  float edge=min(min(shardBisect(local,seed,fi,s0,i0,aspect),shardBisect(local,seed,fi,s1,i1,aspect)),\n    shardBisect(local,seed,fi,s2,i2,aspect))\n    -(.003+separation*.009)*opening;\n  if(edge>0.0) {\n   nearest=depth;faceUV=local;faceSeed=seed;faceId=fi;\n   faceEdge=edge;faceDepth=depth;faceStagger=shape.z;faceOpening=opening;\n  }\n }\n vec3 color=vec3(0.0);\n {\n  // A face drawn at full weight replaces the background completely, so the\n  // two background taps are only read where they still contribute.\n  bool covered=nearest>-99.0&&uParam_amount>=1.0&&fractureWindow>=1.0;\n  if(!covered) {\n  vec4 sourceA=vrchSampleSource0(uv),sourceB=vrchSampleSource1(uv);\n  vec3 background=mix(sourceB.rgb,sourceA.rgb,uParam_balance);\n  fragColor=vec4(mix(sourceA.rgb,background,uParam_amount),mix(sourceA.a,1.0,uParam_amount));\n  // Gaps show the background; combine it with the weighted fractured layer below.\n  color=background;\n  if(nearest<=-99.0) {\n   fragColor.rgb+=uParam_amount*fractureWindow*(sourceB.rgb*.42-background);\n   return;\n  }\n  }\n float echo=step(2.5,act)*(1.0-step(3.5,act));\n float tearing=step(.5,act)*(1.0-step(1.5,act));\n float chromatic=step(1.5,act)*(1.0-step(2.5,act));\n float returnToScene=step(4.5,act);\n  float chosen=1.0-step(.5,abs(mod(faceId,groups)-group));\n  float answer=1.0-step(.5,abs(mod(faceId+1.0,groups)-group));\n  float lead=(chosen+answer)*(1.0-returnToScene)*faceOpening;\n  float drift=sin(faceStagger*.57+faceId*1.1)+(uParam_balance-.5)*3.2;\n  float dream=smoothstep(-.20,.20,drift);\n  // Image swaps support the exposure accents while the scene remains spatially coherent.\n  dream=mix(dream,1.0-dream,gate*chosen*(chromatic+echo*.55));\n  float row=floor(faceUV.y*18.0),direction=stageHash(vec2(row,epoch+faceId))*2.0-1.0;\n  float tornRow=step(.48,stageHash(vec2(row+7.0,floor(phrase)+faceId)));\n  float glitch=uParam_drive*lead*(.18+.82*pulse)*(1.0-returnToScene*.85);\n  vec2 q=faceUV+vec2(direction*tornRow*glitch*(.035+.105*tearing)/aspect,0.0);\n  float hold=gate*tearing*lead*step(.72,stageHash(vec2(row+29.0,epoch)));\n  q.x=mix(q.x,floor(q.x*24.0)/24.0,hold*.86);\n  float spread=(.003+.032*uParam_light)*(glitch*.65+pulse*lead*.9)/aspect;\n  // Registration and echo only use their extra samples when their weights are nonzero.\n  bool split=lead*(uParam_drive*.45+pulse*.80)>0.0;\n  bool ghostNeeded=gate*lead*echo>0.0;\n  vec3 base=vec3(0.0),c=vec3(0.0),ghost=vec3(0.0);\n  float leftRed=0.0,rightBlue=0.0;\n  // A fully dreamed or fully present tap reads only one live image.\n  base=dreamTap(q,dream);\n  if(split) {\n   leftRed=dreamTap(q+vec2(spread,0.0),dream).r;\n   rightBlue=dreamTap(q-vec2(spread,0.0),dream).b;\n  }\n  if(ghostNeeded)ghost=dreamTap(q+vec2(.065*lead/aspect,-.009),1.0-dream);\n  vec3 ink=mod(faceId,2.0)<.5?vec3(.05,.92,.96):vec3(1.0,.10,.58);\n  // The untouched state stays on the original linear image path; a face with\n  // neither registration nor exposure returns to it unchanged.\n  vec3 face=base;\n  float exposure=gate*lead;\n  if(uParam_drive+hit>=.00001&&(split||exposure>0.0)) {\n  c=filmDisplay(base);\n  if(split) {\n   c=mix(c,vec3(filmDisplay1(leftRed),c.g,filmDisplay1(rightBlue)),clamp(lead*(uParam_drive*.45+pulse*.80),0.0,1.0));\n  }\n  // Every exposure treatment is weighted by exposure; at zero it leaves c unchanged.\n  if(exposure>0.0) {\n  float negative=1.0-step(.5,act);\n  float solar=step(3.5,act)*(1.0-step(4.5,act));\n  ghost=filmDisplay(ghost);\n  vec3 inverted=vec3(1.0)-c;\n  c=mix(c,inverted*vec3(.92,.97,1.0),exposure*negative);\n  float lum=dot(c,vec3(.2126,.7152,.0722));\n  vec3 opposite=mod(faceId,2.0)<.5?vec3(.38,.01,.32):vec3(.01,.21,.30);\n  vec3 duotone=mix(opposite,ink,smoothstep(.08,.9,lum));\n  c=mix(c,duotone,exposure*chromatic*.94);\n  vec3 doubleExposure=clamp(c*.44+(vec3(1.0)-ghost)*vec3(.18,.92,.98)*.88,0.0,1.0);\n  float scan=.76+.24*step(.42,fract(faceUV.y*min(iResolution.y*.32,160.0)));\n  c=mix(c,doubleExposure*scan,exposure*echo*.92);\n  vec3 solarized=mix(c,1.0-c,smoothstep(vec3(.40),vec3(.64),c));\n  solarized=clamp((solarized-.12)*2.35,0.0,1.0);\n  c=mix(c,solarized*mix(vec3(.55,.98,1.0),vec3(1.0,.24,.64),step(.5,mod(faceId,2.0))),exposure*solar);\n  float dropout=tornRow*gate*tearing*lead;\n  vec3 dropoutInk=mix(c*.12,ink*(.20+lum*.80),step(.82,stageHash(vec2(row,floor(q.x*27.0)))));\n  c=mix(c,dropoutInk,dropout*.88);\n  }\n  face=filmLinear(c);\n  }\n  face*=.85+.15*faceDepth;\n  float aa=1.0/iResolution.y,rim=1.0-smoothstep(aa,aa*2.5,faceEdge);\n  float inner=exp(-faceEdge/(.009+.011*separation));\n  vec3 edgeColor=mix(vec3(.34,.48,.58),vec3(.65,.51,.31),dream);\n  vec3 inkLinear=mod(faceId,2.0)<.5?vec3(0.003936,0.827571,0.911408):vec3(1.,0.010023,0.2957);\n  edgeColor=mix(edgeColor,inkLinear,pulse*lead*.82);\n  face+=edgeColor*(inner*(.06+uParam_light*.25)+rim*(.12+uParam_light*.50))*faceOpening;\n  if(covered)fragColor=vec4(face,1.0);\n  else fragColor.rgb+=uParam_amount*fractureWindow*(face-color);\n }\n}\n"
+  },
+  "frame": {
+    "entry_point": "vrchFrame",
+    "source": "// Per-shard values for this frame, three texels per shard:\n// 0 seed.xy, depth, opening; 1 shift.xy, cos and sin of the turn; 2 zoom, skew, stagger.\nvoid vrchFrame(in int texel,out vec4 value) {\n int k=texel/3,part=texel-k*3;\n float aspect=clamp(iResolution.x/iResolution.y,.75,2.5);\n vec2 scale=vec2(aspect,1.0);\n float phase=vrchPhase_speed(),pulse=smoothstep(.22,.72,clamp(uParam_accent,0.0,1.0));\n float phrase=vrchPhase_accent()*4.0;\n float count=clamp(floor(uParam_shards+.5),3.0,10.0),groups=min(count,4.0);\n float group=mod(floor(phrase/2.0),groups);\n float cycleTime=phase*.22+.45,cyclePhase=fract(cycleTime);\n float layoutId=floor(cycleTime)+floor(uParam_fracture+.5)*67.0;\n float variation=step(.5,layoutId);\n float separation=uParam_pressure,slip=uParam_bend;\n float layoutAngle=(stageHash(vec2(layoutId,31.0))-.5)*6.2831853;\n mat2 turnLayout=mat2(cos(layoutAngle),-sin(layoutAngle),sin(layoutAngle),cos(layoutAngle));\n float fi=float(k);\n vec2 seed=variation>.5?shardSeed(k,layoutId,turnLayout):shardSeed(k,0.0,mat2(1.0));\n vec2 travel=normalize((seed-vec2(.49,.47))*scale+vec2(.14,.035));\n float launch=(stageHash(vec2(fi+19.0,layoutId+11.0))-.5)*1.7*variation;\n travel=shardRotation(launch)*travel;\n float order=stageHash(vec2(fi+23.0,layoutId+43.0));\n float closeOrder=stageHash(vec2(fi+67.0,layoutId+89.0));\n float opening=smoothstep(.04+order*.20,.20+order*.20,cyclePhase)\n   *(1.0-smoothstep(.72+closeOrder*.12,.96,cyclePhase));\n float stagger=phase*.68-seed.x*2.2-seed.y*.8\n   +(stageHash(vec2(fi+41.0,layoutId+17.0))-.5)*4.0*variation;\n float release=.5+.5*tanh(2.1*sin(stagger));\n float depth=.2+.55*release+.12*sin(fi*2.3);\n float chosen=1.0-step(.5,abs(mod(fi,groups)-group));\n float distance=separation*(.045+.085*release);\n vec2 shift=travel*distance+vec2(.032,-.015)*sin(stagger+fi*.4)*slip;\n shift+=vec2(group<1.5?.022:-.022,0.0)*chosen*uParam_drive*(.24+.76*pulse);\n shift*=opening;\n float angle=(seed.y-.5)*(slip*.26)*sin(stagger+.6)*opening;\n float zoom=1.0+depth*separation*.17*opening;\n float skew=slip*.13*sin(stagger*.77)*opening;\n if(part==0)value=vec4(seed,depth,opening);\n else if(part==1)value=vec4(shift,cos(angle),sin(angle));\n else value=vec4(zoom,skew,stagger,0.0);\n}\n",
+    "texels": 30
+  },
+  "parameters": [
+    {
+      "key": "shards",
+      "label": "Fragments",
+      "type": "float",
+      "default": 8,
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "widget": "slider",
+      "group": "Composition",
+      "description": "Number of independently moving scene fragments."
+    },
+    {
+      "key": "fracture",
+      "label": "Fracture Pattern",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 31,
+      "step": 1,
+      "widget": "slider",
+      "group": "Composition",
+      "description": "Choose the fracture layout. Each opening cycle develops new crack paths, directions and timing."
+    },
+    {
+      "key": "balance",
+      "label": "Dream",
+      "type": "float",
+      "default": 0.54,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Composition",
+      "description": "Balance fragments of present reality and its dream."
+    },
+    {
+      "key": "pressure",
+      "label": "Separation",
+      "type": "float",
+      "default": 0.42,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Composition",
+      "description": "Separate the scene fragments in depth and open the fractures."
+    },
+    {
+      "key": "bend",
+      "label": "Time Slip",
+      "type": "float",
+      "default": 0.48,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Composition",
+      "description": "Shear and offset the fragments in staggered phases."
+    },
+    {
+      "key": "speed",
+      "label": "Pace",
+      "type": "float",
+      "default": 0.55,
+      "min": 0.05,
+      "max": 1.5,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Pace of the fracture and reassembly wave."
+    },
+    {
+      "key": "light",
+      "label": "Spectrum",
+      "type": "float",
+      "default": 0.26,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Material",
+      "description": "Color registration and illuminated shard edges."
+    },
+    {
+      "key": "drive",
+      "label": "Glitch",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Tear selected image regions into displaced strips and broken signal blocks."
+    },
+    {
+      "key": "accent",
+      "label": "Beat Cut",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Motion",
+      "description": "Perform negative, torn, chromatic, ghost and solarized exposures on musical attacks."
+    },
+    {
+      "key": "amount",
+      "label": "Effect",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "widget": "slider",
+      "group": "Composition",
+      "description": "Blend the fragmented scene with Source A."
+    }
+  ],
+  "signals": [
+    {
+      "id": "audio.v2.low",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.mid",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.high",
+      "type": "scalar",
+      "optional": true,
+      "default": 0
+    },
+    {
+      "id": "audio.v2.onset",
+      "type": "trigger",
+      "optional": true,
+      "default": 0
+    }
+  ],
+  "default_bindings": [
+    {
+      "binding_version": 2,
+      "binding_id": "gallery-stage-low",
+      "param_key": "drive",
+      "signal_id": "audio.v2.low",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.6,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 22,
+      "release_ms": 140,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "gallery-stage-mid",
+      "param_key": "balance",
+      "signal_id": "audio.v2.mid",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.18,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 32,
+      "release_ms": 165,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "gallery-stage-high",
+      "param_key": "light",
+      "signal_id": "audio.v2.high",
+      "signal_type": "scalar",
+      "operator": "add",
+      "depth": 0.4,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 12,
+      "release_ms": 95,
+      "clamp": true
+    },
+    {
+      "binding_version": 2,
+      "binding_id": "gallery-stage-onset",
+      "param_key": "accent",
+      "signal_id": "audio.v2.onset",
+      "signal_type": "trigger",
+      "operator": "add",
+      "depth": 0.98,
+      "input_min": 0.025,
+      "input_max": 1,
+      "curve": "linear",
+      "polarity": "positive",
+      "attack_ms": 6,
+      "release_ms": 65,
+      "clamp": true
+    }
+  ],
+  "quality": {
+    "cost_hint": "low",
+    "profiles": {
+      "edge": {
+        "variant": "edge",
+        "preferred_scale": 1.0
+      },
+      "standard": {
+        "variant": "standard",
+        "preferred_scale": 0.75
+      },
+      "high": {
+        "variant": "high",
+        "preferred_scale": 1
+      }
+    }
+  },
+  "catalog": {
+    "category": "Blend",
+    "tags": [
+      "aesthetic-study",
+      "gallery-shutter"
+    ],
+    "thumbnail_ref": "",
+    "roles": [
+      "experience-example"
+    ]
+  },
+  "provenance": {
+    "kind": "ai-derived",
+    "base_scene_ref": {
+      "scene_id": "user.study-gallery-shutter",
+      "content_hash": "sha256:9bf956fd0c07ced736f400ac042aabb6535bb843649781afcdcb88bbce9b4dc4"
+    },
+    "prompt_summary": "Add count and fracture-pattern controls. After each reassembly, choose new crack positions, opening directions and order. Hold paths steady within each cycle; keep clean edges and musical stage exposures.",
+    "created_at": "2026-09-11T19:21:04Z"
+  },
+  "ui": {
+    "simple_parameters": [
+      "shards",
+      "fracture",
+      "drive",
+      "accent"
+    ]
+  }
+}

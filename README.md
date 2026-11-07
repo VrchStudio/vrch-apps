@@ -29,6 +29,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [VibeLive Synth](apps/vibelive-synth): play and blend AI music loops rendered by a connected Mac.
 
+- [Visuals Player](apps/visuals-player): play music-driven visuals, shape them with the knobs and steer them with your hands.
+
 - [Shader Editor](apps/shader-editor): edit and save visual presets with audio and image inputs.
 
 - [Beatbox Coach](apps/beatbox-coach): 把你的嘴巴声音实时变成鼓声，并用示范、对比和打分带你学会 Beatbox。.

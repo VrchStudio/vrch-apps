@@ -1,0 +1,16 @@
+Bundled third-party resources and their license notices:
+
+three.min.js (three.js r158): licenses/three-LICENSE.txt, https://raw.githubusercontent.com/mrdoob/three.js/r158/LICENSE
+MediaPipe Tasks Vision 1.0.1 and the Pose Landmarker Lite model: vendor/mediapipe/tasks-vision-1.0.1/LICENSE (Apache 2.0), models/mediapipe/README.md
+Fonts: webfonts/*-LICENSE.txt (SIL Open Font License 1.1); Font Awesome Free icons: css/fontawesome-local.css header.
+
+music/: original tracks made for Visuals Player with Suno on a Pro plan (commercial use permitted),
+loudness-matched to -14 LUFS and encoded as MP3 (VBR quality 3, 48 kHz). Section times in music/index.json
+come from Suno's audio analysis of the same clips.
+  glass-engine.mp3: Glass Engine (Suno 8eb1a4f9-b724-4b78-9038-715f0a9f4d0a)
+  velvet-motion.mp3: Velvet Motion (Suno ccd4300b-3367-42d9-995f-acac39b35e42)
+  long-way-home.mp3: Take the Long Way Home (Suno 090dc533-4a57-443a-8141-ffed68d0d78b)
+  prism-rush.mp3: Prism Rush (Suno 98b9c2bd-72aa-4fd0-a77b-978a679b295d)
+
+pictures/: original images made for Visuals Player with OpenAI image generation, scaled to 1280x720 WebP.
+  Image visuals show them while the camera is off.

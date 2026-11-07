@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "pictures": [
+    {
+      "id": "dancer",
+      "file": "dancer.webp"
+    },
+    {
+      "id": "portrait",
+      "file": "portrait.webp"
+    },
+    {
+      "id": "rain-street",
+      "file": "rain-street.webp"
+    },
+    {
+      "id": "crowd",
+      "file": "crowd.webp"
+    },
+    {
+      "id": "flowers",
+      "file": "flowers.webp"
+    },
+    {
+      "id": "keys",
+      "file": "keys.webp"
+    },
+    {
+      "id": "shoreline",
+      "file": "shoreline.webp"
+    },
+    {
+      "id": "dunes",
+      "file": "dunes.webp"
+    }
+  ]
+}
