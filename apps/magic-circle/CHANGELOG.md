@@ -1,5 +1,9 @@
 # Magic Circle
 
+## 1.0.3
+
+- Start sound as soon as the App opens, without pressing E1 first.
+
 ## 1.0.2
 
 - Fix sound startup on current device browsers.

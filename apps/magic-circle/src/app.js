@@ -88,7 +88,9 @@ function draw(now){
 
  requestAnimationFrame(draw);
 }
-canvas.onpointerdown=()=>pulse();
+canvas.onpointerdown=()=>{if(magic.sound==='error')void soundEngine.start();pulse();};
 VrchApp.controls.onEvent(e=>{if(!magic.ready)return;const panel=soundBank;if(e.type==='rotate'){const d=Number(e.delta)||0;if(panel){if(e.control==='E1')update({volume:settings.volume+d*.02});if(e.control==='E2')update({pitch:settings.pitch+d*5});if(e.control==='E3')update({tone:(settings.tone+Math.sign(d)+3)%3});if(e.control==='E4')update({space:settings.space+d*.05});}else{if(e.control==='E1')update({speed:settings.speed+d*.05});if(e.control==='E2')update({points:settings.points+d});if(e.control==='E3')update({glow:settings.glow+d*.05});if(e.control==='E4')update({gain:settings.gain+d*.1});}}if(e.type==='down'&&!held.has(e.control)){held.add(e.control);if(e.control==='E1')void soundEngine.toggle();if(e.control==='E3')setControlBank(!soundBank);if(e.control==='E4')toggleAudio();if(e.control==='K2')update({pattern:(settings.pattern+1)%patterns.length});if(e.control==='K3')update({palette:(settings.palette+1)%palettes.length});if(e.control==='K4')pulse();}if(e.type==='up'||e.type==='cancel')held.delete(e.control);});
-VrchApp.ready().then(async()=>{try{settings=normalize((await VrchApp.data.get('settings')).value);}catch(_){}magic.ready=true;render();if(VrchApp.context.mode==='device')void startInput();}).catch(()=>$('status').textContent='App unavailable. Reopen it.');
+// Sound starts with the App; when the host audio returns after a failed start, retry it.
+VrchApp.audio.onAvailable?.(()=>{if(magic.sound==='error')void soundEngine.start();});
+VrchApp.ready().then(async()=>{try{settings=normalize((await VrchApp.data.get('settings')).value);}catch(_){}magic.ready=true;render();void soundEngine.start();if(VrchApp.context.mode==='device')void startInput();}).catch(()=>$('status').textContent='App unavailable. Reopen it.');
 addEventListener('pagehide',()=>{disposed=true;clearTimeout(saveTimer);void stopInput();void soundEngine.stop();},{once:true});render();resize();requestAnimationFrame(draw);
