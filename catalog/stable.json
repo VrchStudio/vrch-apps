@@ -2755,7 +2755,7 @@
     },
     "d0d6f747-e3a9-4ab5-884e-4edb5ece58a4": {
       "slug": "vocal-chain",
-      "latest": "1.2.3",
+      "latest": "1.2.4",
       "versions": {
         "1.2.0": {
           "version": "1.2.0",
@@ -2832,6 +2832,25 @@
             "updateApi": 1
           },
           "notes": "- Keep English parameter labels clear of their sliders."
+        },
+        "1.2.4": {
+          "version": "1.2.4",
+          "name": "Vocal Chain",
+          "tag": "vocal-chain-v1.2.4",
+          "sourceCommit": "8d8ceae9ffb4b141f946072e7636cfa68eb3b433",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/vocal-chain-v1.2.4",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/vocal-chain-v1.2.4/vocal-chain-1.2.4.vrchapp",
+          "size": 49036,
+          "sha256": "218d686554f945ecc3ae12a7fa12791365981badf5e6136e145cad38a0ad8cff",
+          "packageDigest": "218d686554f945ecc3ae12a7fa12791365981badf5e6136e145cad38a0ad8cff",
+          "revision": "e9c9e3acfd9cc7df00e96529d1e0eff33e1a9b083a595de93868fb302af3cf7f",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Play through your own microphone in the browser Playground."
         }
       },
       "guide": {
