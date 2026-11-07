@@ -186,7 +186,7 @@ class Packages(unittest.TestCase):
         git('-c','user.name=t','-c','user.email=t@example.test','commit','-q','-m','source')
         commit=git('rev-parse','HEAD')
         manifest,records,revision=apps.source('demo',root=self.root)
-        release={'version':'1.0.0','sourceCommit':commit,'revision':revision,'sha256':'a'*64,'size':10}
+        release={'version':'1.0.0','sourceCommit':commit,'revision':revision,'sha256':'a'*64,'size':10,'assetUrl':'https://github.com/VrchStudio/vrch-apps/releases/download/demo-v1.0.0/demo-1.0.0.vrchapp'}
         catalog={'schemaVersion':1,'apps':{self.manifest['id']:{'slug':'demo','latest':'1.0.0','versions':{'1.0.0':release}}}}
         presentation={'schemaVersion':1,'categories':[{'id':'tools','label':'Tools'}],'apps':{'demo':{'category':'tools','featured':2,'tags':['Try me']}}}
         # Later uncommitted edits must not leak into the published listing.
@@ -199,6 +199,10 @@ class Packages(unittest.TestCase):
         self.assertEqual([f['path'] for f in listing['files']],[name for name,_ in records])
         self.assertEqual(apps.content_revision([(f['path'],dict(records)[f['path']]) for f in listing['files']]),revision)
         self.assertEqual(entry['assets']['icon']['mediaType'],'image/svg+xml')
+        # The release package is listed as one verified download.
+        self.assertEqual(entry['assets']['package'],{'url':release['assetUrl'],'size':10,'sha256':'a'*64})
+        with self.assertRaises(ValueError):
+            apps.write_playground_catalog({'schemaVersion':1,'apps':{self.manifest['id']:{**catalog['apps'][self.manifest['id']],'versions':{'1.0.0':{k:v for k,v in release.items() if k!='assetUrl'}}}}},root=self.root,presentation=presentation)
         # A recorded revision the committed source cannot reproduce is never advertised.
         with self.assertRaises(ValueError):
             apps.write_playground_catalog({'schemaVersion':1,'apps':{self.manifest['id']:{**catalog['apps'][self.manifest['id']],'versions':{'1.0.0':{**release,'revision':'b'*64}}}}},root=self.root,presentation=presentation)

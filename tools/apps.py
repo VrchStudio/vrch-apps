@@ -166,7 +166,10 @@ def read_presentation(root):
 
 
 def write_playground_catalog(catalog, root=None, presentation=None, sources=committed_source):
-    """Browser Playground catalog: exact published source files, loaded directly from raw GitHub.
+    """Browser Playground catalog: the published release package plus its exact source files.
+
+    Browsers fetch the package through a same-origin route to the GitHub Release (one request,
+    verified against packageDigest); the per-file listing on raw GitHub remains for older Pages and fallback.
 
     Device catalogs stay unchanged. A listed App is published only when its committed source
     reproduces the recorded content revision.
@@ -194,6 +197,10 @@ def write_playground_catalog(catalog, root=None, presentation=None, sources=comm
                    'base': f'https://raw.githubusercontent.com/{REPOSITORY}/{release["sourceCommit"]}/apps/{app["slug"]}/src/',
                    'files': [{'path': name, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()} for name, data in records]}
         assets = {'files': store_asset(root, json.dumps(listing, ensure_ascii=False, separators=(',', ':')).encode(), 'json', PLAYGROUND_FILES_LIMIT)}
+        package = release.get('assetUrl')
+        if not isinstance(package, str) or not package.startswith(f'https://github.com/{REPOSITORY}/releases/download/') or not package.endswith('.vrchapp'):
+            raise ValueError('Published release has no package asset: ' + app['slug'] + ' ' + release['version'])
+        assets['package'] = {'url': package, 'size': release['size'], 'sha256': release['sha256']}
         icon = manifest.get('icon')
         if isinstance(icon, str) and icon in files and Path(icon).suffix.lower() in ('.svg', '.png'):
             assets['icon'] = {**store_asset(root, files[icon], Path(icon).suffix.lower()[1:], 65536),
