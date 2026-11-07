@@ -1374,7 +1374,7 @@
     },
     "95d295da-7cf2-40ec-934a-07818d892b68": {
       "slug": "body-vibes",
-      "latest": "0.5.2",
+      "latest": "0.5.3",
       "versions": {
         "0.5.1": {
           "version": "0.5.1",
@@ -1413,6 +1413,25 @@
             "updateApi": 1
           },
           "notes": "- Add a VRCH-style vector body-motion icon for Launcher, My Apps and Guide.\n- Fix device audio initialization while retaining music and tone sensitivity."
+        },
+        "0.5.3": {
+          "version": "0.5.3",
+          "name": "BODY VIBES",
+          "tag": "body-vibes-v0.5.3",
+          "sourceCommit": "951bc76d8dcf2a31aaa00f4a221f970c5cbc7fca",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/body-vibes-v0.5.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/body-vibes-v0.5.3/body-vibes-0.5.3.vrchapp",
+          "size": 54965297,
+          "sha256": "38ee18445ff5cd31d3cb0ebf82d2ed7500e761ef8b0865e1a54d2b5858cfe20b",
+          "packageDigest": "38ee18445ff5cd31d3cb0ebf82d2ed7500e761ef8b0865e1a54d2b5858cfe20b",
+          "revision": "66bbf289e56b215fbe732b9fe4f3871923fde2089e3c8b00e36797d31f83b03a",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Play with your arms in a browser that allows the camera, such as the Playground."
         }
       },
       "guide": {
