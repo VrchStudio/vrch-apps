@@ -1331,7 +1331,7 @@
     },
     "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31": {
       "slug": "palmnotes-duo",
-      "latest": "0.1.3",
+      "latest": "0.1.4",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -1408,6 +1408,25 @@
             "updateApi": 1
           },
           "notes": "- Download about 11 MB less; hand tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).\n- Keep camera frames and usage data on this device: the tracker no longer contacts any outside service."
+        },
+        "0.1.4": {
+          "version": "0.1.4",
+          "name": "PalmNotes Duo",
+          "tag": "palmnotes-duo-v0.1.4",
+          "sourceCommit": "d812a3f6e79c123234b181b99b29fb420a67ac55",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/palmnotes-duo-v0.1.4",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/palmnotes-duo-v0.1.4/palmnotes-duo-0.1.4.vrchapp",
+          "size": 16730204,
+          "sha256": "838b0432182ecad7bdc7c6783e5797f20b5e043346efa61715b0e187494fa56d",
+          "packageDigest": "838b0432182ecad7bdc7c6783e5797f20b5e043346efa61715b0e187494fa56d",
+          "revision": "dd236c8867379ce0e2af7c109a50695281e5456e1cb9eb4e48bfaa7744658510",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Ask you to allow sound and press K2 again when the browser has not started sound, instead of pointing to the output settings.\n- Keep routine tracking messages out of the browser console's errors."
         }
       },
       "guide": {
