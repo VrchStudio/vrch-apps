@@ -1864,7 +1864,7 @@
     },
     "a591c7e9-3faa-4207-a1c2-2a88153ed934": {
       "slug": "shader-editor",
-      "latest": "0.1.1",
+      "latest": "0.1.2",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -1903,6 +1903,25 @@
             "updateApi": 1
           },
           "notes": "- Add a VRCH-style vector shader icon.\n- Keep audio analysis on a silent output while preserving visual presets and saved workspaces."
+        },
+        "0.1.2": {
+          "version": "0.1.2",
+          "name": "Shader Editor",
+          "tag": "shader-editor-v0.1.2",
+          "sourceCommit": "2b384df4e9ebe78f22e9ce0b1618cc66516e4375",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/shader-editor-v0.1.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/shader-editor-v0.1.2/shader-editor-0.1.2.vrchapp",
+          "size": 32230727,
+          "sha256": "9b078ccee7d818761189d377f49ca40ca756cf3723971aaf16a32ade35948ac6",
+          "packageDigest": "9b078ccee7d818761189d377f49ca40ca756cf3723971aaf16a32ade35948ac6",
+          "revision": "ce489da6c649ae437d0d5d26814642f3251febde7bec381c1310aba15a89d696",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Download about 11 MB less; tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).\n- Keep camera frames and usage data on this device: the tracker no longer contacts any outside service."
         }
       },
       "guide": {
