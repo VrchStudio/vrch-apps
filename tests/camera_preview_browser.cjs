@@ -54,7 +54,13 @@ function build(app) {
       const live = () => page.waitForFunction(() => videoTracks.some(t => t.readyState === 'live'), null, {timeout: 45000});
       if (capture) {
         try{await live();}catch(e){console.error('camera did not open:',app,JSON.stringify(await frame.evaluate(()=>document.body.innerText.slice(0,400))),JSON.stringify(await page.evaluate(()=>({tracks:videoTracks.length,modal:document.querySelector('#modal')?.open,fb:document.getElementById('stageFeedback')?.textContent}))),errors);await page.screenshot({path:'/tmp/cam-debug.png'});throw e;}
-        if (app === 'hardware-check') await frame.waitForFunction(() => cameraCheck.state === 'live' && cameraCheck.frames > 0);
+        if (app === 'hardware-check') {
+          await frame.waitForFunction(() => cameraCheck.state === 'live' && cameraCheck.frames > 0);
+          // E1 press starts Face tracking; the tracker must load its Worker and return inferences, not only show the camera.
+          await page.click('[data-input="E1"]');
+          await frame.waitForFunction(() => trackingCheck.mode === 'face' && (trackingCheck.state === 'error' || trackingCheck.inferences > 2), null, {timeout: 60000});
+          assert.deepEqual(await frame.evaluate(() => ({state: trackingCheck.state, error: trackingCheck.error})), {state: 'ready', error: null}, 'hardware-check tracking runs');
+        }
         if (app === 'body-vibes') await frame.waitForFunction(() => BodyVibesDiagnostics.snapshot().phase === 'live' && BodyVibesDiagnostics.snapshot().metrics.frames > 0, null, {timeout: 60000});
         if (app === 'palmnotes-duo') {assert.equal(await frame.evaluate(() => document.body.classList.contains('is-preview')), false); await frame.waitForFunction(() => PalmNotesDuo.state.phase === 'live' && PalmNotesDuo.state.frames > 0, null, {timeout: 60000});}
       } else {

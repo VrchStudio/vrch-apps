@@ -1,5 +1,9 @@
 # Hardware Check
 
+## 1.6.7
+
+- Fix body, face and hand tracking in the camera test, which stopped before it could start.
+
 ## 1.6.6
 
 - Download about 11 MB less; the camera tracking test needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).

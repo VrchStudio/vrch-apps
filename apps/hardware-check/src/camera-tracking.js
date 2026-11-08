@@ -4,11 +4,13 @@
 function createCameraTracking(onChange){
   const root=new URL('assets/tracking/',document.baseURI).href;
   const state=window.trackingCheck={mode:'off',state:'off',handCount:1,backend:null,landmarks:[],connections:[],tracks:0,fps:null,inferences:0,workersCreated:0,workersTerminated:0,error:null};
-  let worker=null,generation=0,active=false,busy=false,measuredAt=0,measuredFrames=0,config=null;
+  let worker=null,workerUrl=null,generation=0,active=false,busy=false,measuredAt=0,measuredFrames=0,config=null;
   const configPromise=fetch(root+'models.json').then(r=>{if(!r.ok)throw new Error('Tracking settings unavailable');return r.json();}).then(value=>config=value);
   function changed(){onChange(state);}
   function release(){
     ++generation;worker?.terminate();if(worker)state.workersTerminated++;worker=null;busy=false;
+    // The Worker loads its blob script asynchronously, so the address lives as long as the Worker.
+    if(workerUrl){URL.revokeObjectURL(workerUrl);workerUrl=null;}
     state.landmarks=[];state.connections=[];state.tracks=0;state.fps=null;state.backend=null;
   }
   function failed(error){
@@ -21,8 +23,8 @@ function createCameraTracking(onChange){
       await configPromise;
       const response=await fetch(new URL('camera-worker.js',document.baseURI));if(!response.ok)throw new Error('Tracking processor unavailable');
       const code=await response.text();if(request!==generation||!active)return;
-      const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
-      try{worker=new Worker(url);}finally{URL.revokeObjectURL(url);}
+      workerUrl=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
+      worker=new Worker(workerUrl);
       const opened=worker;state.workersCreated++;
       worker.onerror=()=>{if(worker===opened&&request===generation)failed(new Error('Tracking processor stopped'));};
       worker.onmessage=({data})=>{
