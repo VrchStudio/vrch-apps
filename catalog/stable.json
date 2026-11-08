@@ -1412,7 +1412,7 @@
     },
     "95d295da-7cf2-40ec-934a-07818d892b68": {
       "slug": "body-vibes",
-      "latest": "0.5.3",
+      "latest": "0.5.4",
       "versions": {
         "0.5.1": {
           "version": "0.5.1",
@@ -1470,6 +1470,25 @@
             "updateApi": 1
           },
           "notes": "- Play with your arms in a browser that allows the camera, such as the Playground."
+        },
+        "0.5.4": {
+          "version": "0.5.4",
+          "name": "BODY VIBES",
+          "tag": "body-vibes-v0.5.4",
+          "sourceCommit": "2b384df4e9ebe78f22e9ce0b1618cc66516e4375",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/body-vibes-v0.5.4",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/body-vibes-v0.5.4/body-vibes-0.5.4.vrchapp",
+          "size": 43683565,
+          "sha256": "307b71ea9b9ad695c0f291b41686779b7d3695b907fcd10a0f0b875d8f9a7bf7",
+          "packageDigest": "307b71ea9b9ad695c0f291b41686779b7d3695b907fcd10a0f0b875d8f9a7bf7",
+          "revision": "f4f4b9b60f0fca1f235c26fcd9edb31c53224c01c4db5c4a8f003a7d6cfb9f23",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Download about 11 MB less; body tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).\n- Keep camera frames and usage data on this device: the tracker no longer contacts any outside service."
         }
       },
       "guide": {
