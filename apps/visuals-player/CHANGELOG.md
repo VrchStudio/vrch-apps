@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.1.5
+
+- Start sooner in the Playground: one download, and the picture plays as soon as its first files arrive.
+
 ## 0.1.4
 
 - Start in the Playground after about 5 MB: the songs and camera tracking keep loading while the picture plays.

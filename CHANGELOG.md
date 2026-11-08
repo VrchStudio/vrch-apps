@@ -9,4 +9,5 @@
 
 ### Fixed
 
+- Start Visuals Player in the Playground from its one release download as soon as the first files arrive.
 - Publish a lightweight App index with icons and guides loaded separately.

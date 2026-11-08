@@ -34,6 +34,24 @@ class Packages(unittest.TestCase):
     def build(self):
         return apps.build('demo',root=self.root,source_commit='a'*40)
 
+    def test_deferred_files_come_last_in_presentation_order(self):
+        (self.src/'media').mkdir()
+        for name in ('a.mp3','a.vpf','b.mp3'):
+            (self.src/'media'/name).write_bytes(name.encode())
+        (self.root/'catalog').mkdir()
+        presentation={'schemaVersion':1,'categories':[{'id':'tools','label':'Tools'}],'apps':{'demo':{'category':'tools','deferred':['media/a.vpf','media/a.mp3','media/']}}}
+        (self.root/'catalog/presentation.json').write_text(json.dumps(presentation))
+        path,release=self.build()
+        with zipfile.ZipFile(path) as archive:
+            self.assertEqual(archive.namelist(),['app.json','icon.svg','index.html','unknown.bin','media/a.vpf','media/a.mp3','media/b.mp3'])
+        manifest,records,revision=apps.source('demo',root=self.root)
+        self.assertEqual(release['revision'],revision)
+        # Without deferred files the package keeps path order.
+        (self.root/'catalog/presentation.json').write_text(json.dumps({**presentation,'apps':{'demo':{'category':'tools'}}}))
+        path,_=self.build()
+        with zipfile.ZipFile(path) as archive:
+            self.assertEqual(archive.namelist(),[name for name,_ in records])
+
     def test_official_icon_required(self):
         for value in (None, '', 'missing.svg', 'index.html', 'https://example.com/icon.svg'):
             with self.subTest(icon=value):

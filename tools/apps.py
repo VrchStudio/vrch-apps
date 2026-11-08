@@ -186,6 +186,24 @@ def deferred_files(slug, prefixes, names):
     return sorted(result, key=lambda n: n.encode('utf-8'))
 
 
+def package_order(slug, records, root):
+    """Release package entry order. An App with Playground deferred files puts its startup files first (path order)
+    and its deferred files last, in the presentation's order, so a browser reading the one package as it arrives can
+    start the App once the startup files are in. Content and revision do not depend on the order."""
+    if not (root / 'catalog/presentation.json').exists():
+        return records
+    prefixes = read_presentation(root)['apps'].get(slug, {}).get('deferred', [])
+    if not prefixes:
+        return records
+    names = [name for name, _ in records]
+    deferred_files(slug, prefixes, names)
+    later = []
+    for prefix in prefixes:
+        later += [n for n in names if (n == prefix or (prefix.endswith('/') and n.startswith(prefix))) and n not in later]
+    rank = {name: i for i, name in enumerate(later)}
+    return sorted(records, key=lambda record: (record[0] in rank, rank.get(record[0], 0)))
+
+
 def write_playground_catalog(catalog, root=None, presentation=None, sources=committed_source):
     """Browser Playground catalog: the published release package plus its exact source files.
 
@@ -264,7 +282,7 @@ def build(app, root=ROOT, output=None, source_commit=None):
         temporary=Path(staging.name)
     try:
         with zipfile.ZipFile(temporary,'w',compression=zipfile.ZIP_STORED) as archive:
-            for path,data in records:
+            for path,data in package_order(app,records,root):
                 info=zipfile.ZipInfo(path,(1980,1,1,0,0,0))
                 info.create_system=3
                 info.external_attr=(stat.S_IFREG|0o644)<<16

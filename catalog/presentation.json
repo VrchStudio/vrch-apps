@@ -27,16 +27,16 @@
       "category": "visuals",
       "featured": 1,
       "deferred": [
-        "music/glass-engine.mp3",
         "music/glass-engine.vpf",
-        "music/long-way-home.mp3",
-        "music/long-way-home.vpf",
-        "music/prism-rush.mp3",
-        "music/prism-rush.vpf",
-        "music/velvet-motion.mp3",
-        "music/velvet-motion.vpf",
+        "music/glass-engine.mp3",
+        "vendor/mediapipe/tasks-vision-1.0.1/wasm/vision_wasm_internal.wasm",
         "models/",
-        "vendor/mediapipe/tasks-vision-1.0.1/wasm/vision_wasm_internal.wasm"
+        "music/velvet-motion.vpf",
+        "music/velvet-motion.mp3",
+        "music/long-way-home.vpf",
+        "music/long-way-home.mp3",
+        "music/prism-rush.vpf",
+        "music/prism-rush.mp3"
       ]
     },
     "disco-ball": {
