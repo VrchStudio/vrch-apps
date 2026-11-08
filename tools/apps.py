@@ -162,7 +162,28 @@ def read_presentation(root):
             raise ValueError('Invalid Playground tags: ' + slug)
         if not isinstance(shots, list) or len(shots) > SCREENSHOTS or any(not isinstance(s, str) or Path(s).suffix.lower() not in SCREENSHOT_TYPES or Path(s).is_absolute() or '..' in Path(s).parts for s in shots):
             raise ValueError('Invalid Playground screenshots: ' + slug)
+        deferred = meta.get('deferred', [])
+        if not isinstance(deferred, list) or len(deferred) > 32 or any(not isinstance(d, str) or not d or d.startswith('/') or '..' in d.split('/') for d in deferred):
+            raise ValueError('Invalid Playground deferred files: ' + slug)
     return value
+
+
+# The Playground may start an App before its deferred files arrive: the App reads them only with fetch, which waits
+# for them. Pages, scripts, styles and JSON always arrive before the App starts.
+PLAYGROUND_STARTUP_TYPES = ('.html', '.htm', '.js', '.mjs', '.css', '.json')
+
+
+def deferred_files(slug, prefixes, names):
+    # Presentation prefixes are a file path or a directory ending in /; the catalog lists the matching files.
+    result = []
+    for prefix in prefixes:
+        matched = [n for n in names if n == prefix or (prefix.endswith('/') and n.startswith(prefix))]
+        if not matched:
+            raise ValueError(f'Playground deferred path matches no file in {slug}: {prefix}')
+        if any(Path(n).suffix.lower() in PLAYGROUND_STARTUP_TYPES for n in matched):
+            raise ValueError(f'Playground cannot defer startup files in {slug}: {prefix}')
+        result += [n for n in matched if n not in result]
+    return sorted(result, key=lambda n: n.encode('utf-8'))
 
 
 def write_playground_catalog(catalog, root=None, presentation=None, sources=committed_source):
@@ -219,10 +240,14 @@ def write_playground_catalog(catalog, root=None, presentation=None, sources=comm
         caps = manifest.get('capabilities', {})
         capabilities = sorted([key for key in ('controls', 'audio_input', 'audio_output', 'video_input', 'imu_input') if caps.get(key) is True]
                               + (['websocket'] if caps.get('websocket') else []))
-        entries.append({'appId': identifier, 'slug': app['slug'], 'name': manifest['name'], 'version': release['version'],
-                        'summary': summary.strip()[:240], 'category': meta['category'], 'featured': meta.get('featured'),
-                        'tags': meta.get('tags', []), 'capabilities': capabilities, 'size': release['size'],
-                        'revision': release['revision'], 'packageDigest': release['sha256'], 'assets': assets})
+        entry = {'appId': identifier, 'slug': app['slug'], 'name': manifest['name'], 'version': release['version'],
+                 'summary': summary.strip()[:240], 'category': meta['category'], 'featured': meta.get('featured'),
+                 'tags': meta.get('tags', []), 'capabilities': capabilities, 'size': release['size'],
+                 'revision': release['revision'], 'packageDigest': release['sha256'], 'assets': assets}
+        deferred = deferred_files(app['slug'], meta.get('deferred', []), [name for name, _ in records])
+        if deferred:
+            entry['deferred'] = deferred
+        entries.append(entry)
     entries.sort(key=lambda e: (order[e['category']], e['name'].casefold()))
     result = {'schemaVersion': 1, 'categories': presentation['categories'], 'apps': entries}
     (root / 'catalog/playground.json').write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')) + '\n')

@@ -25,7 +25,19 @@
   "apps": {
     "visuals-player": {
       "category": "visuals",
-      "featured": 1
+      "featured": 1,
+      "deferred": [
+        "music/glass-engine.mp3",
+        "music/glass-engine.vpf",
+        "music/long-way-home.mp3",
+        "music/long-way-home.vpf",
+        "music/prism-rush.mp3",
+        "music/prism-rush.vpf",
+        "music/velvet-motion.mp3",
+        "music/velvet-motion.vpf",
+        "models/",
+        "vendor/mediapipe/tasks-vision-1.0.1/wasm/vision_wasm_internal.wasm"
+      ]
     },
     "disco-ball": {
       "category": "instruments",

@@ -208,6 +208,15 @@ class Packages(unittest.TestCase):
             apps.write_playground_catalog({'schemaVersion':1,'apps':{self.manifest['id']:{**catalog['apps'][self.manifest['id']],'versions':{'1.0.0':{**release,'revision':'b'*64}}}}},root=self.root,presentation=presentation)
         with self.assertRaises(ValueError):
             apps.write_playground_catalog(catalog,root=self.root,presentation={**presentation,'apps':{'missing':{'category':'tools'}}})
+        # Deferred files are opt-in, listed by path, and never include what the App needs to start.
+        self.assertNotIn('deferred',entry)
+        names=['app.json','index.html','media/a.mp3','media/b.vpf','media/index.json','vendor/run.wasm']
+        self.assertEqual(apps.deferred_files('demo',['vendor/run.wasm','media/b.vpf','media/a.mp3'],names),['media/a.mp3','media/b.vpf','vendor/run.wasm'])
+        for prefixes in (['media/'],['index.html'],['missing/']):
+            with self.assertRaises(ValueError):apps.deferred_files('demo',prefixes,names)
+        (self.root/'catalog').mkdir(exist_ok=True)
+        (self.root/'catalog/presentation.json').write_text(json.dumps({**presentation,'apps':{'demo':{'category':'tools','deferred':['../x']}}}))
+        with self.assertRaises(ValueError):apps.read_presentation(self.root)
 
     def test_catalog_rejects_downgrade(self):
         _,release=self.build()

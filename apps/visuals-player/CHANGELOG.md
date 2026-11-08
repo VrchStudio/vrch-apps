@@ -1,5 +1,10 @@
 # Visuals Player
 
+## 0.1.4
+
+- Start in the Playground after about 5 MB: the songs and camera tracking keep loading while the picture plays.
+- Keep routine tracking messages out of the browser console's errors.
+
 ## 0.1.3
 
 - Curated visuals that move with four original songs, your microphone or line in, or play silently.
