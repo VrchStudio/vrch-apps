@@ -1293,7 +1293,7 @@
     },
     "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31": {
       "slug": "palmnotes-duo",
-      "latest": "0.1.2",
+      "latest": "0.1.3",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -1351,6 +1351,25 @@
             "updateApi": 1
           },
           "notes": "- Play with your hands in a browser that allows the camera, such as the Playground; without a camera, Preview still auditions notes."
+        },
+        "0.1.3": {
+          "version": "0.1.3",
+          "name": "PalmNotes Duo",
+          "tag": "palmnotes-duo-v0.1.3",
+          "sourceCommit": "2b384df4e9ebe78f22e9ce0b1618cc66516e4375",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/palmnotes-duo-v0.1.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/palmnotes-duo-v0.1.3/palmnotes-duo-0.1.3.vrchapp",
+          "size": 16729319,
+          "sha256": "76da14f30e547a8c51fc60ac68c3d2730977e57d107ebfa414ab28b61214d1e2",
+          "packageDigest": "76da14f30e547a8c51fc60ac68c3d2730977e57d107ebfa414ab28b61214d1e2",
+          "revision": "2e0da50195563d2101895ee3f10ce2d79100603123be7594e0eb307e2374ad8b",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Download about 11 MB less; hand tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).\n- Keep camera frames and usage data on this device: the tracker no longer contacts any outside service."
         }
       },
       "guide": {
