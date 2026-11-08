@@ -71,6 +71,41 @@ function assertSameOrigin(url, label) {
     return parsed.href;
 }
 
+// Frames, landmarks and usage stay on this device: every request outside the Viewer origin or the App package is
+// refused, including the MediaPipe bundle's usage logger (a POST to odml.pa.googleapis.com every 60 s and on close).
+// Refused addresses are kept in VRCH_LANDMARK_REFUSED for diagnostics.
+const VRCH_LANDMARK_REFUSED = [];
+function landmarkRequestAllowed(value) {
+    const address = String(value && typeof value === 'object' && 'url' in value ? value.url : value);
+    if (/^(blob|data):/i.test(address)) return true;
+    try { assertSameOrigin(address, 'request'); return true; } catch (_) { return false; }
+}
+(function guardLandmarkNetwork(scope) {
+    const refuse = (value) => {
+        if (VRCH_LANDMARK_REFUSED.length < 32) VRCH_LANDMARK_REFUSED.push(String(value && value.url || value).slice(0, 160));
+        return new TypeError('Tracking requests stay on this device.');
+    };
+    const nativeFetch = typeof scope.fetch === 'function' ? scope.fetch.bind(scope) : null;
+    if (nativeFetch) scope.fetch = (input, init) => (landmarkRequestAllowed(input) ? nativeFetch(input, init) : Promise.reject(refuse(input)));
+    if (typeof scope.importScripts === 'function') {
+        const nativeImport = scope.importScripts.bind(scope);
+        scope.importScripts = (...urls) => { for (const url of urls) if (!landmarkRequestAllowed(url)) throw refuse(url); return nativeImport(...urls); };
+    }
+    if (scope.XMLHttpRequest) {
+        const open = scope.XMLHttpRequest.prototype.open;
+        scope.XMLHttpRequest.prototype.open = function (method, url) {
+            if (!landmarkRequestAllowed(url)) throw refuse(url);
+            return open.apply(this, arguments);
+        };
+    }
+    if (scope.navigator && typeof scope.navigator.sendBeacon === 'function') {
+        try { Object.defineProperty(scope.navigator, 'sendBeacon', { value: (url) => { refuse(url); return false; } }); } catch (_) {}
+    }
+    for (const name of ['WebSocket', 'EventSource']) {
+        if (typeof scope[name] === 'function') scope[name] = function blockedConnection(url) { throw refuse(url); };
+    }
+})(self);
+
 function serializeError(error, code) {
     const kind = VRCH_LANDMARK_WORKER.kind || 'landmark';
     return {

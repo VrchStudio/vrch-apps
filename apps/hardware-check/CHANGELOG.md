@@ -1,5 +1,9 @@
 # Hardware Check
 
+## 1.6.6
+
+- Download about 11 MB less; the camera tracking test needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).
+
 ## 1.6.5
 
 - Test the camera in a browser that allows it, such as the Playground.

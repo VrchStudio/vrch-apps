@@ -1,5 +1,10 @@
 # Shader Editor
 
+## 0.1.2
+
+- Download about 11 MB less; tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).
+- Keep camera frames and usage data on this device: the tracker no longer contacts any outside service.
+
 ## 0.1.1
 
 - Add a VRCH-style vector shader icon.

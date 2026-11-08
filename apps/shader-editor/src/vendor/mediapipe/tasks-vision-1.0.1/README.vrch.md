@@ -9,4 +9,4 @@ This directory vendors the browser bundle and WebAssembly files from the officia
 
 Only the Hand Landmarker adapter is enabled for H1. Face and Pose APIs remain out of scope.
 
-The Viewer uses a classic Worker and calls `FilesetResolver.forVisionTasks()` with its default module flag. The vendored WASM directory therefore keeps the reachable SIMD and no-SIMD loader/binary pairs; the unused `vision_wasm_module_internal.*` pair is intentionally omitted.
+The Viewer uses a classic Worker and calls `FilesetResolver.forVisionTasks()` with its default module flag. The vendored WASM directory keeps only the SIMD loader/binary pair, which every current browser loads; the no-SIMD and `vision_wasm_module_internal.*` pairs are intentionally omitted.

@@ -1,5 +1,10 @@
 # BODY VIBES
 
+## 0.5.4
+
+- Download about 11 MB less; body tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).
+- Keep camera frames and usage data on this device: the tracker no longer contacts any outside service.
+
 ## 0.5.3
 
 - Play with your arms in a browser that allows the camera, such as the Playground.
