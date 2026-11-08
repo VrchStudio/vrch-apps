@@ -1,4 +1,6 @@
 'use strict';
+// MediaPipe prints routine stderr ("INFO: ...", "W0000 ...") through console.error/warn; keep it at debug level.
+(()=>{const routine=/^(INFO: |[IW]\d{4} )/,debug=console.debug.bind(console);for(const level of['error','warn']){const native=console[level].bind(console);console[level]=(...args)=>typeof args[0]==='string'&&routine.test(args[0])?debug(...args):native(...args);}})();
 let detector=null,settings=null,sequence=0,lastTimestamp=-1;
 const nativeFetch=self.fetch.bind(self);
 self.onmessage=async({data})=>{

@@ -1,5 +1,9 @@
 # Shader Editor
 
+## 0.1.3
+
+- Keep routine tracking messages out of the browser console's errors.
+
 ## 0.1.2
 
 - Download about 11 MB less; tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).

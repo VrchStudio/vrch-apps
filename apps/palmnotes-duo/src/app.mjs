@@ -174,7 +174,7 @@ async function start() {
     await release(value);
     if (error.cancelled || token !== epoch || closed) return;
     current = null; previewPending = null; phase = 'error';
-    errorText = error.code === 'permission_required' ? 'Allow the camera, then Retry.' : preview ? 'Choose Listen in Apps, then tap a note.' : step;
+    errorText = error.code === 'permission_required' ? 'Allow the camera, then Retry.' : preview ? 'Choose Listen in Apps, then tap a note.' : error.code === 'interaction_required' ? 'Allow sound, then press K2.' : step;
     render();
   }
 }

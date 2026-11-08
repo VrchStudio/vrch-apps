@@ -15,6 +15,21 @@ const VRCH_LANDMARK_WORKER = {
 
 const VRCH_LANDMARK_IN_PAGE = typeof document !== 'undefined';
 
+// MediaPipe prints its routine stderr (for example "INFO: Created TensorFlow Lite XNNPACK delegate for CPU.")
+// through console.error and glog lines such as "W0000 ..." through console.warn. Keep those at debug level so
+// real errors stay visible; the bundle binds console.error when it loads, so this must run first.
+(function quietRoutineTrackingLogs(scope) {
+    const log = scope.console;
+    if (!log || log.vrchTrackingLogsQuiet) return;
+    const routine = /^(INFO: |[IW]\d{4} )/;
+    const debug = (log.debug || log.log).bind(log);
+    for (const level of ['error', 'warn']) {
+        const native = log[level].bind(log);
+        log[level] = (...args) => (typeof args[0] === 'string' && routine.test(args[0]) ? debug(...args) : native(...args));
+    }
+    log.vrchTrackingLogsQuiet = true;
+})(self);
+
 function postResult(message) {
     if (VRCH_LANDMARK_IN_PAGE) self.parent.postMessage(message, self.location.origin);
     else self.postMessage(message);

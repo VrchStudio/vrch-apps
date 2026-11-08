@@ -37,7 +37,9 @@ function build(app) {
         window.videoTracks = []; const gum = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
         navigator.mediaDevices.getUserMedia = async c => {const s = await gum(c); videoTracks.push(...s.getVideoTracks()); return s;};
       }, capture);
-      const page = await context.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message)); page.setDefaultTimeout(30000);
+      const page = await context.newPage(), errors = [], routine = {loud: [], quiet: 0}; page.on('pageerror', e => errors.push(e.message)); page.setDefaultTimeout(30000);
+      // MediaPipe's routine stderr ("INFO: ...", "W0000 ...") must reach the console at debug level, never as an error or warning.
+      page.on('console', m => {if (/^(INFO: |[IW]\d{4} )/.test(m.text())) {if (m.type() === 'error' || m.type() === 'warning') routine.loud.push(m.type() + ': ' + m.text().slice(0, 80)); else routine.quiet++;}});
       await page.goto(origin + '/vrch_playground.html?mode=make&view=2d');
       await page.waitForFunction(() => globalThis.vrchSimulator && document.querySelector('#storageState').textContent === '');
       await page.setInputFiles('#importFile', packages[app]);
@@ -73,6 +75,8 @@ function build(app) {
       }
       await page.screenshot({path: path.join(OUT, app + (capture ? '-camera' : '-preview') + '.png')});
       assert.deepEqual(errors, [], app + ' ' + JSON.stringify(errors));
+      assert.deepEqual(routine.loud, [], app + ' routine tracking logs stay at debug level');
+      if (capture) assert.ok(routine.quiet > 0, app + ' tracking logs are observed');
       results[app + (capture ? ' camera' : ' preview')] = 'pass';
       await context.close();
     }

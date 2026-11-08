@@ -33,7 +33,7 @@ function result(data){
   points=data.tracks?.[0]?.landmarks||[];apply(instrument.update(points,now,source.width/source.height),now,data.capturedAtMs);
 }
 async function release(){player?.port.postMessage({type:'stop'});tracker?.close();await Promise.allSettled([camera?.close(),output?.close(),ac?.close()]);}
-function fail(error){if(closed||phase==='error')return;console.error('BODY VIBES',error);phase='error';audio={bass:0,synth:0,vocal:0};void release();prompt('Let’s reconnect.','Check camera and sound in Menu, then Reload.');$('tracking').textContent='STOPPED';for(const key of ['bass','synth','vocal']){$(key).classList.remove('active');$(key+'-value').textContent='OFF';$(key+'-meter').style.width='0';}}
+function fail(error){if(closed||phase==='error')return;if(error?.code!=='camera_closed')console.error('BODY VIBES',error);phase='error';audio={bass:0,synth:0,vocal:0};void release();prompt('Let’s reconnect.','Check camera and sound in Menu, then Reload.');$('tracking').textContent='STOPPED';for(const key of ['bass','synth','vocal']){$(key).classList.remove('active');$(key+'-value').textContent='OFF';$(key+'-meter').style.width='0';}}
 async function start(){
   try{
     await sdk.ready();resize();layoutCamera();const response=await fetch(new URL('instrument.json',import.meta.url));if(!response.ok)throw Error('Instrument unavailable');config=await response.json();instrument=new BodyInstrument(config.gestures);

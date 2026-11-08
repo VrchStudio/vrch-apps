@@ -1,5 +1,9 @@
 # BODY VIBES
 
+## 0.5.5
+
+- Keep routine tracking messages out of the browser console's errors, and stop reporting an error when the App closes.
+
 ## 0.5.4
 
 - Download about 11 MB less; body tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).

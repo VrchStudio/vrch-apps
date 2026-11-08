@@ -1,5 +1,10 @@
 # PalmNotes Duo
 
+## 0.1.4
+
+- Ask you to allow sound and press K2 again when the browser has not started sound, instead of pointing to the output settings.
+- Keep routine tracking messages out of the browser console's errors.
+
 ## 0.1.3
 
 - Download about 11 MB less; hand tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).

@@ -1,5 +1,9 @@
 # Hardware Check
 
+## 1.6.8
+
+- Keep routine tracking messages out of the browser console's errors.
+
 ## 1.6.7
 
 - Fix body, face and hand tracking in the camera test, which stopped before it could start.
