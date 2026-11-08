@@ -1469,7 +1469,7 @@
     },
     "95d295da-7cf2-40ec-934a-07818d892b68": {
       "slug": "body-vibes",
-      "latest": "0.5.4",
+      "latest": "0.5.5",
       "versions": {
         "0.5.1": {
           "version": "0.5.1",
@@ -1546,6 +1546,25 @@
             "updateApi": 1
           },
           "notes": "- Download about 11 MB less; body tracking needs a browser with WebAssembly SIMD (current Chrome, Edge, Firefox or Safari).\n- Keep camera frames and usage data on this device: the tracker no longer contacts any outside service."
+        },
+        "0.5.5": {
+          "version": "0.5.5",
+          "name": "BODY VIBES",
+          "tag": "body-vibes-v0.5.5",
+          "sourceCommit": "d812a3f6e79c123234b181b99b29fb420a67ac55",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/body-vibes-v0.5.5",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/body-vibes-v0.5.5/body-vibes-0.5.5.vrchapp",
+          "size": 43684411,
+          "sha256": "afb88cad16a720f051d31d0d84d4d120c9fc4e35d0d8f0aa6e43c2f4d83ef24f",
+          "packageDigest": "afb88cad16a720f051d31d0d84d4d120c9fc4e35d0d8f0aa6e43c2f4d83ef24f",
+          "revision": "99e3a66a38e5ab0357453d446f69d078221250511654272d58bf35c02e0d8a7a",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Keep routine tracking messages out of the browser console's errors, and stop reporting an error when the App closes."
         }
       },
       "guide": {
