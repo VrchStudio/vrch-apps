@@ -10,6 +10,7 @@
 - Show Shader Editor, Shaker Shaker and Vape Grain on a large output or second screen.
 - Show Body Vibes, PalmNotes Duo and Wavescape on a large output or second screen.
 - Mute Visuals Player from a speaker button on the device screen, with the sound fading out and back in.
+- Turn the Visuals Player camera on or off from a button beside mute.
 
 ### Fixed
 

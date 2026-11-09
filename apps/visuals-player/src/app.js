@@ -254,6 +254,7 @@
     return '';
   }
   function renderPlayer() {
+    renderCamera();
     const body = $('playerBody');
     if (!body || open !== 'player') return;
     if (document.activeElement?.closest?.('#playerBody')) playerCursor = cursorOf(document.activeElement);
@@ -467,6 +468,22 @@
       if (!held && event.type === 'up') pressKey('K3');
     }
   });
+  // The camera button beside mute does what Player's Camera row does: pressed while the camera is on, pulsing while it
+  // starts, and in the warning colour (with the reason as its label) when the camera was refused or is missing.
+  function renderCamera() {
+    const button = $('camera-toggle');
+    if (!button) return;
+    button.hidden = isOutput || !camera;
+    const on = cameraState === 'on' || cameraState === 'starting';
+    button.dataset.state = cameraState; button.setAttribute('aria-pressed', String(on));
+    button.setAttribute('aria-label', cameraState === 'error' ? cameraError : on ? 'Turn camera off' : 'Turn camera on');
+    button.title = button.getAttribute('aria-label');
+  }
+  $('camera-toggle').addEventListener('click', event => {
+    event.stopPropagation();
+    if (isOutput || !camera || cameraState === 'starting') return;
+    if (camera.on) stopCamera(); else void startCamera();
+  });
   // Mute fades the music out and back in; it shows only while Music is the sound (the input is never played back).
   function renderMute() {
     const button = $('mute');
@@ -665,7 +682,7 @@
       present(firstKey, null);
     }
     if (followed) follow(followed);
-    renderMute();
+    renderMute(); renderCamera();
     if (typeof restored.source === 'string' && restored.source !== 'music') void music.setSource(restored.source);
     VrchApp.ready().then(() => { monitorDirty = true; publish(); if (restored.camera) void startCamera(); }, () => {});
     requestAnimationFrame(() => requestAnimationFrame(() => { stats.firstFrameAt = performance.now(); }));

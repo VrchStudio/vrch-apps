@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.0
+
+- Turn the camera on or off with the camera button beside mute on the device screen.
+
 ## 0.2.0
 
 - Mute or unmute the music with the speaker button on the device screen; the sound fades out and back in, and the picture keeps the beat.
