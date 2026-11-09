@@ -3786,7 +3786,7 @@
     },
     "db065989-bdb9-4c22-8c80-a15f92c65154": {
       "slug": "botanica-core",
-      "latest": "2.2.1",
+      "latest": "2.2.2",
       "versions": {
         "2.1.0": {
           "version": "2.1.0",
@@ -3844,6 +3844,25 @@
             "updateApi": 1
           },
           "notes": "- Keep the output garden sharp on a second screen: it no longer lowers its resolution when that does not make it smoother.\n- Name the icon Botanica Core."
+        },
+        "2.2.2": {
+          "version": "2.2.2",
+          "name": "Botanica Core",
+          "tag": "botanica-core-v2.2.2",
+          "sourceCommit": "5e9de829a9f4bdf3ece1f37aa344d7e2e6eeb51b",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/botanica-core-v2.2.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/botanica-core-v2.2.2/botanica-core-2.2.2.vrchapp",
+          "size": 210515,
+          "sha256": "e6b3743f62022fb64fb16625da8db848ebb1d8f38ef83b68a1df1bdc794e489f",
+          "packageDigest": "e6b3743f62022fb64fb16625da8db848ebb1d8f38ef83b68a1df1bdc794e489f",
+          "revision": "ddd3fb8869f5619df35924850b2ee4bf536bee7e98d9a8960b1c174f6eec2075",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Keep the second-screen garden at least at the screen's own size on a busy device, so the device stays smooth too."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+Qm90YW5pY2EgQ29yZTwvdGl0bGU+CiAgPHBhdGggZD0iTTMyIDZjNiA4IDYgMTYgMCAyNC02LTgtNi0xNiAwLTI0WiIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8cGF0aCBkPSJNMzIgMzBjOC02IDE2LTYgMjQgMC04IDYtMTYgNi0yNCAwWm0wIDBjLTgtNi0xNi02LTI0IDAgOCA2IDE2IDYgMjQgMFoiIHN0cm9rZT0iI2U4ZThlMyIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPHBhdGggZD0iTTMyIDM0djIyTTIyIDU4bDQtMTAgNiA4IDYtOCA0IDEwIiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMi41Ii8+CiAgPHBhdGggZD0iTTEwIDE0aDVtNCAwaDNNNDQgNTBoNG00IDBoM000NiAxMmwzIDNtNCA0bDIgMiIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMwIiByPSIzLjUiIGZpbGw9IiNmZjE0OTMiIHN0cm9rZT0ibm9uZSIvPgo8L3N2Zz4K",
