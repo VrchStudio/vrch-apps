@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "categories": [
     {
+      "id": "visuals",
+      "label": "Visuals"
+    },
+    {
       "id": "instruments",
       "label": "Instruments"
     },
@@ -12,10 +16,6 @@
     {
       "id": "voice-fx",
       "label": "Voice & FX"
-    },
-    {
-      "id": "visuals",
-      "label": "Visuals"
     },
     {
       "id": "tools",
