@@ -1564,7 +1564,7 @@
     },
     "95d295da-7cf2-40ec-934a-07818d892b68": {
       "slug": "body-vibes",
-      "latest": "0.5.5",
+      "latest": "0.6.0",
       "versions": {
         "0.5.1": {
           "version": "0.5.1",
@@ -1660,6 +1660,25 @@
             "updateApi": 1
           },
           "notes": "- Keep routine tracking messages out of the browser console's errors, and stop reporting an error when the App closes."
+        },
+        "0.6.0": {
+          "version": "0.6.0",
+          "name": "BODY VIBES",
+          "tag": "body-vibes-v0.6.0",
+          "sourceCommit": "8b497656e91258b99b8f0a2c53beac3843e1ddad",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/body-vibes-v0.6.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/body-vibes-v0.6.0/body-vibes-0.6.0.vrchapp",
+          "size": 43692549,
+          "sha256": "69a0924a56c53f738c8d06725e49cc2d792447c2106deeb0d43305f9c562069e",
+          "packageDigest": "69a0924a56c53f738c8d06725e49cc2d792447c2106deeb0d43305f9c562069e",
+          "revision": "2bd29e88581df58c3dda5c04749d72e95bf1b10c1951a917828778d0995dec6f",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show your camera picture, body and sound rings on a large output or second screen while you play."
         }
       },
       "guide": {
