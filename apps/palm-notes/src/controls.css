@@ -1,0 +1,56 @@
+/* Portable App controls. Tag/key vocabulary and interaction sizes follow Flux FX;
+   range geometry follows Pages ui-range. Kept inside the package for offline use. */
+:root {
+  color-scheme: dark;
+  --paper: #ededed;
+  --muted: #9b9b9b;
+  --surface: #202020;
+  --surface-hover: #292929;
+  --line: #3e3e3e;
+  --vrch-deep-pink: #ff1493;
+}
+button { font: inherit; color: inherit; cursor: pointer; border-radius: 2px; touch-action: manipulation; }
+button:disabled { cursor: wait; opacity: .5; }
+button:focus-visible, [role="slider"]:focus-visible, input:focus-visible { outline: 2px solid var(--paper); outline-offset: -3px; }
+.tag { min-height: 44px; min-width: 44px; border: 0; padding: 0 6px; background: transparent; font: 11px monospace; white-space: nowrap; }
+.tag::before { content: '[ '; color: var(--muted); }
+.tag::after { content: ' ]'; color: var(--muted); }
+.tag:hover { color: var(--vrch-deep-pink); }
+.tag[aria-pressed="true"] { color: var(--vrch-deep-pink); }
+.key { min-height: 44px; min-width: 44px; border: 0; background: var(--surface); text-align: left; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.key:hover { background: var(--surface-hover); }
+.key > span { color: var(--muted); font: 9px monospace; }
+.key > b { font: 11px monospace; white-space: nowrap; }
+.key[aria-pressed="true"] > b { color: var(--vrch-deep-pink); }
+.key--action { flex-direction: row; align-items: center; justify-content: space-between; }
+.key--action > span { min-width: 0; font: 12px/16px Arial,sans-serif; }
+.key--action > b { flex-shrink: 0; font-size: 14px; }
+.key:active, .tag:active { transform: translateY(1px); }
+.choice-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: minmax(56px,1fr); gap: 4px; min-width: 0; }
+.choice-grid .key { align-items: center; padding: 4px; gap: 2px; text-align: center; }
+.ui-icon { flex-shrink: 0; width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.icon-library { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.choice-grid .key > b { font: 14px Arial,sans-serif; }
+.choice-grid .key[aria-pressed="true"] { box-shadow: inset 0 -2px var(--vrch-deep-pink); }
+.choice-grid .key[aria-pressed="true"] .ui-icon { color: var(--vrch-deep-pink); }
+.choice-grid .key[aria-pressed="true"] > b { font-weight: 700; }
+@media (max-width: 360px) { .choice-grid .key > b { font-size: 12px; } }
+.range-control { position: relative; height: 34px; min-width: 0; }
+.parameter-grid { display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: repeat(4,48px); gap: 6px; min-width: 0; }
+.parameter-row { display: grid; grid-template-columns: 1fr auto; grid-template-rows: 14px 34px; align-items: center; min-width: 0; }
+.parameter-row > label { font: 11px monospace; color: var(--muted); white-space: nowrap; }
+.parameter-row > output { font: 700 16px monospace; font-variant-numeric: tabular-nums; }
+.parameter-row > .range-control, .range-ends { grid-column: 1 / -1; }
+.range-ends { display: flex; justify-content: space-between; font: 9px monospace; color: var(--muted); }
+@media (max-width: 360px) { .parameter-row > label { font-size: 10px; } .parameter-row > output { font-size: 14px; } }
+.range-origin { position: absolute; left: 50%; top: 10px; width: 2px; height: 14px; transform: translateX(-50%); background: var(--paper); pointer-events: none; }
+.ui-range { position: relative; top: -5px; width: 100%; min-width: 0; height: 44px; margin: 0; background: transparent; cursor: pointer; appearance: none; touch-action: none; }
+.ui-range::-webkit-slider-runnable-track { height: 6px; border: 1px solid var(--line); border-radius: 2px; background: var(--surface); }
+.ui-range::-moz-range-track { height: 6px; border: 1px solid var(--line); border-radius: 2px; background: var(--surface); }
+.ui-range::-webkit-slider-thumb { width: 20px; height: 30px; margin-top: -13px; border: 1px solid #111; border-radius: 2px; background: var(--paper); appearance: none; }
+.ui-range::-moz-range-thumb { width: 20px; height: 30px; border: 1px solid #111; border-radius: 2px; background: var(--paper); }
+.levels { display: flex; align-items: center; gap: 6px; font: 10px monospace; color: var(--muted); }
+.levels > i { flex: 1; height: 6px; overflow: hidden; background: var(--surface-hover); }
+.levels em { display: block; height: 100%; background: var(--paper); transform: scaleX(0); transform-origin: left; }
+.notice { margin: 0; color: var(--vrch-deep-pink); font: 12px/18px Arial,sans-serif; }
+[hidden] { display: none !important; }

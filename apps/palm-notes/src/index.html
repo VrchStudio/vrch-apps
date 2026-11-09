@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PalmNotes</title>
+  <link rel="stylesheet" href="controls.css">
+  <link rel="stylesheet" href="popover.css">
+  <link rel="stylesheet" href="popover-theme.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="/apps/sdk/apps-v1.js"></script>
+  <script src="scripts/vrch_pages_live_console_action_popover.js"></script>
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <main class="instrument">
+    <header><h1>Palm<span>Notes</span></h1><span id="status" role="status">READY</span><button id="start" class="tag" disabled>START</button></header>
+    <section class="stage" aria-label="Camera and current note">
+      <canvas id="camera" width="640" height="480" aria-label="Camera preview with hand landmarks"></canvas>
+      <div id="message"><b>Your hand. Your melody.</b><span>Show one hand to play.</span></div>
+      <div class="readout"><span id="count">—</span><div><strong id="note">Rest</strong><span id="note-hint">No sound</span></div></div>
+    </section>
+    <div class="camera-tools"><span id="tracking">ONE HAND · SEVEN NOTES</span><button class="tag" id="voice" aria-haspopup="menu" aria-expanded="false">TONE: SOFT</button><button class="tag" id="rotate" aria-label="Rotate camera">0°</button><button class="tag" id="mirror" aria-pressed="true">MIRROR</button></div>
+    <div id="notes" class="note-strip" aria-label="Gesture to note mapping"></div>
+    <footer><label for="volume">VOLUME</label><input id="volume" class="ui-range" type="range" min="0" max="100" step="1" value="70"><output id="volume-value" for="volume">70%</output></footer>
+    <p id="hint">6: thumb + pinky · OK: thumb + index touch</p>
+  </main>
+</body>
+</html>

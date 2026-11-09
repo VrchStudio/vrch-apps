@@ -1,0 +1,18 @@
+/* Portable token adapter for the unmodified shared action-popover primitive. */
+:root {
+  --vrch-layer-action-popover: 20;
+  --vrch-line-strong: var(--line);
+  --vrch-line: var(--line);
+  --vrch-radius-compact: 2px;
+  --vrch-surface-1: var(--surface);
+  --vrch-surface-hover: var(--surface-hover);
+  --vrch-shadow-flyout: none;
+  --vrch-text: var(--paper);
+  --vrch-text-secondary: var(--paper);
+  --vrch-text-muted: var(--muted);
+  --vrch-font-control: monospace;
+  --vrch-font-readable: Arial,sans-serif;
+  --vrch-type-size: 12px;
+  --vrch-theme-selection: #323232;
+  --vrch-selection-foreground: var(--paper);
+}
