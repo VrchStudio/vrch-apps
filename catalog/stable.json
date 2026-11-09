@@ -3783,6 +3783,157 @@
           }
         ]
       }
+    },
+    "db065989-bdb9-4c22-8c80-a15f92c65154": {
+      "slug": "botanica-core",
+      "latest": "2.1.0",
+      "versions": {
+        "2.1.0": {
+          "version": "2.1.0",
+          "name": "Botanica Engine",
+          "tag": "botanica-core-v2.1.0",
+          "sourceCommit": "b4b9d493791518c21a0f1bdb489d65c8afc4359b",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/botanica-core-v2.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/botanica-core-v2.1.0/botanica-core-2.1.0.vrchapp",
+          "size": 198077,
+          "sha256": "2de2c10a78c6693a1a76cb9915170a5052026b7144f3ff4f3d03a39aeaafbcb3",
+          "packageDigest": "2de2c10a78c6693a1a76cb9915170a5052026b7144f3ff4f3d03a39aeaafbcb3",
+          "revision": "4cffb20f392e5207fe223a3d1a161cb2ea53ccd8854ec93ae46888b040eff664",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Publish the original installed package as the update baseline."
+        }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+Qm90YW5pY2EgRW5naW5lPC90aXRsZT4KICA8cGF0aCBkPSJNMzIgNmM2IDggNiAxNiAwIDI0LTYtOC02LTE2IDAtMjRaIiBzdHJva2U9IiNlOGU4ZTMiIHN0cm9rZS13aWR0aD0iMyIvPgogIDxwYXRoIGQ9Ik0zMiAzMGM4LTYgMTYtNiAyNCAwLTggNi0xNiA2LTI0IDBabTAgMGMtOC02LTE2LTYtMjQgMCA4IDYgMTYgNiAyNCAwWiIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8cGF0aCBkPSJNMzIgMzR2MjJNMjIgNThsNC0xMCA2IDggNi04IDQgMTAiIHN0cm9rZT0iI2FhYTlhNSIgc3Ryb2tlLXdpZHRoPSIyLjUiLz4KICA8cGF0aCBkPSJNMTAgMTRoNW00IDBoM000NCA1MGg0bTQgMGgzTTQ2IDEybDMgM200IDRsMiAyIiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMyIvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzAiIHI9IjMuNSIgZmlsbD0iI2ZmMTQ5MyIgc3Ryb2tlPSJub25lIi8+Cjwvc3ZnPgo=",
+      "guide": {
+        "description": "A petalcore synthesizer that grows glitchy, organic songs around a holographic glass flower.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "K4 · Press",
+                "action": "Start or stop the self-playing garden."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Next specimen: a new sound, tempo and chords."
+              },
+              {
+                "control": "E1 · Turn",
+                "action": "On GLITCH, turn up stutters, reverses and tape stops."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "E1–E4 · Turn",
+                "action": "Edit the four parameters on the current page."
+              },
+              {
+                "control": "E1–E4 · Press",
+                "action": "Restore that parameter to the specimen value (KEY: switch major/minor)."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Next specimen."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Next page: BLOOM, GLITCH, LAYERS, AIR, FORM, HARMONY."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "GROW: auto-play on or off."
+              },
+              {
+                "control": "Crystal pad · Hold",
+                "action": "Play that note of the key by hand."
+              },
+              {
+                "control": "Parameter · Drag",
+                "action": "Change it."
+              },
+              {
+                "control": "KEY · Tap",
+                "action": "Switch major/minor."
+              },
+              {
+                "control": "Page tab · Tap",
+                "action": "Show that page."
+              },
+              {
+                "control": "Specimen · Tap",
+                "action": "Choose that specimen."
+              },
+              {
+                "control": "GROW · Tap",
+                "action": "Auto-play on or off."
+              },
+              {
+                "control": "Garden · Tap",
+                "action": "Start audio if it stopped."
+              }
+            ]
+          },
+          {
+            "title": "Pages",
+            "controls": [
+              {
+                "control": "BLOOM",
+                "action": "TIMBRE felt piano to glass to music box, BRIGHT, SOFT attack, SUSTAIN."
+              },
+              {
+                "control": "GLITCH",
+                "action": "GLITCH stutter, reverse and tape-stop rate, GRAIN cloud, FREEZE granular freeze, CRUSH bitcrush and tape wobble."
+              },
+              {
+                "control": "LAYERS",
+                "action": "KEYS, VOICE formant chops and choir, FOLEY droplets, twigs, leaves and chimes, BEAT."
+              },
+              {
+                "control": "AIR",
+                "action": "SHIMMER octave reverb, ECHO, AMBIENCE wind, rain and birds, BASS."
+              },
+              {
+                "control": "FORM",
+                "action": "TEMPO, ENERGY (how often the full canopy section appears), EVOLVE section length, SEED melody variation."
+              },
+              {
+                "control": "HARMONY",
+                "action": "KEY, CHORDS progression, MELODY activity, VOLUME."
+              }
+            ]
+          },
+          {
+            "title": "Key",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "On HARMONY, pick the key root, C to B."
+              },
+              {
+                "control": "E1 · Press",
+                "action": "On HARMONY, switch major/minor."
+              }
+            ]
+          },
+          {
+            "title": "Sound",
+            "text": "Auto-play moves through dawn, bloom, canopy, glitch and petal fall over progressions with 7ths and 9ths in any of 12 major or minor keys; in minor, every progression is re-voiced in the parallel minor. It plays a felt-piano or glass melody, glass arpeggios, vocal chops and choir, organic percussion and quantized glitches, with sidechain pump and shimmer. The holographic flower, crystals, butterflies and water ripples follow every note, glitch, freeze and section."
+          },
+          {
+            "title": "Saved settings",
+            "text": "Specimen, page, key and all parameters save automatically; changing specimen keeps your key. Choosing a specimen loads its sound, tempo and chords. Auto-play resumes after a reload, and audio reconnects by itself if the output drops."
+          }
+        ]
+      }
     }
   }
 }

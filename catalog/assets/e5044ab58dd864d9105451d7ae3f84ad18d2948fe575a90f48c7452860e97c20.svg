@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Botanica Engine</title>
+  <path d="M32 6c6 8 6 16 0 24-6-8-6-16 0-24Z" stroke="#e8e8e3" stroke-width="3"/>
+  <path d="M32 30c8-6 16-6 24 0-8 6-16 6-24 0Zm0 0c-8-6-16-6-24 0 8 6 16 6 24 0Z" stroke="#e8e8e3" stroke-width="3"/>
+  <path d="M32 34v22M22 58l4-10 6 8 6-8 4 10" stroke="#aaa9a5" stroke-width="2.5"/>
+  <path d="M10 14h5m4 0h3M44 50h4m4 0h3M46 12l3 3m4 4l2 2" stroke="#ff1493" stroke-width="3"/>
+  <circle cx="32" cy="30" r="3.5" fill="#ff1493" stroke="none"/>
+</svg>
