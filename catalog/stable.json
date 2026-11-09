@@ -3786,7 +3786,7 @@
     },
     "db065989-bdb9-4c22-8c80-a15f92c65154": {
       "slug": "botanica-core",
-      "latest": "2.1.0",
+      "latest": "2.2.0",
       "versions": {
         "2.1.0": {
           "version": "2.1.0",
@@ -3806,6 +3806,25 @@
             "updateApi": 1
           },
           "notes": "- Publish the original installed package as the update baseline."
+        },
+        "2.2.0": {
+          "version": "2.2.0",
+          "name": "Botanica Core",
+          "tag": "botanica-core-v2.2.0",
+          "sourceCommit": "91c77f4df65cf17ac4e4442f3407e28a6694011d",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/botanica-core-v2.2.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/botanica-core-v2.2.0/botanica-core-2.2.0.vrchapp",
+          "size": 210204,
+          "sha256": "e746f80c68d4daf7463d48eeba734139150716d5605cac36fd80ee171749eb3d",
+          "packageDigest": "e746f80c68d4daf7463d48eeba734139150716d5605cac36fd80ee171749eb3d",
+          "revision": "f5626c16f98db07966f4a64f0c9abc72441c53fa08decfabe143a3697e325818",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Rename Botanica Engine to Botanica Core.\n- Show the garden on a large output or second screen, following the device's specimen, notes, glitches and sections.\n- Include the font licenses."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+Qm90YW5pY2EgRW5naW5lPC90aXRsZT4KICA8cGF0aCBkPSJNMzIgNmM2IDggNiAxNiAwIDI0LTYtOC02LTE2IDAtMjRaIiBzdHJva2U9IiNlOGU4ZTMiIHN0cm9rZS13aWR0aD0iMyIvPgogIDxwYXRoIGQ9Ik0zMiAzMGM4LTYgMTYtNiAyNCAwLTggNi0xNiA2LTI0IDBabTAgMGMtOC02LTE2LTYtMjQgMCA4IDYgMTYgNiAyNCAwWiIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8cGF0aCBkPSJNMzIgMzR2MjJNMjIgNThsNC0xMCA2IDggNi04IDQgMTAiIHN0cm9rZT0iI2FhYTlhNSIgc3Ryb2tlLXdpZHRoPSIyLjUiLz4KICA8cGF0aCBkPSJNMTAgMTRoNW00IDBoM000NCA1MGg0bTQgMGgzTTQ2IDEybDMgM200IDRsMiAyIiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMyIvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzAiIHI9IjMuNSIgZmlsbD0iI2ZmMTQ5MyIgc3Ryb2tlPSJub25lIi8+Cjwvc3ZnPgo=",
