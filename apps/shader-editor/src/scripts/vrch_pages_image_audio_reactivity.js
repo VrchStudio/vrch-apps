@@ -211,7 +211,8 @@
                     const dataArray = new Uint8Array(analyser.frequencyBinCount);
                     const timeDataArray = new Uint8Array(analyser.fftSize);
                     const constraints = { audio:{ deviceId: deviceId!=='default' ? { exact:deviceId } : undefined } };
-                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    let hostCapture;try{hostCapture=globalThis.top?.VrchPagesDeviceAudio?.capture;}catch(_){}
+                    const stream = await (hostCapture ? hostCapture(navigator.mediaDevices, constraints) : navigator.mediaDevices.getUserMedia(constraints));
                     // if another start replaced context, abort this one
                     if (this.audioContext && this.audioContext !== ctx) {
                         try { stream.getTracks().forEach(t=>t.stop()); } catch(_){}

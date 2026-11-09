@@ -255,16 +255,13 @@
       overlay.setAttribute('tabindex', '-1');
       overlay.innerHTML = `
         <div class="ui-modal__dialog scene-picker-dialog">
-          <div class="scene-picker-header">
-            <nav class="ui-tabs ui-tabs--navigation ui-tabs--edge ui-tabs--equal scene-picker-collections" data-role="collections" aria-label="Visual collections"></nav>
-            <button type="button" class="ui-icon-action" data-role="search-open" aria-label="Search all visuals" title="Search all visuals" aria-expanded="false"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
+          <vrch-dialog-header icon="fa-image" label="Visual Picker" dismiss="[data-role=cancel]"><nav slot="navigation" class="ui-tabs ui-tabs--navigation ui-tabs--edge ui-tabs--equal scene-picker-collections" data-role="collections" aria-label="Visual collections"></nav><button type="button" slot="action" class="ui-icon-action" data-role="search-open" aria-label="Search all visuals" title="Search all visuals" aria-expanded="false"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button></vrch-dialog-header>
             <div class="scene-picker-search" data-role="search" role="search" aria-label="All visuals" hidden>
               <button type="button" class="ui-icon-action" data-role="search-back" aria-label="Back to categories" title="Back to categories"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></button>
               <input type="search" class="ui-input scene-picker-filter" data-role="filter" placeholder="Search all visuals..." autocomplete="off" aria-label="Search all visuals">
               <span class="visually-hidden" data-role="count" aria-live="polite"></span>
               <button type="button" class="ui-icon-action" data-role="search-clear" aria-label="Clear search" title="Clear search" hidden><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
-          </div>
           <div class="scene-picker-layout">
             <section class="scene-picker-preview-panel" aria-label="Selected visual preview">
               <div class="scene-picker-preview" data-role="preview">
@@ -287,6 +284,7 @@
             <button type="button" class="ui-btn--md is-confirm scene-picker-confirm" data-role="confirm" disabled></button>
           </div>
         </div>`;
+      overlay.querySelector('vrch-dialog-header').setAttribute('label',this.options.title);
       document.body.appendChild(overlay);
       this.overlay = overlay;
       this.elements = {
@@ -354,6 +352,10 @@
         ? root.VrchDialogs.createController({
             overlay,
             dismissResult: 'cancel',
+            onRequestClose: (reason) => {
+              if (reason === 'escape' && this.searching && !this.busy) { this.leaveSearch(); return false; }
+              return true;
+            },
             onClose: (result) => this._afterClose(result)
           })
         : null;
@@ -398,6 +400,11 @@
       search.hidden = !this.searching;
       clear.hidden = !this.filterQuery;
       for (const control of [open, back, clear]) control.disabled = this.busy;
+      root.VrchDialogs.setHeader(this.overlay.querySelector('vrch-dialog-header'), {
+        navigation:this.searching ? search : this.elements.collections,
+        identity:this.searching ? back : null,
+        action:this.searching ? clear : open
+      });
     }
 
     enterSearch() {

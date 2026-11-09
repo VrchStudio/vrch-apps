@@ -109,8 +109,8 @@
     overlaySize: 256,
     maxInputDimension: 192,
     preferredDelegate: 'CPU',
-    workerUrl: '/scripts/vrch_pages_landmark_worker.js?v=20261020-shader-tracking-a2',
-    pageHostUrl: '/vrch_landmark_host.html?v=20261020-shader-tracking-a2',
+    workerUrl: '/scripts/vrch_pages_landmark_worker.js?v=20261107-camera-a1',
+    pageHostUrl: '/vrch_landmark_host.html?v=20261107-camera-a1',
     bundleUrl: '/vendor/mediapipe/tasks-vision-1.0.1/vision_bundle.js',
     wasmBaseUrl: '/vendor/mediapipe/tasks-vision-1.0.1/wasm/'
   });

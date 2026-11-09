@@ -1,5 +1,10 @@
 # Shader Editor
 
+## 0.2.0
+
+- Show the visual you are editing on a large output or second screen, with its sound, tracking and image sources.
+- Use the current shared visual engine and controls.
+
 ## 0.1.3
 
 - Keep routine tracking messages out of the browser console's errors.

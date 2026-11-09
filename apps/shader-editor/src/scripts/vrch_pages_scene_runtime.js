@@ -241,6 +241,25 @@
     return framePacing && framePacing.refreshMs > 0 ? framePacing.refreshMs : defaultRefreshMs(config);
   }
 
+  function initialPerformanceState(profile) {
+    return {
+      profile: profile,
+      quality_variant: 'standard',
+      profile_scale: 1,
+      render_scale: 1,
+      target_frame_ms: 16.7,
+      status: 'warming',
+      sample_count: 0,
+      frame_time_p50_ms: null,
+      frame_time_p95_ms: null,
+      frame_time_mean_ms: null,
+      overrun_windows: 0,
+      healthy_windows: 0,
+      degraded_reason: null,
+      frame_pacing: 'every_refresh'
+    };
+  }
+
   const TILE_MUSIC_SIGNAL = 'audio.v2.flip_tiles';
   function rank(x, y, seed) {
     let n = Math.imul(x + 1, 73856093) ^ Math.imul(y + 1, 19349663) ^ Math.imul(seed, 83492791);
@@ -1109,22 +1128,7 @@
       this.webgl2 = capabilities.isWebGL2 === true;
       if (!this.webgl2) throw runtimeError('capability_missing', 'runtime', 'Scene Runtime requires WebGL2.');
       this.basePixelRatio = this.renderer.getPixelRatio ? this.renderer.getPixelRatio() : (root.devicePixelRatio || 1);
-      this.performanceState = {
-        profile: this._resolveDeviceProfile(),
-        quality_variant: 'standard',
-        profile_scale: 1,
-        render_scale: 1,
-        target_frame_ms: 16.7,
-        status: 'warming',
-        sample_count: 0,
-        frame_time_p50_ms: null,
-        frame_time_p95_ms: null,
-        frame_time_mean_ms: null,
-        overrun_windows: 0,
-        healthy_windows: 0,
-        degraded_reason: null,
-        frame_pacing: 'every_refresh'
-      };
+      this.performanceState = initialPerformanceState(this._resolveDeviceProfile());
       this.frameSamples = [];
       // Shared with every effect this runtime creates; the Viewer render loop
       // reports each refresh and skips refreshes until minIntervalMs has passed.
@@ -2311,10 +2315,59 @@
     }
   }
 
+  // Scene Runtime's performance policy for a renderer outside it (local
+  // previews, Apps): the same device profile, preferred scale, edge frame
+  // pacing and p95 scale ladder, using the same methods.
+  class ScenePerformance {
+    constructor(options = {}) {
+      if (!Contract || !options.renderer) throw runtimeError('runtime_unavailable', 'runtime', 'ScenePerformance needs a renderer.');
+      this.renderer = options.renderer;
+      this.deviceProfile = options.deviceProfile || 'auto';
+      this.runtimeOwner = 'scene';
+      this.config = Object.assign({
+        performanceWindowFrames: Contract.CONFIG.performanceWindowFrames,
+        performanceOverrunWindows: Contract.CONFIG.performanceOverrunWindows,
+        performanceRecoveryWindows: Contract.CONFIG.performanceRecoveryWindows,
+        performanceScales: Contract.CONFIG.performanceScaleLadder.slice()
+      }, options.config || {});
+      this.basePixelRatio = this.renderer.getPixelRatio ? this.renderer.getPixelRatio() : (root.devicePixelRatio || 1);
+      this.performanceState = initialPerformanceState(this._resolveDeviceProfile());
+      this.frameSamples = [];
+      this.framePacing = createFramePacing(Contract.CONFIG.edgeFramePacing);
+      this.paceProbe = { frames: 0, quick: 0, late: 0 };
+      this.renderBudget = null;
+      this.lastPacedFrameAt = 0;
+      this.onRecord = typeof options.onRecord === 'function' ? options.onRecord : null;
+    }
+
+    activate(definition) { this._activatePerformanceProfile(definition); this.lastPacedFrameAt = 0; }
+
+    observe(frameTimeMs) { this._observeFrame(frameTimeMs); }
+
+    // The Viewer render loop rule: every refresh measures the display interval;
+    // refreshes before the paced minimum interval are skipped.
+    shouldRender(time, frameStamp) {
+      const pacing = this.framePacing;
+      if (Number.isFinite(frameStamp)) pacing.observeTick(frameStamp);
+      const minIntervalMs = Number(pacing.minIntervalMs) || 0;
+      if (minIntervalMs > 0 && this.lastPacedFrameAt && time - this.lastPacedFrameAt < minIntervalMs) return false;
+      this.lastPacedFrameAt = time;
+      return true;
+    }
+
+    _record(type, data) {
+      if (this.onRecord) try { this.onRecord(type, data || {}); } catch (_) {}
+    }
+  }
+  ['_resolveDeviceProfile', '_preferredScale', '_targetFrameMs', '_applyRenderScale', '_activatePerformanceProfile',
+    '_observeFrame', 'setRenderBudget', '_applyRenderBudget', '_observePacing', '_setPacingDivisor', 'getPerformanceState'
+  ].forEach((name) => { ScenePerformance.prototype[name] = SceneRuntime.prototype[name]; });
+
   return Object.freeze({
     SceneEffect: SceneEffect,
     SceneVisualSlot: SceneVisualSlot,
     SceneRuntime: SceneRuntime,
+    ScenePerformance: ScenePerformance,
     createFramePacing: createFramePacing,
     defaultSlot: defaultSlot,
     sourceHasTopLeftTextureOrigin: sourceHasTopLeftTextureOrigin,

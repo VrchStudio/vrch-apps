@@ -4,6 +4,27 @@
   const sdk = VrchApp;
   const $ = (id) => document.getElementById(id);
   const preview = sdk.context.mode === 'preview';
+  // Output role: a picture-only instance (Playground's output, a second screen) draws the stage from the controller's
+  // preset, figure and breath meter (VrchApp.output). It plays no sound, reads no input or controls, saves nothing and
+  // shows only the stage.
+  const isOutput = sdk.context?.role === 'output', relay = sdk.output || null;
+  document.documentElement.dataset.role = isOutput ? 'output' : 'control';
+  let shared = '', sentMeter = 0;
+  function share() {
+    if (isOutput || !relay) return;
+    const value = {preset: state.preset, figure: state.figure, muted};
+    const text = JSON.stringify(value);
+    if (text === shared) return;
+    shared = text;
+    try { relay.publish(value); } catch (_) {}
+  }
+  function shareMeter() {
+    const now = performance.now();
+    if (isOutput || !relay || now - sentMeter < 33) return;
+    sentMeter = now;
+    const r = v => Math.round((Number(v) || 0) * 1e4) / 1e4;
+    try { relay.send({t: 'meter', env: r(meter.env), cloud: r(meter.cloud), peak: r(meter.peak)}); } catch (_) {}
+  }
   const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 
   const MACROS = [
@@ -215,6 +236,7 @@
         meter.grains = data.grains;
         meter.peak = data.peak;
         meter.listening = data.listening;
+        shareMeter();
         if (data.env > 0.2 && !hintHidden) { hintHidden = true; $('hint').classList.add('off'); }
       };
 
@@ -272,7 +294,8 @@
     $('start').textContent = phase === 'error' ? 'RETRY' : preview ? 'START' : 'START';
 
     accent();
-    monitor();
+    share();
+    if (!isOutput) monitor();
   }
 
   function monitor() {
@@ -357,9 +380,10 @@
 
   function resizeCanvas() {
     const rect = $('stage').getBoundingClientRect();
-    dpr = Math.min(2, window.devicePixelRatio || 1);
     W = Math.max(1, rect.width);
     H = Math.max(1, rect.height);
+    // The output can be a full 1080p or 4K screen: its canvas stays within 1920x1080 pixels.
+    dpr = Math.min(2, window.devicePixelRatio || 1, isOutput ? Math.sqrt(1920 * 1080 / (W * H)) : Infinity);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -912,6 +936,28 @@
     } catch (_) { /* first run */ }
   }
 
+  function initOutput() {
+    resizeCanvas();
+    new ResizeObserver(resizeCanvas).observe($('stage'));
+    accent();
+    requestAnimationFrame(draw);
+    window.vapeGrain = {role: 'output', followed: 0, meters: 0};
+    sdk.ready().then(() => {
+      relay?.onMessage(({kind, data} = {}) => {
+        if (!data || typeof data !== 'object') return;
+        if (kind === 'state') {
+          if (Number.isInteger(data.preset)) state.preset = clamp(data.preset, 0, PRESETS.length - 1);
+          if ((data.figure === 'cat' || data.figure === 'stick') && data.figure !== state.figure) { state.figure = data.figure; particles.length = 0; }
+          muted = data.muted === true;
+          accent(); window.vapeGrain.followed++; window.vapeGrain.preset = state.preset;
+        } else if (data.t === 'meter') {
+          meter.env = clamp(Number(data.env) || 0); meter.cloud = clamp(Number(data.cloud) || 0); meter.peak = clamp(Number(data.peak) || 0);
+          window.vapeGrain.meters++;
+        }
+      });
+    }).catch(() => {});
+  }
+
   async function init() {
     buildMacros();
     updateMacros();
@@ -935,5 +981,5 @@
 
   addEventListener('pagehide', () => { void stop(); });
 
-  void init();
+  if (isOutput) initOutput(); else void init();
 })();

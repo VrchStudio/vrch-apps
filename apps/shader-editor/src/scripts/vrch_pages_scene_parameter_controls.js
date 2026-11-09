@@ -256,6 +256,37 @@
     return !!(definition && (definition.signals || []).some((signal) => String(signal.id || '').startsWith('audio.v2.')));
   }
 
+  // VibeCtrl encoder pages, shared by Live Console and Apps: pages 0-1 hold the first eight numeric
+  // non-audio parameters, page 2 the audio response (strength and band gains). One detent moves one step.
+  const ENCODER_AUDIO = [['strength', 'Audio'], ['low', 'Low'], ['mid', 'Mid'], ['high', 'High']];
+  function audioMaster(instance) {
+    return root.VrchSceneSignalBus.normalizeAudioMaster(instance && instance.modulation_master && instance.modulation_master.audio);
+  }
+  function encoderParameters(definition, instance) {
+    if (!definition || !instance) return { sceneId: null, parameters: [], audio: [] };
+    const params = instance.params || {};
+    const parameters = (definition.parameters || []).filter((p) => ['float', 'int'].includes(p.type) && !/audio/i.test([p.key, p.label, p.group].join(' '))).slice(0, 8)
+      .map((p) => ({ key: p.key, type: p.type, label: p.label, min: p.min, max: p.max, step: p.step || (p.type === 'int' ? 1 : 0.01), default: p.default, value: params[p.key] ?? p.default }));
+    const master = audioMaster(instance);
+    const audio = ENCODER_AUDIO.map(([key, label]) => ({ key, type: 'float', label, min: 0, max: 4, step: 0.05, default: 1,
+      value: key === 'strength' ? (master.strength ?? master.gain) : (master.band_gains?.[key] ?? 1) }));
+    return { sceneId: definition.scene_id, parameters, audio };
+  }
+  function encoderTarget(snapshot, page, index) {
+    if (!snapshot || !Number.isInteger(index) || index < 0 || index > 3) return null;
+    return (page === 2 ? snapshot.audio[index] : snapshot.parameters[page * 4 + index]) || null;
+  }
+  function encoderValue(parameter, delta, reset = false) {
+    return Number(Math.max(parameter.min, Math.min(parameter.max, reset ? parameter.default : parameter.value + delta * parameter.step)).toFixed(6));
+  }
+  function encoderAudioChange(instance, key, value) {
+    const master = audioMaster(instance);
+    const change = { contract_version: 2, enabled: master.enabled, strength: master.strength ?? master.gain,
+      band_gains: { low: master.band_gains?.low ?? 1, mid: master.band_gains?.mid ?? 1, high: master.band_gains?.high ?? 1 }, phase: 'end' };
+    if (key === 'strength') change.strength = value; else change.band_gains[key] = value;
+    return change;
+  }
+
   let visualParameterPanelCount = 0;
 
   class VisualParameterPanel {
@@ -714,6 +745,10 @@
     primaryParameters: primaryParameters,
     supportsAudio: supportsAudio,
     supportsAudioV2: supportsAudioV2,
+    encoderParameters: encoderParameters,
+    encoderTarget: encoderTarget,
+    encoderValue: encoderValue,
+    encoderAudioChange: encoderAudioChange,
     colorToHex: colorToHex,
     hexToColor: hexToColor,
     formatValue: formatValue,

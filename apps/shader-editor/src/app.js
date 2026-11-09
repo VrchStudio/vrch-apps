@@ -8,6 +8,8 @@
   const backend = new VrchSceneAppsStore.AppsBackend(VrchApp);
   const store = new VrchSceneStore.SceneStore({backendFactory: () => backend.open()});
   const catalog = new VrchSceneCatalog.PresetCatalog();
+  const isOutput = VrchApp.context?.role === 'output', relay = VrchApp.output || null;
+  document.documentElement.dataset.role = isOutput ? 'output' : 'control';
   let active = null, preferences = {}, residue = {}, picker = null, parameters = null, mirror = null;
   let loaded = false, disposed = false, librarySaving = false, saving = null, timer = 0, retrying = false;
   let editVersion = 0, savedVersion = 0, lastError = null, mode = 'simple';
@@ -114,8 +116,9 @@
         $('trackingMessage').title = state.error?.message || '';
       },
     });
+    if (mirror && relay) watchAudio(mirror);
     if (!mirror.show(active.definition, active.instance, true)) feedback('This visual could not be previewed on this device.');
-    else media?.resume(mirror, active.definition);
+    else { shownAt = performance.timeOrigin + performance.now(); media?.resume(mirror, active.definition); }
   }
 
   function patch(change) {
@@ -347,6 +350,137 @@
     } catch (error) { failed(error); }
   }
 
+
+  // ---- Output role ------------------------------------------------------------------------------------------------
+  // A picture-only instance (Playground's output, a second screen) shows the visual being edited and nothing else.
+  // The editor publishes the visual, its parameters and scene time; audio, tracking values and live image sources follow
+  // as events. The output reads only the packaged catalog: no workspace, media, controls or text.
+  const FRAME_WIDTH = 256, FRAME_LIMIT = 15000, AUDIO_MS = 33, TRACK_MS = 66, FRAME_MS = 100;
+  let shownAt = 0, published = '', lastAudio = null, sentAudio = null, lastTrack = 0, lastFrame = 0, frameKey = 'A', frameBusy = false;
+  function compact(sample) {
+    if (!sample || typeof sample !== 'object') return null;
+    const out = {};
+    for (const [key, value] of Object.entries(sample)) out[key] = typeof value === 'number' ? Math.round(value * 1e4) / 1e4 : value && value.length ? Array.from(value, v => Math.round(v * 10) / 10) : value;
+    return out;
+  }
+  function liveSource(key) { return media?.enabled && media.sources[key] ? media.sources[key] : null; }
+  function publish() {
+    if (isOutput || !relay || !loaded) return;
+    const state = active ? {scene_id: active.definition.scene_id, params: active.instance.params, bindings: active.instance.bindings,
+      modulation_master: active.instance.modulation_master, quality_mode: active.instance.quality_mode, shown_at: shownAt,
+      live: {A: !!liveSource('A'), B: !!liveSource('B')}} : {scene_id: null};
+    const text = JSON.stringify(state);
+    if (text === published) return;
+    published = text;
+    try { relay.publish(state); } catch (_) {}
+  }
+  function send(data) { try { relay.send(data); } catch (_) {} }
+  async function frameData(canvas) {
+    const height = Math.max(1, Math.round(FRAME_WIDTH * canvas.height / Math.max(1, canvas.width)));
+    const small = document.createElement('canvas'); small.width = FRAME_WIDTH; small.height = height;
+    small.getContext('2d').drawImage(canvas, 0, 0, FRAME_WIDTH, height);
+    for (const quality of [0.6, 0.4, 0.25]) {
+      const blob = await new Promise(resolve => small.toBlob(resolve, 'image/jpeg', quality));
+      if (!blob) return null;
+      const url = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
+      if (url.length <= FRAME_LIMIT) return url;
+    }
+    return null;
+  }
+  function relayLive(now) {
+    if (isOutput || !relay || !loaded || document.hidden) return;
+    publish();
+    if (!active || !mirror) return;
+    if (lastAudio !== sentAudio) { sentAudio = lastAudio; send({type: 'audio', sample: compact(lastAudio)}); }
+    if (active.definition.analysis_requirements?.length && now - lastTrack >= TRACK_MS) {
+      lastTrack = now;
+      const values = mirror.effect?.signalBus?.values || {}, tracking = {};
+      for (const [key, value] of Object.entries(values)) if (key.startsWith('tracking.') && Number.isFinite(value)) tracking[key] = Math.round(value * 1e4) / 1e4;
+      send({type: 'track', values: tracking});
+    }
+    if (!frameBusy && now - lastFrame >= FRAME_MS / 2) {
+      // Live sources (camera, image channels) take turns; built-in samples need no frames.
+      const keys = ['A', 'B'].filter(liveSource);
+      if (!keys.length) return;
+      frameKey = keys.includes(frameKey === 'A' ? 'B' : 'A') ? (frameKey === 'A' ? 'B' : 'A') : keys[0];
+      lastFrame = now; frameBusy = true;
+      const key = frameKey;
+      void frameData(liveSource(key)).then(data => { if (data && liveSource(key)) send({type: 'frame', key, data}); }, () => {}).finally(() => { frameBusy = false; });
+    }
+  }
+  function watchAudio(target) {
+    // The editor's audio provider also feeds the output: each sample the preview reads is relayed.
+    const set = target.setAudioProvider.bind(target);
+    target.setAudioProvider = provider => set(provider ? () => { const sample = provider(); lastAudio = sample; return sample; } : (lastAudio = null, null));
+  }
+  class OutputPicture {
+    constructor() { this.canvas = document.createElement('canvas'); this.busy = false; this.pending = null; this.live = false; }
+    async show(url, onDrawn) {
+      if (typeof url !== 'string' || !url.startsWith('data:image/jpeg;base64,')) return;
+      this.pending = url;
+      if (this.busy) return;
+      this.busy = true;
+      try {
+        while (this.pending) {
+          const next = this.pending; this.pending = null;
+          const image = new Image(); image.src = next;
+          try { await image.decode(); } catch (_) { continue; }
+          if (this.canvas.width !== image.naturalWidth || this.canvas.height !== image.naturalHeight) { this.canvas.width = image.naturalWidth; this.canvas.height = image.naturalHeight; }
+          this.canvas.getContext('2d').drawImage(image, 0, 0);
+          this.live = true; onDrawn();
+        }
+      } finally { this.busy = false; }
+    }
+  }
+  async function startOutput() {
+    const host = document.createElement('div'); host.className = 'shader-output';
+    document.body.replaceChildren(host);
+    window.__shaderOutput = {frames: 0, followed: 0, scene: null};
+    try {
+      mirror = new VrchSceneMirror.SceneMirror({container: host, maxPixels: 1920 * 1080, analysis: false, sourceBindings: {0: 'A', 1: 'B'},
+        analysisOptions: ShaderAnalysis.options, performance: {config: {performanceWindowFrames: 60, performanceOverrunWindows: 3, performanceRecoveryWindows: 6}}});
+      await Promise.all([catalog.load(), VrchApp.ready()]);
+    } catch (_) { return; }
+    const pictures = {A: new OutputPicture(), B: new OutputPicture()};
+    let relayed = null, shown = null, state = null, count = 1;
+    mirror.setAudioProvider(() => relayed);
+    const sources = () => {
+      const a = state?.live?.A && pictures.A.live ? pictures.A.canvas : undefined, b = state?.live?.B && pictures.B.live ? pictures.B.canvas : undefined;
+      mirror.setSources(a, count > 1 ? b : a);
+    };
+    const follow = next => {
+      state = next; window.__shaderOutput.followed++; window.__shaderOutput.params = next?.params || null;
+      if (!next || typeof next.scene_id !== 'string') { shown = null; window.__shaderOutput.scene = null; mirror.hide(); return; }
+      const item = catalog.getBySceneId(next.scene_id);
+      if (!item) return;
+      const instance = contract.normalizeInstance(item.definition, {...catalog.makeInstance(catalog.itemKey(item)),
+        ...(next.params ? {params: next.params} : {}), ...(next.bindings ? {bindings: next.bindings} : {}),
+        ...(next.modulation_master ? {modulation_master: next.modulation_master} : {}), ...(next.quality_mode ? {quality_mode: next.quality_mode} : {})}, {trusted: false});
+      count = item.definition.runtime?.max_sources ?? 1;
+      for (const key of ['A', 'B']) if (!next.live?.[key]) pictures[key].live = false;
+      if (shown?.scene_id !== next.scene_id || shown?.shown_at !== next.shown_at) {
+        if (!mirror.show(item.definition, instance, true)) return;
+        if (Number.isFinite(next.shown_at) && next.shown_at > 0) mirror.setSceneTime(Math.max(0, (performance.timeOrigin + performance.now() - next.shown_at) / 1000));
+      } else mirror.patchInstance(instance);
+      shown = {scene_id: next.scene_id, shown_at: next.shown_at}; window.__shaderOutput.scene = next.scene_id;
+      sources();
+    };
+    relay?.onMessage(({kind, data} = {}) => {
+      if (!data || typeof data !== 'object') return;
+      if (kind === 'state') follow(data);
+      else if (data.type === 'audio') relayed = data.sample && typeof data.sample === 'object' ? data.sample : null;
+      else if (data.type === 'track' && data.values && typeof data.values === 'object') mirror.effect?.signalBus?.setExternalValues(data.values);
+      else if (data.type === 'frame' && pictures[data.key]) void pictures[data.key].show(data.data, sources);
+    });
+    const count_ = () => { window.__shaderOutput.frames++; requestAnimationFrame(count_); };
+    requestAnimationFrame(count_);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) mirror.hide(); else if (state) { shown = null; follow(state); } });
+    window.addEventListener('pagehide', () => { disposed = true; mirror?.dispose(); });
+  }
+
+
+  if (isOutput) { void startOutput(); return; }
+  setInterval(() => relayLive(performance.now()), AUDIO_MS);
   $('retryTracking').addEventListener('click', () => { media?.stop(); mirror?.hide(); showPreview(); });
   $('saveVisual').addEventListener('click', saveVisual);
   $('retrySave').addEventListener('click', retry);

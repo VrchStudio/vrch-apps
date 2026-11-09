@@ -147,6 +147,8 @@
       if (signalId === 'external.knock') this._knockTarget = Math.max(this._knockTarget, value);
       if (signalId === 'audio.beat') this._beatTarget = Math.max(this._beatTarget, value);
       if (signalId === 'audio.low_hit') this._lowHitTarget = Math.max(this._lowHitTarget, value);
+      if (signalId === 'audio.v2.onset') this._v2OnsetTarget = Math.max(this._v2OnsetTarget, value);
+      if (signalId === 'audio.v2.beat') this._v2BeatTarget = Math.max(this._v2BeatTarget, value);
     }
 
     setExternalValues(values) {

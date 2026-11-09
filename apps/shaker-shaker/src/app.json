@@ -3,7 +3,10 @@
   "sdk_version": 1,
   "id": "94f420c4-fd6e-4b50-835e-8577322ed483",
   "name": "Shaker Shaker",
-  "version": "0.1.1",
+  "version": "0.2.0",
+  "roles": [
+    "output"
+  ],
   "entry": "index.html",
   "icon": "assets/shaker-shaker.svg",
   "data_schema_version": 1,

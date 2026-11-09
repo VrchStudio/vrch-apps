@@ -7,6 +7,7 @@
   'use strict';
   const THREE = root.THREE;
   const SceneEffect = root.VrchSceneRuntime && root.VrchSceneRuntime.SceneEffect;
+  const ScenePerformance = root.VrchSceneRuntime && root.VrchSceneRuntime.ScenePerformance;
   const FrameAnalysis = root.VrchSceneFrameAnalysis;
   const FrameAnalysisController = FrameAnalysis && FrameAnalysis.FrameAnalysisController;
 
@@ -75,6 +76,16 @@
       this.externalSourceGenerations = { A: 0, B: 0 };
       this.sourceBindings = options.sourceBindings || { 0: 'A', 1: 'A' };
       this.analysisOptions = options.analysisOptions || {};
+      // analysis: false never starts landmark tracking (a picture-only output that receives tracking values).
+      this.analysisEnabled = options.analysis !== false;
+      // A surface read as another visual's source keeps its drawing buffer between frames.
+      this.preserveDrawingBuffer = options.preserveDrawingBuffer === true;
+      // Optional Scene Runtime performance policy (device profile, render scale, edge pacing).
+      this.performanceOptions = options.performance || null;
+      // Optional drawing-buffer budget in device pixels (an output surface caps it at 1080p); without it the
+      // pixel ratio stays at most 1.5.
+      this.maxPixels = Number(options.maxPixels) > 0 ? Number(options.maxPixels) : 0;
+      this.performance = null;
       this.audioProvider = null;
       this.cameraStream = null;
       this.cameraVideo = null;
@@ -109,9 +120,13 @@
       if (FrameAnalysis && typeof FrameAnalysis.createModelLoadOverlay === 'function') {
         this.analysisStatusView = FrameAnalysis.createModelLoadOverlay(this.container);
       }
-      this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true, powerPreference: 'low-power' });
+      this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true, powerPreference: 'low-power', preserveDrawingBuffer: this.preserveDrawingBuffer });
       if (!this.renderer.capabilities.isWebGL2) throw new Error('Local preview requires WebGL2.');
       this.renderer.setPixelRatio(Math.min(1.5, root.devicePixelRatio || 1));
+      if (this.performanceOptions && ScenePerformance) {
+        const settings = typeof this.performanceOptions === 'object' ? this.performanceOptions : {};
+        this.performance = new ScenePerformance({ renderer: this.renderer, deviceProfile: settings.deviceProfile, onRecord: settings.onRecord, config: settings.config });
+      }
       this.scene = new THREE.Scene();
       this.camera = new THREE.Camera();
       this._resizeNow();
@@ -137,6 +152,11 @@
       if (width < 1 || height < 1) return false;
       if (width === this.lastSize.width && height === this.lastSize.height) return false;
       this.lastSize = { width, height };
+      if (this.maxPixels) {
+        const base = Math.min(root.devicePixelRatio || 1, Math.sqrt(this.maxPixels / (width * height)));
+        if (this.performance) this.performance.basePixelRatio = base;
+        this.renderer.setPixelRatio(base * (this.performance ? this.performance.performanceState.render_scale : 1));
+      }
       this.renderer.setSize(width, height, false);
       return true;
     }
@@ -149,22 +169,18 @@
       if (this.effect) this.effect.dispose();
       try {
         this._resizeNow();
-        this.effect = new SceneEffect({ scene: this.scene, camera: this.camera, renderer: this.renderer, definition: definition, instance: instance, trusted: trusted === true, displayMode: 'crop' });
+        const governor = this.performance;
+        this.effect = new SceneEffect({ scene: this.scene, camera: this.camera, renderer: this.renderer, definition: definition, instance: instance, trusted: trusted === true, displayMode: 'crop',
+          onFrameSample: governor ? (frameTimeMs) => governor.observe(frameTimeMs) : null });
+        if (governor) {
+          this.effect.framePacing = governor.framePacing;
+          governor.activate(definition);
+        }
         const source = this.cameraVideo || this.fixture;
         this.effect.setSources([this.externalSources?.[0] || source, this.externalSources?.[1] || source]);
         this.analysisRuntime.active = { definition: definition, instance: instance };
         this.analysisRuntime.signalBus = this.effect.signalBus;
-        if (FrameAnalysisController) {
-          if (!this.frameAnalysis) this.frameAnalysis = new FrameAnalysisController({
-            ...this.analysisOptions,
-            runtime: this.analysisRuntime,
-            onStatus: (status) => {
-              if (FrameAnalysis && typeof FrameAnalysis.renderModelLoadOverlay === 'function') {
-                FrameAnalysis.renderModelLoadOverlay(this.analysisStatusView, status);
-              }
-              try { this.onAnalysisState(status); } catch (_) {}
-            }
-          });
+        if (this._ensureFrameAnalysis()) {
           this.frameAnalysis.setRuntime(this.analysisRuntime);
           this.frameAnalysis.sync(definition, this.analysisRuntime.getSourceBindingState());
         }
@@ -192,6 +208,17 @@
     }
 
     setAudioProvider(provider) { this.audioProvider = provider; }
+
+    getPerformanceState() { return this.performance ? this.performance.getPerformanceState() : null; }
+
+    // Continue the current visual as if it had been showing for this many seconds (another surface showing the same visual).
+    setSceneTime(seconds) {
+      if (!this.effect || !Number.isFinite(seconds)) return false;
+      this.effect.epochSeconds = performance.now() * 0.001 - Math.max(0, seconds);
+      return true;
+    }
+
+    setRenderBudget(budget) { return this.performance ? this.performance.setRenderBudget(budget) : false; }
 
     patchInstance(instance) {
       if (!this.effect || !this.renderer) return false;
@@ -358,6 +385,51 @@
         : { state: 'idle', source_slot: null, hands: 0, duration_ms: null, error: null };
     }
 
+    _ensureFrameAnalysis() {
+      if (!FrameAnalysisController || !this.analysisEnabled) return null;
+      if (!this.frameAnalysis) this.frameAnalysis = new FrameAnalysisController({
+        ...this.analysisOptions,
+        runtime: this.analysisRuntime,
+        onStatus: (status) => {
+          if (FrameAnalysis && typeof FrameAnalysis.renderModelLoadOverlay === 'function') {
+            FrameAnalysis.renderModelLoadOverlay(this.analysisStatusView, status);
+          }
+          try { this.onAnalysisState(status); } catch (_) {}
+        }
+      });
+      return this.frameAnalysis;
+    }
+
+    // Start the tracking a visual needs without showing it; the current visual keeps its own tracking state.
+    // Needs workers kept between visuals (analysisOptions.cacheWorkers, the default).
+    prepareAnalysis(definition) {
+      if (this.disposed || !this._ensureFrameAnalysis()) return false;
+      const state = this.analysisRuntime.getSourceBindingState();
+      this.frameAnalysis.sync(definition, state);
+      this.frameAnalysis.sync(this.analysisRuntime.active ? this.analysisRuntime.active.definition : null, state);
+      return true;
+    }
+
+    // Stop tracking and free its worker and model; a later visual that needs tracking starts a new one.
+    releaseAnalysis() {
+      if (!this.frameAnalysis) return false;
+      this.frameAnalysis.dispose();
+      this.frameAnalysis = null;
+      if (FrameAnalysis && typeof FrameAnalysis.renderModelLoadOverlay === 'function') FrameAnalysis.renderModelLoadOverlay(this.analysisStatusView, { state: 'idle' });
+      return true;
+    }
+
+    // Tracking runs only while a host enables it (for example while a camera feeds the sources);
+    // disabling frees the worker and model, enabling starts what the current visual needs.
+    setAnalysisEnabled(enabled) {
+      this.analysisEnabled = enabled === true;
+      if (!this.analysisEnabled) return this.releaseAnalysis();
+      if (this.disposed || !this.analysisRuntime.active || !this._ensureFrameAnalysis()) return false;
+      this.frameAnalysis.setRuntime(this.analysisRuntime);
+      this.frameAnalysis.sync(this.analysisRuntime.active.definition, this.analysisRuntime.getSourceBindingState());
+      return true;
+    }
+
     hide() {
       this.running = false;
       if (this.raf) cancelAnimationFrame(this.raf);
@@ -373,10 +445,11 @@
       this.onState('waiting');
     }
 
-    _frame() {
+    _frame(frameStamp) {
       if (!this.running || this.disposed) return;
-      this.raf = requestAnimationFrame(() => this._frame());
+      this.raf = requestAnimationFrame((stamp) => this._frame(stamp));
       if (!this.effect || !this.renderer || document.hidden) return;
+      if (this.performance && !this.performance.shouldRender(performance.now(), frameStamp)) return;
       if (this.cameraVideo) this.effect.sourceTextures.forEach((texture) => { if (texture) texture.needsUpdate = true; });
       if (this.frameAnalysis) {
         const slot = this.frameAnalysis.sourceSlot || 'A';

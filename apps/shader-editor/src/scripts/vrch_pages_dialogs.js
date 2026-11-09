@@ -1,5 +1,6 @@
 (function(global){
   'use strict';
+  if (global.VrchDialogs && global.VrchDialogs.createShell) return;
 
   function hasOwn(obj, key){
     return Object.prototype.hasOwnProperty.call(obj, key);
@@ -83,6 +84,157 @@
   let globalMessageDialog = null;
   let globalPromptDialog = null;
 
+  // Declarative headers and programmatic dialogs share this renderer. Feature
+  // code supplies existing title/navigation/action nodes, never header HTML.
+  const shells = new WeakMap();
+  let nextTitleId = 0;
+
+  function connectShell(overlay, options = {}){
+    if (!overlay) return null;
+    const existing = shells.get(overlay);
+    if (existing) { Object.assign(existing, options); return existing; }
+    const surface = options.surface || overlay.querySelector('.ui-modal__dialog') || overlay;
+    surface.classList.add('ui-dialog-shell');
+    const shell = { overlay, surface, ...options };
+    shells.set(overlay, shell);
+    return shell;
+  }
+
+  function requestClose(shell, reason){
+    if (typeof shell.onRequestClose === 'function') return shell.onRequestClose(reason);
+    const header = shell.surface.querySelector('vrch-dialog-header');
+    const button = header?.querySelector('[data-dialog-close]:not([data-dialog-generated-close])');
+    if (button) { if (!button.disabled) button.click(); return; }
+    const selector = header?.getAttribute('dismiss');
+    const action = selector ? shell.overlay.querySelector(selector) : null;
+    if (action) { if (!action.disabled) action.click(); return; }
+    // No implicit generic hide: a consumer must provide a real cancellation
+    // action or controller, so closing cannot accidentally commit work.
+  }
+
+  function renderHeader(header, options = {}){
+    options = { ...header.dialogOptions, ...options };
+    header.dialogOptions = options;
+    const doc = header.ownerDocument;
+    let title = options.title || header.querySelector('[slot="title"],.ui-dialog__title');
+    if (typeof title === 'string') { const node = header.querySelector('[slot="title"]') || doc.createElement('h2'); if (node.textContent !== title) node.textContent = title; node.classList.add('ui-dialog__title'); title = node; }
+    let navigation = hasOwn(options,'navigation') ? options.navigation : header.querySelector('[slot="navigation"],nav.ui-tabs,.ui-chooser__tabs');
+    let close = options.close || header.querySelector('[slot="close"],.ui-dialog__close') || header.dialogClose;
+    const action = hasOwn(options,'action') ? options.action : header.querySelector('[slot="action"]');
+    let identity = header.querySelector('[data-dialog-identity]');
+    if (!identity) {
+      identity = doc.createElement('span'); identity.dataset.dialogIdentity = '';
+      header.prepend(identity);
+    }
+    identity.className = 'ui-dialog-header__icon';
+    const icon = options.icon || header.getAttribute('icon') || 'fa-window-maximize';
+    if (options.identity) {
+      if (identity.firstChild !== options.identity || identity.childNodes.length !== 1) identity.replaceChildren(options.identity);
+    }
+    else {
+      const className = (icon === 'fa-bluetooth-b' ? 'fab ' : 'fas ') + icon;
+      if (identity.firstElementChild?.className !== className) {
+        const glyph = doc.createElement('i'); glyph.className = className;
+        glyph.setAttribute('aria-hidden','true'); identity.replaceChildren(glyph);
+      }
+    }
+    if (!options.identity) identity.setAttribute('aria-hidden','true');
+    else identity.removeAttribute('aria-hidden');
+    if (!title) { title = doc.createElement('h2'); title.className = 'ui-dialog__title'; title.textContent = options.label || header.getAttribute('label') || 'Dialog'; }
+    title.slot = 'title'; title.classList.add('ui-dialog-header__title');
+    title.classList.remove('ui-chooser__title','ui-chooser__title--icon');
+    if (!title.id) title.id = 'vrch-dialog-title-' + ++nextTitleId;
+    title.hidden = !!navigation;
+    if (navigation) { navigation.slot = 'navigation'; navigation.classList.add('ui-dialog-header__navigation'); }
+    if (!action && !close) {
+      close = doc.createElement('button'); close.type = 'button';
+      close.setAttribute('aria-label','Close ' + (options.label || header.getAttribute('label') || 'dialog')); close.dataset.dialogGeneratedClose = '';
+      close.addEventListener('click', () => { const shell = header.dialogShell; if (shell) requestClose(shell,'close'); });
+    }
+    if (!action) {
+      close.type = 'button';
+      const cross = doc.createElementNS('http://www.w3.org/2000/svg','svg');
+      cross.setAttribute('viewBox','0 0 24 24'); cross.setAttribute('width','18'); cross.setAttribute('height','18'); cross.setAttribute('aria-hidden','true');
+      const path = doc.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d','m6 6 12 12M18 6 6 18'); path.setAttribute('fill','none'); path.setAttribute('stroke','currentColor'); path.setAttribute('stroke-width','2');
+      cross.append(path); close.replaceChildren(cross);
+      close.slot = 'close'; close.dataset.dialogClose = '';
+      close.classList.remove('ui-chooser__close','ui-modal__close','ui-dialog__close--quiet');
+      close.classList.add('ui-dialog__close','ui-dialog-header__close');
+      header.dialogClose = close;
+    }
+    const end = action || close;
+    if (action) end.slot = 'action';
+    end.type = 'button'; end.classList.add('ui-icon-action','ui-dialog-header__action');
+    header.className = 'ui-dialog-header';
+    const nodes = [identity, title, ...(navigation ? [navigation] : []), end];
+    if (header.children.length !== nodes.length || nodes.some((node,index) => header.children[index] !== node)) header.replaceChildren(...nodes);
+    const surface = header.closest('.ui-modal__dialog,[role="dialog"],dialog');
+    const overlay = surface?.closest('.ui-modal,.live-console-pane-switcher,[data-notice]') || surface;
+    if (overlay) {
+      const label = options.label || header.getAttribute('label');
+      const named = ['dialog','alertdialog'].includes(surface.getAttribute('role')) ? surface : overlay;
+      if (navigation && label) { named.setAttribute('aria-label',label); named.removeAttribute('aria-labelledby'); header.namedByNavigation = true; }
+      else if (header.namedByNavigation) { named.removeAttribute('aria-label'); named.setAttribute('aria-labelledby',title.id); header.namedByNavigation = false; }
+      else if (!named.hasAttribute('aria-label') && !named.hasAttribute('aria-labelledby')) named.setAttribute('aria-labelledby',title.id);
+      header.dialogShell = connectShell(overlay, { surface });
+    }
+    return header;
+  }
+
+  function createHeader(options = {}){
+    const doc = options.document || document, header = doc.createElement('vrch-dialog-header');
+    if (options.icon) header.setAttribute('icon',options.icon);
+    if (options.label) header.setAttribute('label',options.label);
+    if (options.dismiss) header.setAttribute('dismiss',options.dismiss);
+    renderHeader(header, options);
+    return header;
+  }
+
+  function createShell(options = {}){
+    const doc = options.document || document, overlay = doc.createElement('div'), surface = doc.createElement('section');
+    overlay.className = 'ui-modal hidden'; if (options.id) overlay.id = options.id;
+    overlay.setAttribute('aria-hidden','true');
+    surface.className = 'ui-modal__dialog ui-dialog-shell'; surface.setAttribute('role','dialog'); surface.setAttribute('aria-modal','true');
+    surface.append(createHeader(options));
+    if (options.body) surface.append(options.body);
+    if (options.actions) surface.append(options.actions);
+    overlay.append(surface); (options.mount || doc.body).append(overlay);
+    connectShell(overlay, { surface, onRequestClose:options.onRequestClose });
+    return { overlay, surface, header:surface.querySelector('vrch-dialog-header') };
+  }
+
+  if (global.customElements && global.HTMLElement) {
+    global.customElements.define('vrch-dialog-header', class extends global.HTMLElement {
+      connectedCallback(){
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { if (this.isConnected) renderHeader(this); }, {once:true});
+        else renderHeader(this);
+      }
+    });
+    // Escape delegates to the visible foreground dialog's existing cancellation
+    // action. No background mutation, Tab interception or focus management.
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing) return;
+      // Existing anchored menus handle their own Escape before the dialog.
+      if ([...document.querySelectorAll('.ui-action-popover')].some(node => node.getClientRects().length)) return;
+      const visible = [...document.querySelectorAll('vrch-dialog-header')]
+        .map(header => header.dialogShell)
+        .filter(shell => shell && !shell.overlay.hidden && shell.overlay.getAttribute('aria-hidden') !== 'true'
+          && shell.surface.getClientRects().length && getComputedStyle(shell.surface).visibility !== 'hidden');
+      visible.sort((a,b) => {
+        const nativeA = a.overlay.matches('dialog:modal'), nativeB = b.overlay.matches('dialog:modal');
+        if (nativeA !== nativeB) return nativeA ? 1 : -1;
+        if (a.overlay.contains(b.overlay)) return -1;
+        if (b.overlay.contains(a.overlay)) return 1;
+        const layer = (parseFloat(getComputedStyle(a.overlay).zIndex) || 0) - (parseFloat(getComputedStyle(b.overlay).zIndex) || 0);
+        return layer || (a.overlay.compareDocumentPosition(b.overlay) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
+      });
+      const shell = visible.at(-1);
+      if (!shell) return;
+      event.preventDefault(); event.stopImmediatePropagation(); requestClose(shell,'escape');
+    }, true);
+  }
+
   function createController(options){
     const config = Object.assign({
       overlayId: '',
@@ -135,6 +287,11 @@
       const overlay = config.overlay || document.getElementById(config.overlayId);
       if (!overlay) return null;
       state.overlay = overlay;
+      connectShell(overlay, { onRequestClose:(reason) => {
+        if (reason === 'escape' && config.closeOnEscape === false) return;
+        if (typeof config.onRequestClose === 'function' && config.onRequestClose(reason,state,api) === false) return;
+        api.close(getDismissResult());
+      } });
       const selectors = config.selectors || {};
       Object.keys(selectors).forEach((key)=>{
         state[key] = resolveElement(overlay, selectors[key]);
@@ -504,9 +661,7 @@
       'vrch-global-message-dialog',
       [
         '<div class="ui-modal__dialog" tabindex="-1">',
-        '  <div class="ui-dialog__header">',
-        '    <h3 class="ui-dialog__title"></h3>',
-        '  </div>',
+        '  <vrch-dialog-header icon="fa-circle-info" label="Notice"><h3 slot="title" class="ui-dialog__title"></h3></vrch-dialog-header>',
         '  <div class="ui-dialog__body">',
         '    <div class="ui-dialog__note"></div>',
         '    <div class="ui-dialog__actions">',
@@ -532,9 +687,7 @@
       'vrch-global-prompt-dialog',
       [
         '<div class="ui-modal__dialog" tabindex="-1">',
-        '  <div class="ui-dialog__header">',
-        '    <h3 class="ui-dialog__title"></h3>',
-        '  </div>',
+        '  <vrch-dialog-header icon="fa-pen" label="Prompt"><h3 slot="title" class="ui-dialog__title"></h3></vrch-dialog-header>',
         '  <div class="ui-dialog__body">',
         '    <div class="ui-dialog__note"></div>',
         '    <input class="ui-input" type="text" autocomplete="off" />',
@@ -591,6 +744,10 @@
   }
 
   global.VrchDialogs = {
+    createHeader: createHeader,
+    setHeader: renderHeader,
+    createShell: createShell,
+    connectShell: connectShell,
     alert: alertDialog,
     confirm: confirmDialog,
     prompt: promptDialog,

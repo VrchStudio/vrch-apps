@@ -2,11 +2,11 @@
 const PALETTES=[['#ffcf8a','#fa714d','#e5b874'],['#aeecde','#46b8b5','#b4dbcf'],['#ffb89c','#db6453','#e99a7c'],['#e3d8ff','#a09bea','#bfc9ed']];
 const TAU=Math.PI*2;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-export function createVisual(canvas){
+export function createVisual(canvas,{bare=false}={}){
  const ctx=canvas.getContext('2d'),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  let width=0,height=0,dpr=1,previousTime=0,energy=0,rotation=0,aimX=0,aimY=0,latest=null,positions=[],previous=[],snapshotAt=0,previousImpacts=0,flash=0,palette=-1,sprite,disposed=false;
  const ripples=[],rest=Array.from({length:35},(_,i)=>{const x=Math.sin(i*2.399)*Math.sqrt((i+.5)/35)*.7;return[x,-.50-Math.sqrt(Math.max(0,1-x*x))*.23+Math.sin(i*4.1)*.10,Math.cos(i*2.399)*.35];});
- const observer=new ResizeObserver(()=>{const r=canvas.getBoundingClientRect();width=r.width;height=r.height;dpr=Math.min(devicePixelRatio,2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);});observer.observe(canvas);
+ const observer=new ResizeObserver(()=>{const r=canvas.getBoundingClientRect();width=r.width;height=r.height;dpr=Math.min(devicePixelRatio,2,bare?Math.sqrt(1920*1080/Math.max(1,width*height)):Infinity);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);});observer.observe(canvas);
  function spark(color){const c=document.createElement('canvas');c.width=c.height=64;const s=c.getContext('2d'),g=s.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'#fff7e8');g.addColorStop(.09,color);g.addColorStop(.28,color+'88');g.addColorStop(1,color+'00');s.fillStyle=g;s.fillRect(0,0,64,64);return c;}
  function update(snapshot){if(disposed||!snapshot?.positions)return;previous=positions.length===snapshot.positions.length?positions.map(p=>p.slice()):snapshot.positions.map(p=>p.slice());latest=snapshot;snapshotAt=performance.now();if(snapshot.impacts>previousImpacts){flash=Math.min(1,flash+Math.min(.6,(snapshot.impacts-previousImpacts)*.008));if(!reduced&&ripples.length<5&&snapshot.peak>.008)ripples.push({age:0,power:Math.min(1,snapshot.peak*10)});}previousImpacts=snapshot.impacts;}
  function draw(now,{material=0,grip=false,muted=false,motion=[0,9.81,0]}={}){
@@ -17,7 +17,8 @@ export function createVisual(canvas){
   const target=muted||now-snapshotAt>250?0:clamp((latest?.peak||0)*7,0,1);energy+=(target-energy)*Math.min(1,dt*12);flash*=Math.exp(-dt*6);
   const tiltX=clamp(motion[0]/16,-.65,.65),tiltY=clamp((motion[1]-9.81)/20,-.3,.3);
   aimX+=(tiltX-aimX)*Math.min(1,dt*8);aimY+=(tiltY-aimY)*Math.min(1,dt*8);rotation+=(aimX*.16-rotation)*Math.min(1,dt*8);
-  const cx=width*.5+aimX*6,cy=height*.43+aimY*5,rx=Math.min(width*.355,(height-180)*.56),ry=rx*.81;
+  // Bare (an output picture): no title or buttons to leave room for, so the chamber takes the middle of the screen.
+  const cx=width*.5+aimX*6,cy=height*(bare?.5:.43)+aimY*5,rx=bare?Math.min(width*.36,height*.5):Math.min(width*.355,(height-180)*.56),ry=rx*.81;
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.fillStyle='#080809';ctx.fillRect(0,0,width,height);
   // A restrained light field gives the transparent chamber depth without a UI card.
   const halo=ctx.createRadialGradient(cx,cy,rx*.05,cx,cy,rx*1.65);halo.addColorStop(0,accent+'20');halo.addColorStop(.55,accent+(grip?'13':'19'));halo.addColorStop(1,accent+'00');ctx.fillStyle=halo;ctx.fillRect(0,0,width,height);

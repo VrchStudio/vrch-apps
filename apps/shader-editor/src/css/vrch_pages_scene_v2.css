@@ -115,23 +115,6 @@ button.scene-preset-item.has-thumbnail { grid-template-columns: 42px minmax(0, 1
 .scene-picker-variants { --vrch-size-button-sm: 32px; grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 6px 0 0; }
 .scene-picker-variants[hidden] { display: none; }
 .scene-picker-variants > .ui-btn--sm { min-width: 0; padding-inline: 5px; }
-.scene-picker-header {
-  --ui-icon-action-size: 44px;
-  --vrch-size-field: 44px;
-  --vrch-ui-navigation-tab-height: 44px;
-  display: flex;
-  flex: 0 0 44px;
-  min-width: 0;
-  min-height: 44px;
-}
-.scene-picker-header [hidden] { display: none !important; }
-.scene-picker-header .scene-picker-collections { flex: 1; min-width: 0; }
-.scene-picker-header .ui-icon-action { flex: 0 0 44px; }
-.scene-picker-header > [data-role="search-open"] {
-  border-left: 1px solid var(--vrch-line);
-  border-bottom: 1px solid var(--vrch-line);
-  border-radius: 0;
-}
 .scene-picker-search { display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; padding-right: 4px; }
 .scene-picker-search .scene-picker-filter { min-width: 0; flex: 1; }
 .scene-picker-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
