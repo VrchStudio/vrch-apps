@@ -2406,7 +2406,7 @@
     },
     "5b1752ad-ea1d-45cb-9ba1-9ad1dd89783f": {
       "slug": "disco-ball",
-      "latest": "1.7.1",
+      "latest": "1.8.0",
       "versions": {
         "1.7.0": {
           "version": "1.7.0",
@@ -2445,6 +2445,25 @@
             "updateApi": 1
           },
           "notes": "- Add an official VRCH icon.\n- Restore device audio initialization while preserving saved settings."
+        },
+        "1.8.0": {
+          "version": "1.8.0",
+          "name": "Disco Ball",
+          "tag": "disco-ball-v1.8.0",
+          "sourceCommit": "112a7277709d333f2521cf3c5caa854d2587dcf1",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/disco-ball-v1.8.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/disco-ball-v1.8.0/disco-ball-1.8.0.vrchapp",
+          "size": 52976,
+          "sha256": "86f9891849cc57546aefc7bca0cf7e0a6a66e613a5765f41e2bb442e4bb10fe7",
+          "packageDigest": "86f9891849cc57546aefc7bca0cf7e0a6a66e613a5765f41e2bb442e4bb10fe7",
+          "revision": "88e0b9fe269fc03f7578c04d22dc720fda1e58d924a2e273055730bdebf8cafe",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the spinning ball on a large output or second screen, lighting in time with the device."
         }
       },
       "guide": {
