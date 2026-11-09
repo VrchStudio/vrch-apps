@@ -1,5 +1,9 @@
 # Magic Circle
 
+## 1.1.0
+
+- Show the circle on a large output or second screen, following the device's pattern, palette, pulses and input.
+
 ## 1.0.3
 
 - Start sound as soon as the App opens, without pressing E1 first.

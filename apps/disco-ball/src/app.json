@@ -4,8 +4,11 @@
   "data_schema_version": 1,
   "id": "5b1752ad-ea1d-45cb-9ba1-9ad1dd89783f",
   "name": "Disco Ball",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "entry": "index.html",
+  "roles": [
+    "output"
+  ],
   "capabilities": {
     "controls": true,
     "audio_input": false,

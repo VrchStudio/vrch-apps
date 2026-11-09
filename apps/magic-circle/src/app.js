@@ -1,23 +1,37 @@
 'use strict';
 const $=id=>document.getElementById(id),canvas=$('circle'),ctx=canvas.getContext('2d');
+// Output role: a picture-only instance (Playground's output, a second screen) follows the controlling instance through
+// VrchApp.output: its pattern settings and scene time (state), pulses and input energy (events). It plays no sound,
+// reads no input or controls, saves nothing and shows no text.
+const isOutput=VrchApp.context?.role==='output',relay=VrchApp.output||null;document.documentElement.dataset.role=isOutput?'output':'control';
 const TAU=Math.PI*2,patterns=['Orbit','Sigil','Lattice','Vortex','Eclipse','Bloom','Nova','Prism'],palettes=[{name:'Astral',main:'#58dfff',other:'#b45cff',core:'#e9fbff'},{name:'Ember',main:'#ffae42',other:'#ff3868',core:'#fff1ce'},{name:'Verdant',main:'#67ffb6',other:'#46a7ff',core:'#e1ffee'},{name:'Ritual',main:'#ff46bc',other:'#8b55ff',core:'#ffe8fb'},{name:'Solar',main:'#ffe073',other:'#ff7838',core:'#ffffe4'},{name:'Glacier',main:'#8ba9ff',other:'#52ffe1',core:'#f0ffff'}];
 const defaults={speed:.7,points:7,glow:.7,gain:1.5,pattern:0,palette:0,volume:.25,pitch:110,tone:0,space:.45};
-let settings={...defaults},time=0,last=0,width=0,height=0,dpr=1,dirty=true,busy=false,disposed=false,input=null,inputEpoch=0,saveTimer,saveChain=Promise.resolve(),audioEnergy=0,smoothed=0,lastPulse=-10000,held=new Set(),pulses=[];
+let sentEnergy=0,settings={...defaults},time=0,last=0,width=0,height=0,dpr=1,dirty=true,busy=false,disposed=false,input=null,inputEpoch=0,saveTimer,saveChain=Promise.resolve(),audioEnergy=0,smoothed=0,lastPulse=-10000,held=new Set(),pulses=[];
 const stars=Array.from({length:65},(_,i)=>({x:((i*37+13)%101)/101,y:((i*61+7)%103)/103,s:.4+(i%3)*.35}));
 window.magic={ready:false,audio:'off',level:0,frames:0,pulses:0,settings};
 const soundTones=['Astral','Crystal','Void'];let soundBank=false;
 const soundEngine=createMagicSound((state,error)=>{magic.sound=state;$('soundStatus').textContent=error;dirty=true;});magic.sound='off';magic.soundBank=false;
 function setControlBank(value){soundBank=value;magic.soundBank=value;dirty=true;}
 function normalize(v){const n=(k,min,max)=>Math.max(min,Math.min(max,Number.isFinite(Number(v?.[k]))?Number(v[k]):defaults[k]));return {speed:n('speed',0,2),points:Math.round(n('points',3,12)),glow:n('glow',0,1),gain:n('gain',.25,4),pattern:Math.round(n('pattern',0,patterns.length-1)),palette:Math.round(n('palette',0,palettes.length-1)),volume:n('volume',0,1),pitch:Math.round(n('pitch',55,440)),tone:Math.round(n('tone',0,2)),space:n('space',0,1)};}
-function render(){magic.settings=settings;soundEngine.update({volume:settings.volume,pitch:settings.pitch,tone:settings.tone,space:settings.space,speed:settings.speed,pattern:settings.pattern});dirty=true;}
+function share(){if(isOutput||!relay||!magic.ready)return;try{relay.publish({settings:{speed:settings.speed,points:settings.points,glow:settings.glow,pattern:settings.pattern,palette:settings.palette},time,at:Date.now()});}catch(_){}}
+function relaySend(event){if(isOutput||!relay)return;try{relay.send(event);}catch(_){}}
+function follow(kind,data){
+ if(!data||typeof data!=='object')return;
+ if(kind==='state'&&data.settings&&typeof data.settings==='object'){settings=normalize({...settings,...data.settings});magic.settings=settings;
+  // Scene time follows the controller's, so both pictures turn together; small differences are left alone.
+  if(Number.isFinite(data.time)&&Number.isFinite(data.at)){const target=data.time+Math.max(0,Math.min(5,(Date.now()-data.at)/1000));if(Math.abs(target-time)>.15)time=target;}}
+ else if(data.t==='pulse')pulse(Math.max(0,Math.min(2,Number(data.strength)||0)),false);
+ else if(data.t==='energy')audioEnergy=Math.max(0,Math.min(1,Number(data.v)||0));
+}
+function render(){magic.settings=settings;share();soundEngine.update({volume:settings.volume,pitch:settings.pitch,tone:settings.tone,space:settings.space,speed:settings.speed,pattern:settings.pattern});dirty=true;}
 function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{const value={...settings};saveChain=saveChain.then(async()=>{const old=await VrchApp.data.get('settings');await VrchApp.data.set('settings',value,{expectedVersion:old.version});}).catch(()=>{$('status').textContent='Settings could not be saved';});},250);}
 function update(v){if(!magic.ready)return;settings=normalize({...settings,...v});render();save();}
-function pulse(strength=1,withSound=true){if(withSound)soundEngine.pulse(strength);pulses.push({at:time,strength});if(pulses.length>8)pulses.shift();magic.pulses++;}
+function pulse(strength=1,withSound=true){if(withSound&&!isOutput)soundEngine.pulse(strength);relaySend({t:'pulse',strength});pulses.push({at:time,strength});if(pulses.length>8)pulses.shift();magic.pulses++;}
 async function stopInput(){++inputEpoch;const previous=input;input=null;magic.audio='off';audioEnergy=0;$('status').textContent='';dirty=true;await previous?.close().catch(()=>{});}
 async function startInput(){
  const epoch=++inputEpoch;magic.audio='starting';$('status').textContent='';dirty=true;
  try{const opened=await VrchApp.audio.openInput({channels:1});if(epoch!==inputEpoch||disposed){await opened.close();return;}input=opened;magic.audio='active';dirty=true;
-  opened.onData(samples=>{if(input!==opened)return;let energy=0;for(let i=0;i<samples.length;i++)energy+=samples[i]*samples[i];const rms=Math.sqrt(energy/Math.max(1,samples.length));audioEnergy=Math.min(1,Math.max(0,rms-.004)*settings.gain*14);magic.level=rms;if(audioEnergy>.48&&time-lastPulse>.3){lastPulse=time;pulse(audioEnergy,false);}});
+  opened.onData(samples=>{if(input!==opened)return;let energy=0;for(let i=0;i<samples.length;i++)energy+=samples[i]*samples[i];const rms=Math.sqrt(energy/Math.max(1,samples.length));audioEnergy=Math.min(1,Math.max(0,rms-.004)*settings.gain*14);magic.level=rms;const at=performance.now();if(at-sentEnergy>=50){sentEnergy=at;relaySend({t:'energy',v:Math.round(audioEnergy*1000)/1000});}if(audioEnergy>.48&&time-lastPulse>.3){lastPulse=time;pulse(audioEnergy,false);}});
  }catch(error){if(epoch!==inputEpoch||disposed)return;magic.audio='error';dirty=true;$('status').textContent='Input unavailable. Press E4 to retry.';}
 }
 function toggleAudio(){if(magic.audio==='active'||magic.audio==='starting')void stopInput();else void startInput();}
@@ -32,7 +46,8 @@ function ring(radius,color,alpha=1,line=1,start=0,end=TAU){ctx.beginPath();ctx.a
 function polygon(count,radius,rotation=0,skip=1){return Array.from({length:count+1},(_,i)=>{const a=rotation+i*skip*TAU/count;return [Math.cos(a)*radius,Math.sin(a)*radius];});}
 function luminous(points,color,alpha=1,line=1,closed=true){const power=.3+settings.glow;path(points,color,alpha*.08*power,line+7*power,closed);path(points,color,alpha*.19*power,line+2.5*power,closed);path(points,color,alpha,line,closed);}
 function rune(i,x,y,angle,size,color){ctx.save();ctx.translate(x,y);ctx.rotate(angle);const k=i%5;path([[-size*.3,size*.45],[0,-size*.5],[size*.3,size*.45]],color,.85,1,false);path(k===0?[[-size*.35,0],[size*.35,0]]:k===1?[[0,0],[size*.5,-size*.2]]:k===2?[[-size*.4,-size*.2],[0,size*.5],[size*.4,-size*.2]]:k===3?[[0,-size*.65],[0,size*.65]]:[[-size*.5,size*.2],[size*.5,-size*.2]],color,.75,1,false);ctx.restore();}
-function resize(){const box=canvas.getBoundingClientRect();width=box.width;height=box.height;dpr=Math.min(devicePixelRatio||1,1.5);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);}
+// The output can be a full 1080p or 4K screen: its canvas stays within 1920x1080 pixels.
+function resize(){const box=canvas.getBoundingClientRect();width=box.width;height=box.height;dpr=Math.min(devicePixelRatio||1,1.5,isOutput?Math.sqrt(1920*1080/Math.max(1,width*height)):Infinity);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);}
 new ResizeObserver(resize).observe(canvas);
 function geometry(mode,r,t,p,opacity,energy){
  if(opacity<.01)return;const n=settings.points,twist=t*.23,breath=Math.sin(t*.64),a=opacity;
@@ -68,7 +83,7 @@ function geometry(mode,r,t,p,opacity,energy){
 function mixColor(a,b,t){return '#'+[1,3,5].map(i=>Math.round(parseInt(a.slice(i,i+2),16)*(1-t)+parseInt(b.slice(i,i+2),16)*t).toString(16).padStart(2,'0')).join('');}
 function draw(now){
  if(disposed)return;const dt=Math.min(.05,(now-(last||now))/1000);last=now;time+=dt;magic.frames++;smoothed+=(audioEnergy-smoothed)*(1-Math.exp(-dt*12));audioEnergy*=Math.exp(-dt*3);
- if(settings.pattern!==shownPattern){if(magic.ready)soundEngine.pulse(.45);previousPattern=shownPattern;shownPattern=settings.pattern;transition=0;transitionPulse=1;}
+ if(settings.pattern!==shownPattern){if(magic.ready&&!isOutput)soundEngine.pulse(.45);previousPattern=shownPattern;shownPattern=settings.pattern;transition=0;transitionPulse=1;}
  if(settings.palette!==shownPalette){previousPalette=shownPalette;shownPalette=settings.palette;paletteTransition=0;}paletteTransition=Math.min(1,paletteTransition+dt);const pm=Math.round(paletteTransition*20)/20,pa=palettes[previousPalette],pb=palettes[shownPalette];
  transition=Math.min(1,transition+dt*.85);transitionPulse*=Math.exp(-dt*3);const blend=transition*transition*(3-2*transition),p={main:mixColor(pa.main,pb.main,pm),other:mixColor(pa.other,pb.other,pm),core:mixColor(pa.core,pb.core,pm)},t=time*(.16+settings.speed*.85),energy=smoothed;
  pulses=pulses.filter(x=>time-x.at<1.7);const impact=pulses.reduce((v,w)=>Math.max(v,Math.exp(-(time-w.at)*4)*w.strength),0),r=Math.min(width,height)*.46*(1+energy*.045+impact*.025),rot=t*.19,power=.4+settings.glow*.8;
@@ -84,13 +99,14 @@ function draw(now){
  if(shownPattern!==4||transition<1){ctx.save();ctx.rotate(-rot);luminous(polygon(6,r*(.145+energy*.045),0,2),p.core,.9,1);ctx.restore();flare(0,0,r*(.1+energy*.15+impact*.23),p.core,.75);ring(r*(.205+energy*.03),p.main,.5,1);}
  for(const wave of pulses){const age=(time-wave.at)/1.7,rr=r*(.12+age*1.22),alpha=(1-age)**2;ring(rr,p.main,alpha*.18,15*power);ring(rr,p.core,alpha,1.4+3*(1-age));for(let j=0;j<28;j++){const q=j*TAU/28+wave.at,tail=rr-r*.05*(1-age);path([[Math.cos(q)*tail,Math.sin(q)*tail],[Math.cos(q)*rr,Math.sin(q)*rr]],j%2?p.main:p.other,alpha,1.4,false);}}
  if(transitionPulse>.02)ring(r*(.2+(1-transitionPulse)*.8),p.core,transitionPulse*.6,2);
- if(magic.ready&&dirty&&!busy){dirty=false;busy=true;const item=(label,value)=>({label,value:String(value)}),values=soundBank?{E1:item('Volume',Math.round(settings.volume*100)+'%'),E2:item('Pitch',settings.pitch+' Hz'),E3:item('Timbre',soundTones[settings.tone]),E4:item('Space',Math.round(settings.space*100)+'%'),K2:item('Pattern',patterns[settings.pattern]),K3:item('Palette',palettes[settings.palette].name),K4:item('Pulse',magic.sound==='active'?'SFX on':magic.sound==='starting'?'Starting':magic.sound==='error'?'Retry E1':'SFX off')}:{E1:item('Speed',settings.speed.toFixed(2)),E2:item('Points',settings.points),E3:item('Glow',Math.round(settings.glow*100)+'%'),E4:item('Input',magic.audio==='active'?settings.gain.toFixed(1):magic.audio==='error'?'Retry':'Off'),K2:item('Pattern',patterns[settings.pattern]),K3:item('Palette',palettes[settings.palette].name),K4:item('Pulse',magic.sound==='active'?'SFX on':magic.sound==='starting'?'Starting':magic.sound==='error'?'Retry E1':'SFX off')};VrchApp.monitor.set(values).catch(()=>{}).finally(()=>busy=false);}
+ if(magic.ready&&dirty&&!busy&&!isOutput){dirty=false;busy=true;const item=(label,value)=>({label,value:String(value)}),values=soundBank?{E1:item('Volume',Math.round(settings.volume*100)+'%'),E2:item('Pitch',settings.pitch+' Hz'),E3:item('Timbre',soundTones[settings.tone]),E4:item('Space',Math.round(settings.space*100)+'%'),K2:item('Pattern',patterns[settings.pattern]),K3:item('Palette',palettes[settings.palette].name),K4:item('Pulse',magic.sound==='active'?'SFX on':magic.sound==='starting'?'Starting':magic.sound==='error'?'Retry E1':'SFX off')}:{E1:item('Speed',settings.speed.toFixed(2)),E2:item('Points',settings.points),E3:item('Glow',Math.round(settings.glow*100)+'%'),E4:item('Input',magic.audio==='active'?settings.gain.toFixed(1):magic.audio==='error'?'Retry':'Off'),K2:item('Pattern',patterns[settings.pattern]),K3:item('Palette',palettes[settings.palette].name),K4:item('Pulse',magic.sound==='active'?'SFX on':magic.sound==='starting'?'Starting':magic.sound==='error'?'Retry E1':'SFX off')};VrchApp.monitor.set(values).catch(()=>{}).finally(()=>busy=false);}
 
  requestAnimationFrame(draw);
 }
-canvas.onpointerdown=()=>{if(magic.sound==='error')void soundEngine.start();pulse();};
-VrchApp.controls.onEvent(e=>{if(!magic.ready)return;const panel=soundBank;if(e.type==='rotate'){const d=Number(e.delta)||0;if(panel){if(e.control==='E1')update({volume:settings.volume+d*.02});if(e.control==='E2')update({pitch:settings.pitch+d*5});if(e.control==='E3')update({tone:(settings.tone+Math.sign(d)+3)%3});if(e.control==='E4')update({space:settings.space+d*.05});}else{if(e.control==='E1')update({speed:settings.speed+d*.05});if(e.control==='E2')update({points:settings.points+d});if(e.control==='E3')update({glow:settings.glow+d*.05});if(e.control==='E4')update({gain:settings.gain+d*.1});}}if(e.type==='down'&&!held.has(e.control)){held.add(e.control);if(e.control==='E1')void soundEngine.toggle();if(e.control==='E3')setControlBank(!soundBank);if(e.control==='E4')toggleAudio();if(e.control==='K2')update({pattern:(settings.pattern+1)%patterns.length});if(e.control==='K3')update({palette:(settings.palette+1)%palettes.length});if(e.control==='K4')pulse();}if(e.type==='up'||e.type==='cancel')held.delete(e.control);});
+canvas.onpointerdown=()=>{if(isOutput)return;if(magic.sound==='error')void soundEngine.start();pulse();};
+VrchApp.controls.onEvent(e=>{if(!magic.ready||isOutput)return;const panel=soundBank;if(e.type==='rotate'){const d=Number(e.delta)||0;if(panel){if(e.control==='E1')update({volume:settings.volume+d*.02});if(e.control==='E2')update({pitch:settings.pitch+d*5});if(e.control==='E3')update({tone:(settings.tone+Math.sign(d)+3)%3});if(e.control==='E4')update({space:settings.space+d*.05});}else{if(e.control==='E1')update({speed:settings.speed+d*.05});if(e.control==='E2')update({points:settings.points+d});if(e.control==='E3')update({glow:settings.glow+d*.05});if(e.control==='E4')update({gain:settings.gain+d*.1});}}if(e.type==='down'&&!held.has(e.control)){held.add(e.control);if(e.control==='E1')void soundEngine.toggle();if(e.control==='E3')setControlBank(!soundBank);if(e.control==='E4')toggleAudio();if(e.control==='K2')update({pattern:(settings.pattern+1)%patterns.length});if(e.control==='K3')update({palette:(settings.palette+1)%palettes.length});if(e.control==='K4')pulse();}if(e.type==='up'||e.type==='cancel')held.delete(e.control);});
 // Sound starts with the App; when the host audio returns after a failed start, retry it.
-VrchApp.audio.onAvailable?.(()=>{if(magic.sound==='error')void soundEngine.start();});
-VrchApp.ready().then(async()=>{try{settings=normalize((await VrchApp.data.get('settings')).value);}catch(_){}magic.ready=true;render();void soundEngine.start();if(VrchApp.context.mode==='device')void startInput();}).catch(()=>$('status').textContent='App unavailable. Reopen it.');
+VrchApp.audio.onAvailable?.(()=>{if(!isOutput&&magic.sound==='error')void soundEngine.start();});
+if(isOutput)VrchApp.ready().then(()=>{relay?.onMessage(({kind,data}={})=>follow(kind,data));}).catch(()=>{});
+else VrchApp.ready().then(async()=>{try{settings=normalize((await VrchApp.data.get('settings')).value);}catch(_){}magic.ready=true;render();setInterval(share,2000);void soundEngine.start();if(VrchApp.context.mode==='device')void startInput();}).catch(()=>$('status').textContent='App unavailable. Reopen it.');
 addEventListener('pagehide',()=>{disposed=true;clearTimeout(saveTimer);void stopInput();void soundEngine.stop();},{once:true});render();resize();requestAnimationFrame(draw);

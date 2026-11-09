@@ -37,6 +37,12 @@ function restore(saved) {
   return s;
 }
 
+// Output role: a picture-only instance (Playground's output, a second screen) mirrors the controlling instance through
+// VrchApp.output with the same messages as the laptop link: state (published), sparks, beats and gongs (events).
+// It plays no sound, opens no link, reads no controls, saves nothing and shows only the ball.
+const isOutput = (() => { try { return VrchApp.context?.role === 'output'; } catch (_) { return false; } })();
+const relay = VrchApp.output || null;
+document.documentElement.dataset.role = isOutput ? 'output' : 'control';
 let state = defaults(), ready = false, disposed = false;
 const ui = {playing: false, glowAt: -1e9, glowHue: 275, gongAt: -1e9, k3At: 0};
 const sparkleHue = tile => { litHue[tile] = state.palette === 5 ? NEON[(Math.random() * NEON.length) | 0] : Math.random() * 360; };
@@ -264,6 +270,7 @@ function tapTile(tile) {
 const isLaptop = (() => { try { return VrchApp.context.mode === 'laptop'; } catch (_) { return false; } })();
 let sock = null, connecting = false, linked = false, lastRemote = 0, syncTimer = 0, statePush = 0;
 function sendSync(obj) {
+  if (!isOutput && !isLaptop && relay) { try { if (obj.t === 'state') relay.publish({...obj, at: Date.now()}); else relay.send(obj); } catch (_) {} }
   if (!sock) return;
   if (isLaptop) { if (sock.readyState === 1) { try { sock.send(JSON.stringify(obj)); } catch (_) {} } }
   else void sock.send(obj).catch(() => { sock = null; });
@@ -275,7 +282,11 @@ function pushState() {
 function applyRemote(m) {
   const now = performance.now();
   if (m.t === 'spark' && Array.isArray(m.tiles)) {
-    for (const tile of m.tiles) if (Number.isInteger(tile) && tile >= 0 && tile < TILES) { litAt[tile] = now; sparkleHue(tile); }
+    m.tiles.forEach((tile, k) => {
+      if (!Number.isInteger(tile) || tile < 0 || tile >= TILES) return;
+      litAt[tile] = now;
+      if (Number.isFinite(m.hues?.[k])) litHue[tile] = m.hues[k]; else sparkleHue(tile);
+    });
   } else if (m.t === 'beat') {
     ui.glowAt = now; ui.glowHue = (ui.glowHue + 47) % 360;
   } else if (m.t === 'gong') {
@@ -284,7 +295,11 @@ function applyRemote(m) {
     const scaleBefore = state.scale;
     state = restore(m);
     if (state.scale !== scaleBefore) buildFreqs();
-    if (typeof m.angle === 'number' && Number.isFinite(m.angle) && Math.abs(m.angle - angle) > 0.25) angle = m.angle;
+    if (typeof m.angle === 'number' && Number.isFinite(m.angle)) {
+      // An output shares the controller's clock: it carries the angle forward to now and follows it closely.
+      const ahead = isOutput && Number.isFinite(m.at) ? m.angle + (0.08 + state.energy / 100 * 0.55) * clamp((Date.now() - m.at) / 1000, 0, 5) : m.angle;
+      if (Math.abs(ahead - angle) > (isOutput ? 0.05 : 0.25)) angle = ahead;
+    }
     ui.playing = !!m.playing;
     status(m.playing ? 'Linked · Playing' : 'Linked · Stopped');
     invalidate();
@@ -324,7 +339,7 @@ async function connectSync() {
 /* ---------- controls ---------- */
 VrchApp.controls.onEvent(event => {
   if (!ready) return;
-  if (isLaptop && linked) return;
+  if (isOutput || (isLaptop && linked)) return;
   const c = event.control;
   if (event.type === 'rotate') {
     const d = Math.trunc(Number(event.delta) || 0);
@@ -358,7 +373,7 @@ let W = 0, H = 0, CX = 0, CY = 0, R = 0, angle = 0, lastNow = 0, shimmerNow = 0,
 function status(text, error = false) { $('status').textContent = text; $('status').classList.toggle('error', error); }
 function press(el, action) {
   el.addEventListener('pointerdown', event => {
-    if (!ready) return;
+    if (!ready || isOutput) return;
     if (isLaptop && linked) return;
     event.preventDefault();
     if (engine && engine.ctx.state === 'suspended') void engine.ctx.resume().catch(() => {});
@@ -369,7 +384,9 @@ function layout() {
   let inset = 0;
   try { inset = VrchApp.context.safeInsets?.left || 0; } catch (_) {}
   document.documentElement.style.setProperty('--inset-left', inset + 'px');
-  const stage = $('stage'), dpr = Math.min(2, devicePixelRatio || 1);
+  // The output can be a full 1080p or 4K screen: its canvas stays within 1920x1080 pixels.
+  const stage = $('stage'), area = Math.max(1, stage.clientWidth * stage.clientHeight);
+  const dpr = Math.min(2, devicePixelRatio || 1, isOutput ? Math.sqrt(1920 * 1080 / area) : Infinity);
   W = Math.max(1, Math.round(stage.clientWidth * dpr));
   H = Math.max(1, Math.round(stage.clientHeight * dpr));
   canvas.width = W; canvas.height = H;
@@ -518,20 +535,20 @@ function frame(now) {
     if (m.type === 'gong') { ui.gongAt = now; if (!isLaptop) sendSync({t: 'gong'}); continue; }
     for (const tile of m.tiles) { litAt[tile] = now; sparkleHue(tile); }
     if (!isLaptop) sendSync({
-      t: 'spark', tiles: m.tiles,
+      t: 'spark', tiles: m.tiles, hues: m.tiles.map(t => Math.round(litHue[t])),
       ys: m.tiles.map(t => normals[t * 3 + 1]),
       phis: m.tiles.map(t => (Math.atan2(normals[t * 3 + 2], normals[t * 3]) + 2 * Math.PI) % (2 * Math.PI)),
     });
   }
   render(now);
-  if (dirty) { dirty = false; renderHud(); }
-  updateMonitor();
+  if (dirty) { dirty = false; if (!isOutput) renderHud(); }
+  if (!isOutput) updateMonitor();
   requestAnimationFrame(frame);
 }
 
 /* ---------- touch ---------- */
 canvas.addEventListener('pointerdown', event => {
-  if (!ready) return;
+  if (!ready || isOutput) return;
   if (isLaptop && linked) return;
   event.preventDefault();
   if (engine && engine.ctx.state === 'suspended') void engine.ctx.resume().catch(() => {});
@@ -560,7 +577,12 @@ press($('chipVoice'), cycleTimbre);
 press($('chipBeat'), cycleGroove);
 press($('chipPlay'), togglePlay);
 layout();
-VrchApp.ready().then(async () => {
+if (isOutput) VrchApp.ready().then(() => {
+  ready = true; layout();
+  relay?.onMessage(({data} = {}) => { if (data && typeof data === 'object') applyRemote(data); });
+  requestAnimationFrame(frame);
+}).catch(() => {});
+else VrchApp.ready().then(async () => {
   try { const saved = await VrchApp.data.get('state'); state = restore(saved?.value); status('Stopped'); }
   catch (_) { status('Saved settings unavailable', true); }
   buildFreqs();

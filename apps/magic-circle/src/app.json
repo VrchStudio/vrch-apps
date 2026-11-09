@@ -4,8 +4,11 @@
   "data_schema_version": 1,
   "id": "ce96ad6b-8e44-4661-83f4-823bd546aa19",
   "name": "Magic Circle",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "entry": "index.html",
+  "roles": [
+    "output"
+  ],
   "capabilities": {
     "controls": true,
     "audio_input": true,

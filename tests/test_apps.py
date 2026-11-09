@@ -235,6 +235,15 @@ class Packages(unittest.TestCase):
         (self.root/'catalog').mkdir(exist_ok=True)
         (self.root/'catalog/presentation.json').write_text(json.dumps({**presentation,'apps':{'demo':{'category':'tools','deferred':['../x']}}}))
         with self.assertRaises(ValueError):apps.read_presentation(self.root)
+        # An App with an output role says so on its card; others carry no roles.
+        self.assertNotIn('roles',entry)
+        git('checkout','-q','--','apps/demo/src/index.html')
+        (self.src/'app.json').write_text(json.dumps({**self.manifest,'roles':['output','unknown']}))
+        git('-c','user.name=t','-c','user.email=t@example.test','commit','-q','-am','output')
+        _,_,revision=apps.source('demo',root=self.root)
+        output={**release,'sourceCommit':git('rev-parse','HEAD'),'revision':revision}
+        result=apps.write_playground_catalog({'schemaVersion':1,'apps':{self.manifest['id']:{'slug':'demo','latest':'1.0.0','versions':{'1.0.0':output}}}},root=self.root,presentation=presentation)
+        self.assertEqual(result['apps'][0]['roles'],['output'])
 
     def test_catalog_rejects_downgrade(self):
         _,release=self.build()

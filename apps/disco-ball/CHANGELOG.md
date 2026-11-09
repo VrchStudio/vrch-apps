@@ -1,5 +1,9 @@
 # Disco Ball
 
+## 1.8.0
+
+- Show the spinning ball on a large output or second screen, lighting in time with the device.
+
 ## 1.7.1
 
 - Add an official VRCH icon.

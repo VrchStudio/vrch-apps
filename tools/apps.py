@@ -262,6 +262,10 @@ def write_playground_catalog(catalog, root=None, presentation=None, sources=comm
                  'summary': summary.strip()[:240], 'category': meta['category'], 'featured': meta.get('featured'),
                  'tags': meta.get('tags', []), 'capabilities': capabilities, 'size': release['size'],
                  'revision': release['revision'], 'packageDigest': release['sha256'], 'assets': assets}
+        # Roles beyond the controlling instance (an 'output' picture for a large or second screen) mark the App's card.
+        roles = sorted({r for r in manifest.get('roles', []) if r in ('output',)}) if isinstance(manifest.get('roles'), list) else []
+        if roles:
+            entry['roles'] = roles
         deferred = deferred_files(app['slug'], meta.get('deferred', []), [name for name, _ in records])
         if deferred:
             entry['deferred'] = deferred

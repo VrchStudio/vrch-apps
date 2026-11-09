@@ -21,3 +21,6 @@ header{flex:0 0 22px;display:flex;align-items:baseline;justify-content:space-bet
 .chip.primary.on{background:linear-gradient(135deg,rgba(255,60,80,.9),rgba(255,110,60,.9))}
 .chip:active{transform:translateY(1px)}
 .chip.off strong{color:var(--dim)}
+:root[data-role=output] main{padding:0}
+:root[data-role=output] header,:root[data-role=output] .hud{display:none}
+:root[data-role=output] #stage{border-radius:0}
