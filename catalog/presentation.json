@@ -6,6 +6,10 @@
       "label": "Visuals"
     },
     {
+      "id": "audiovisual",
+      "label": "Audiovisual"
+    },
+    {
       "id": "instruments",
       "label": "Instruments"
     },
@@ -39,29 +43,33 @@
         "music/prism-rush.mp3"
       ]
     },
-    "disco-ball": {
-      "category": "instruments",
+    "botanica-core": {
+      "category": "audiovisual",
       "featured": 2
+    },
+    "disco-ball": {
+      "category": "audiovisual",
+      "featured": 3
     },
     "petal-fm": {
       "category": "instruments",
-      "featured": 3
+      "featured": 4
     },
     "drum-808": {
       "category": "rhythm",
-      "featured": 4
+      "featured": 5
     },
     "wavescape": {
       "category": "instruments",
-      "featured": 5
+      "featured": 6
     },
     "gm-studio": {
       "category": "instruments",
-      "featured": 6
+      "featured": 7
     },
     "magic-circle": {
-      "category": "visuals",
-      "featured": 7
+      "category": "audiovisual",
+      "featured": 8
     },
     "shaker-shaker": {
       "category": "instruments"
@@ -100,7 +108,7 @@
       "category": "visuals"
     },
     "body-vibes": {
-      "category": "visuals"
+      "category": "audiovisual"
     },
     "hardware-check": {
       "category": "tools"

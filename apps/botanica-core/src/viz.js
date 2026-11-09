@@ -1,4 +1,4 @@
-/* Botanica Engine — holographic garden renderer (WebGL 1).
+/* Botanica Core — holographic garden renderer (WebGL 1).
  *
  * TouchDesigner-style pipeline:
  *   scene (additive glass petals, wireframe, point cloud, crystals, butterflies,
@@ -6,7 +6,7 @@
  *   → feedback trails → bloom (¼ res) → composite (datamosh glitch, chromatic
  *   aberration, pixel crush, scanlines, komorebi rays).
  * Geometry is static; motion lives in shaders driven by ~40 uniforms.
- * Render scale adapts to the measured frame time. */
+ * Render scale adapts to the measured frame time, within options.maxPixels (a large output screen). */
 (() => {
   'use strict';
 
@@ -485,7 +485,8 @@ void main() {
     return new Float32Array(v);
   }
 
-  function create(canvas) {
+  function create(canvas, options = {}) {
+    const maxPixels = options.maxPixels || Infinity;
     const gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, premultipliedAlpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' });
     if (!gl) return null;
     const compile = (type, src) => {
@@ -573,6 +574,7 @@ void main() {
     function resize() {
       const r = canvas.getBoundingClientRect();
       W = Math.max(1, r.width); H = Math.max(1, r.height);
+      scale = Math.min(scale, Math.sqrt(maxPixels / (W * H)));
       canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
       freeTargets();
       const w = canvas.width, h = canvas.height, bw = Math.max(1, w >> 2), bh = Math.max(1, h >> 2);
@@ -583,7 +585,7 @@ void main() {
       if (frames >= 40) {
         const avg = accDt / frames; frames = 0; accDt = 0; fps = 1000 / avg;
         if (avg > 19 && scale > 0.6) { scale = Math.max(0.6, scale - 0.15); resize(); }
-        else if (avg < 17.2 && scale < maxScale) { scale = Math.min(maxScale, scale + 0.1); resize(); }
+        else if (avg < 17.2 && scale < Math.min(maxScale, Math.sqrt(maxPixels / (W * H)))) { scale = Math.min(maxScale, scale + 0.1); resize(); }
       }
     }
 

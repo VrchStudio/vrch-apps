@@ -2,6 +2,13 @@
   'use strict';
 
   const sdk = window.VrchApp;
+  // Output role: a picture-only instance (the Playground output, a second screen) draws the same garden. The controlling
+  // instance publishes the garden's look (state) and relays the engine's notes, glitches, freezes, sections and level
+  // (events); the output plays no sound, reads no controls, saves nothing and shows no text.
+  const isOutput = sdk.context?.role === 'output', relay = sdk.output || null;
+  document.documentElement.dataset.role = isOutput ? 'output' : 'control';
+  // What the garden shows, for checks on either side: its look, palette, notes heard and frames drawn.
+  const probe = window.botanica = { role: isOutput ? 'output' : 'control', params: null, palette: 'dawn', notes: 0, frames: 0 };
   const $ = (id) => document.getElementById(id);
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const SAVE_KEY = 'botanica-engine';
@@ -82,7 +89,7 @@
   Object.assign(state, SPECIMENS[0].p, SPECIMENS[0].s);
 
   let engine = null, phase = 'idle', epoch = 0, version, saveTimer = 0, noticeTimer = 0, monitorTimer = 0, flashTimer = 0;
-  let viz = null, vizError = '', dirty = true;
+  let viz = null, vizError = '', dirty = true, vizParams = null, palette = 'dawn';
   let lastBeat = 0, retryTimer = 0, retries = 0, recovering = false;
   let section = null, form = [], lens = [], secIdx = 0, secBar = 0, secStep = 0;
   const meters = new Float32Array(8), meterT = new Float32Array(8);
@@ -190,13 +197,16 @@
     if (d.type === 'm') {
       lastBeat = performance.now();
       if (viz) viz.setLevel(d.lv);
+      relaySend({ type: 'l', lv: d.lv });
       for (let i = 0; i < 8; i++) meterT[i] = Math.min(1, (d.L[i] || 0) / METER_SCALE[i]);
       secBar = d.bar; secStep = d.step;
       return;
     }
     if (viz) viz.event(d);
+    relaySend(d);
+    if (d.type === 'n') probe.notes++;
     if (d.type === 's') {
-      section = d.name; form = d.form; lens = d.lens || []; secIdx = d.i; secBar = 0;
+      palette = d.name; section = d.name; form = d.form; lens = d.lens || []; secIdx = d.i; secBar = 0;
       buildForm(); syncViz(); dirty = true;
     } else if (d.type === 'n' && (d.l === 'k' || d.l === 'c')) {
       const pc = ((d.m - state.key) % 12 + 12) % 12, deg = scale().indexOf(pc);
@@ -224,10 +234,9 @@
   function setPage(i) { state.page = (i + PAGES.length) % PAGES.length; dirty = true; save(); }
 
   function syncViz() {
-    if (!viz) return;
     const sp = SPECIMENS[state.specimen].v;
     const lvl = state.playing && section ? SECTIONS[section].lvl : 0.42;
-    viz.setParams({
+    vizParams = {
       count: sp.count, notch: sp.notch, round: sp.round, hue: sp.hue + state.key / 12,
       open: 0.55 + lvl * 0.6 + state.bright * 0.2, len: 0.5 + state.sustain * 0.22,
       droop: 0.12 + (section === 'petal' ? 0.5 : 0) + (1 - state.soft) * 0.1,
@@ -238,8 +247,13 @@
       grow: 0.2 + lvl * 0.6 + state.bass * 0.25, motes: 0.1 + state.ambience * 0.9, fly: state.voice,
       spin: (0.05 + state.bpm / 180 * 0.25) * (state.playing ? 1 : 0.4),
       aber: 0.0015 + state.crush * 0.004 + state.glitch * 0.002, pix: state.crush > 0.5 ? 1 + (state.crush - 0.5) * 3 : 1,
-    });
+    };
+    if (viz) viz.setParams(vizParams);
+    probe.params = vizParams; probe.palette = palette;
+    share();
   }
+  function share() { if (isOutput || !relay || !vizParams) return; try { relay.publish({ viz: vizParams, palette }); } catch (_) { /* no output */ } }
+  function relaySend(d) { if (isOutput || !relay) return; try { relay.send(d); } catch (_) { /* no output */ } }
 
   /* ── controls ─────────────────────────────────────────────────────── */
   function handleControl(e) {
@@ -377,7 +391,7 @@
       }
     }
     if (viz) {
-      try { viz.frame(t); } catch (err) { viz = null; vizError = '3D view: ' + String(err && err.message || err).slice(0, 160); notice(vizError, true); }
+      try { viz.frame(t); probe.frames++; } catch (err) { viz = null; vizError = '3D view: ' + String(err && err.message || err).slice(0, 160); notice(vizError, true); }
     }
   }
   function applyViewport() {
@@ -417,8 +431,28 @@
     sdk.controls.onEvent(handleControl);
     sdk.audio.onAvailable(() => { if (phase === 'live' || phase === 'error') void stop().then(start); });
     await sdk.ready();
+    setInterval(share, 2000);
     void start();
   }
+  // The output: the garden alone, following the controlling instance; a 4K screen still renders about 1080p of pixels.
+  async function initOutput() {
+    try { viz = window.BotanicaViz.create($('gl'), { maxPixels: 1920 * 1080 }); } catch (_) { viz = null; }
+    let shown = 'dawn';
+    const follow = ({ kind, data } = {}) => {
+      if (!viz || !data || typeof data !== 'object') return;
+      if (kind === 'state') {
+        if (data.viz && typeof data.viz === 'object') { const p = {}; for (const k in data.viz) if (Number.isFinite(data.viz[k])) p[k] = data.viz[k]; viz.setParams(p); probe.params = p; }
+        if (typeof data.palette === 'string' && data.palette !== shown) { shown = data.palette; viz.event({ type: 's', name: shown }); }
+        probe.palette = shown;
+      } else if (data.type === 'l') viz.setLevel(Number(data.lv) || 0);
+      else if (data.type === 'n' || data.type === 'g' || data.type === 'z' || data.type === 's') { if (data.type === 's') shown = probe.palette = data.name; if (data.type === 'n') probe.notes++; viz.event(data); }
+    };
+    const loop = (t) => { requestAnimationFrame(loop); if (viz) { try { viz.frame(t); probe.frames++; } catch (_) { viz = null; } } };
+    new ResizeObserver(() => { if (viz) viz.resize(); }).observe(document.body);
+    requestAnimationFrame(loop);
+    await sdk.ready();
+    relay?.onMessage(follow);
+  }
   addEventListener('pagehide', () => { void stop(); });
-  void init();
+  void (isOutput ? initOutput() : init());
 })();

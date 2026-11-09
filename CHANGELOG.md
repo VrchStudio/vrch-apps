@@ -4,6 +4,8 @@
 
 ### Added
 
+- Add Botanica Core, a petalcore synthesizer around a holographic glass flower that also plays on a large output or second screen.
+- Group Botanica Core, Disco Ball, Magic Circle and Body Vibes under Audiovisual in the Playground, second after Visuals.
 - Let the vrch.io Playground list, group and load official Apps directly from GitHub.
 - Add Visuals Player: curated visuals that move with original songs, your microphone or line in, featured first in the catalog.
 - Show Disco Ball and Magic Circle on a large output or second screen, and mark Apps with an output in the Playground catalog.
