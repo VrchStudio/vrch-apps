@@ -1072,7 +1072,7 @@
     },
     "94f420c4-fd6e-4b50-835e-8577322ed483": {
       "slug": "shaker-shaker",
-      "latest": "0.1.1",
+      "latest": "0.2.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -1111,6 +1111,25 @@
             "updateApi": 1
           },
           "notes": "- Add a VRCH-style vector shaker icon for Launcher, My Apps and Guide.\n- Fix device audio initialization while retaining sound settings."
+        },
+        "0.2.0": {
+          "version": "0.2.0",
+          "name": "Shaker Shaker",
+          "tag": "shaker-shaker-v0.2.0",
+          "sourceCommit": "4933e425fe48d355f0bc1eb65031811374ae294c",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/shaker-shaker-v0.2.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/shaker-shaker-v0.2.0/shaker-shaker-0.2.0.vrchapp",
+          "size": 275963,
+          "sha256": "03613d012971b9ff6dafda436d2e7a3abc62ecfc54db5825e5df139316f5e36f",
+          "packageDigest": "03613d012971b9ff6dafda436d2e7a3abc62ecfc54db5825e5df139316f5e36f",
+          "revision": "85aefc54ffb035d79d7b57a01e2bd5d0c2c94f21093ed2bef7210407dd00af98",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the chamber and its grains on a large output or second screen, moving with every shake and tap."
         }
       },
       "guide": {
