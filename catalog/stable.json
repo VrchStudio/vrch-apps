@@ -1199,7 +1199,7 @@
     },
     "13c783df-6a9a-4a60-80b1-1754d8293291": {
       "slug": "vape-grain",
-      "latest": "1.10.1",
+      "latest": "1.11.0",
       "versions": {
         "1.9.0": {
           "version": "1.9.0",
@@ -1257,6 +1257,25 @@
             "updateApi": 1
           },
           "notes": "- Keep the E minor arpeggios, individual waveforms and CAT/MAN controls from 1.10.0.\n- Add the official icon and retain device audio compatibility."
+        },
+        "1.11.0": {
+          "version": "1.11.0",
+          "name": "Vape Grain",
+          "tag": "vape-grain-v1.11.0",
+          "sourceCommit": "9afda858fe4d6ea9032ab52368d844aab1bd4a5c",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/vape-grain-v1.11.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/vape-grain-v1.11.0/vape-grain-1.11.0.vrchapp",
+          "size": 102178,
+          "sha256": "1d60562c9327db8dabbc2a4d152e14ed2e2431c75eda9503c284064e81596687",
+          "packageDigest": "1d60562c9327db8dabbc2a4d152e14ed2e2431c75eda9503c284064e81596687",
+          "revision": "284c6db7310f3efabaf0c8ba95ec255dc166bbbdd81db695598a70e51e249b70",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the stage on a large output or second screen: the figure, vapour and light follow every breath on the device."
         }
       },
       "guide": {
