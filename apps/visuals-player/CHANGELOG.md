@@ -3,7 +3,7 @@
 ## 0.3.1
 
 - Keep the speaker button on the device screen with every sound choice: with Silent or Mic / Line in it shows as muted, and a tap plays the music.
-- Mark the camera button with a small cross while the camera is off.
+- Mark the camera button with a small cross while the camera is off, and colour both buttons the same way: pink while the music plays or the camera is on.
 
 ## 0.3.0
 

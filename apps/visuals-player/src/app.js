@@ -475,7 +475,7 @@
     if (!button) return;
     button.hidden = isOutput || !camera;
     const on = cameraState === 'on' || cameraState === 'starting';
-    button.dataset.state = cameraState; button.setAttribute('aria-pressed', String(on));
+    button.dataset.state = cameraState; button.dataset.on = String(on); button.setAttribute('aria-pressed', String(on));
     button.setAttribute('aria-label', cameraState === 'error' ? cameraError : on ? 'Turn camera off' : 'Turn camera on');
     button.title = button.getAttribute('aria-label');
   }
@@ -490,7 +490,7 @@
     const button = $('mute');
     if (!button || !music) return;
     const playing = music.source === 'music', muted = !playing || music.muted;
-    button.hidden = isOutput;
+    button.hidden = isOutput; button.dataset.on = String(!muted);
     button.setAttribute('aria-pressed', String(muted)); button.setAttribute('aria-label', !playing ? 'Play music' : muted ? 'Unmute' : 'Mute');
     button.title = button.getAttribute('aria-label');
     button.firstElementChild.className = 'fas ' + (muted ? 'fa-volume-xmark' : 'fa-volume-high');
