@@ -1,5 +1,9 @@
 # BODY VIBES
 
+## 0.6.0
+
+- Show your camera picture, body and sound rings on a large output or second screen while you play.
+
 ## 0.5.5
 
 - Keep routine tracking messages out of the browser console's errors, and stop reporting an error when the App closes.

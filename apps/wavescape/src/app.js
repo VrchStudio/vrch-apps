@@ -7,6 +7,25 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lib = window.WavescapeTables;
   const SAVE_KEY = 'wavescape';
+  // Output role: a picture-only instance (Playground's output, a second screen) draws the wavetable full screen from the
+  // controlling instance's patch and live meter (VrchApp.output). It plays no sound, reads no controls, saves nothing
+  // and shows no text.
+  const isOutput = sdk.context?.role === 'output', relay = sdk.output || null;
+  document.documentElement.dataset.role = isOutput ? 'output' : 'control';
+  let shared = '';
+  function share() {
+    if (isOutput || !relay) return;
+    const p = P(), value = { wave1: p.wave1 | 0, wave2: p.wave2 | 0, position: Math.round(p.position * 100) / 100, layerMix: Math.round(p.layerMix * 1000) / 1000, live: phase === 'live', playing };
+    const text = JSON.stringify(value);
+    if (text === shared) return;
+    shared = text;
+    try { relay.publish(value); } catch (_) {}
+  }
+  function shareMeter(m) {
+    if (isOutput || !relay || document.hidden) return;
+    const r = (v) => Math.round((Number(v) || 0) * 1e4) / 1e4;
+    try { relay.send({ t: 'meter', pos: r(m.pos), mix: r(m.mix), peak: r(m.peak), voices: m.voices | 0, step: m.step | 0 }); } catch (_) {}
+  }
 
   /* ── factory patches ──────────────────────────────────────────────────
    * Every patch carries its own pattern, written one token per 16th:
@@ -238,6 +257,7 @@
     }
     showValue(key);
     save();
+    share();
   }
   function showValue(key) {
     const spec = PARAMS[key];
@@ -298,6 +318,7 @@
       e.node.port.onmessage = ({ data }) => {
         if (engine !== e || !data || data.type !== 'meter') return;
         Object.assign(meter, data);
+        shareMeter(data);
       };
       if (token !== epoch) { await release(e); return; }
       engine = e;
@@ -756,6 +777,7 @@
     renderSections();
     updatePads();
     monitor();
+    share();
   }
   function monitor() {
     clearTimeout(monitorTimer);
@@ -777,6 +799,7 @@
   let lastStep = -2;
   function frame() {
     drawTable();
+    share();
     if (meter.step !== lastStep) {
       lastStep = meter.step;
       // follow the playhead across 16-step pages
@@ -881,6 +904,84 @@
     await sdk.ready();
     void start();
   }
+  /* ── output role: the wavetable, full screen ───────────────────────── */
+  function initOutput() {
+    const view = document.createElement('canvas'), g = view.getContext('2d');
+    view.className = 'output-view';
+    document.body.replaceChildren(view);
+    const stats = window.wavescapeOutput = { followed: 0, meters: 0, frames: 0 };
+    const FRAMES_SHOWN = 28, POINTS = 128, cache = new Map();
+    const table = (t) => {
+      if (!cache.has(t)) { const list = []; for (let f = 0; f < FRAMES_SHOWN; f++) list.push(lib.frameWave(t, f / (FRAMES_SHOWN - 1), POINTS)); cache.set(t, list); }
+      return cache.get(t);
+    };
+    let W = 1, H = 1, patch = null, live = false, at = 0, pulse = 0, glow = 0, step = -1, previous = 0;
+    const m = { pos: 0, mix: 0, peak: 0, voices: 0 };
+    const fit = () => {
+      W = innerWidth || 1; H = innerHeight || 1;
+      const dpr = Math.min(devicePixelRatio || 1, 2, Math.sqrt(1920 * 1080 / (W * H)));
+      view.width = Math.round(W * dpr); view.height = Math.round(H * dpr);
+      g.setTransform(view.width / W, 0, 0, view.height / H, 0, 0);
+    };
+    fit(); addEventListener('resize', fit);
+    const trace = (wave, ox, oy, ww, hh) => {
+      g.beginPath();
+      for (let i = 0; i < wave.length; i++) { const x = ox + (i / (wave.length - 1)) * ww, y = oy - wave[i] * hh; if (i) g.lineTo(x, y); else g.moveTo(x, y); }
+      g.stroke();
+    };
+    const blend = (fr, cur) => { const f0 = Math.min(fr.length - 2, Math.floor(cur)), ff = cur - f0; return fr[f0].map((v, i) => v * (1 - ff) + fr[f0 + 1][i] * ff); };
+    function draw(now) {
+      requestAnimationFrame(draw);
+      const delta = Math.min(0.05, (now - previous) / 1000 || 0); previous = now;
+      stats.frames++;
+      const sounding = live && m.voices > 0 && now - at < 400;
+      glow += ((sounding ? Math.min(1, m.peak * 1.6) : 0) - glow) * Math.min(1, delta * 10);
+      pulse = Math.max(0, pulse - delta * 5);
+      const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0b0d0f'); bg.addColorStop(1, '#14171a');
+      g.fillStyle = bg; g.fillRect(0, 0, W, H);
+      if (!patch) return;
+      const pos = sounding ? m.pos : patch.position, mix = sounding ? m.mix : patch.layerMix;
+      const main = mix > 0.5 ? patch.wave2 : patch.wave1, other = mix > 0.5 ? patch.wave1 : patch.wave2;
+      const fr = table(main), n = fr.length, k = H / 432;
+      const dx = W * 0.0085, dy = -H * 0.019, ww = W * 0.6, hh = H * 0.15, x0 = W * 0.1, y0 = H * 0.8;
+      const cur = (Math.max(0, Math.min(127, pos)) / 127) * (n - 1);
+      g.lineJoin = 'round'; g.lineCap = 'round';
+      for (let f = n - 1; f >= 0; f--) {
+        const near = 1 - Math.min(1, Math.abs(f - cur) / 3);
+        g.strokeStyle = 'rgba(220,226,232,' + (0.1 + 0.42 * (1 - f / n) + 0.25 * near * glow + 0.12 * pulse) + ')';
+        g.lineWidth = (1 + near * 0.6) * k * 0.9;
+        trace(fr[f], x0 + f * dx, y0 + f * dy, ww, hh);
+      }
+      const ox = x0 + cur * dx, oy = y0 + cur * dy;
+      // The other layer's current frame, as much as the mix lets it through.
+      const through = Math.min(mix, 1 - mix) * 2;
+      if (through > 0.02) { g.strokeStyle = 'rgba(78,169,223,' + (0.25 + 0.5 * through) + ')'; g.lineWidth = 1.6 * k; trace(blend(table(other), cur), ox, oy, ww, hh); }
+      g.save();
+      g.shadowColor = '#ff7a1a'; g.shadowBlur = (6 + glow * 30 + pulse * 10) * k;
+      g.strokeStyle = '#ff7a1a'; g.lineWidth = (2.2 + glow * 1.6 + pulse) * k;
+      trace(blend(fr, cur), ox, oy, ww, hh);
+      g.restore();
+      const level = Math.min(1, m.peak * 1.3) * (sounding ? 1 : 0);
+      if (level > 0.005) { g.fillStyle = '#ff3a22'; g.fillRect(W * 0.1, H - 6 * k, W * 0.8 * level, 2 * k); }
+    }
+    requestAnimationFrame(draw);
+    sdk.ready().then(() => {
+      relay?.onMessage(({ kind, data } = {}) => {
+        if (!data || typeof data !== 'object') return;
+        const count = lib.TABLES.length, index = (v) => Number.isInteger(v) && v >= 0 && v < count;
+        if (kind === 'state') {
+          if (!index(data.wave1) || !index(data.wave2)) return;
+          patch = { wave1: data.wave1, wave2: data.wave2, position: clamp(Number(data.position) || 0, 0, 127), layerMix: clamp(Number(data.layerMix) || 0, 0, 1) };
+          live = data.live === true; stats.followed++; stats.patch = patch;
+        } else if (data.t === 'meter') {
+          m.pos = clamp(Number(data.pos) || 0, 0, 127); m.mix = clamp(Number(data.mix) || 0, 0, 1); m.peak = clamp(Number(data.peak) || 0, 0, 2); m.voices = data.voices | 0;
+          if (Number.isInteger(data.step) && data.step >= 0 && data.step !== step) pulse = 1;
+          step = Number.isInteger(data.step) ? data.step : -1; at = performance.now(); stats.meters++;
+        }
+      });
+    }).catch(() => {});
+  }
+
   addEventListener('pagehide', () => { void stop(); });
-  void init();
+  if (isOutput) initOutput(); else void init();
 })();

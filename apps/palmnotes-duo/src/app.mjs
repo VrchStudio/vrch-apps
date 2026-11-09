@@ -1,8 +1,30 @@
 import {recognize, NoteGate} from './gesture.mjs';
 import {createTracker} from './tracker.mjs';
 import {Tone} from './tone.mjs';
+import {createPictureSender, createPictureReceiver} from './picture-relay.mjs';
 
 const sdk = globalThis.VrchApp, $ = id => document.getElementById(id);
+// Output role: a picture-only instance (Playground's output, a second screen) shows the camera picture, both hands and
+// the sounding note's colour from the controlling instance (VrchApp.output). It plays no sound, opens no camera, reads
+// no controls, saves nothing and shows no text.
+const isOutput = sdk.context?.role === 'output', relay = sdk.output || null;
+document.documentElement.dataset.role = isOutput ? 'output' : 'control';
+const offerPicture = isOutput ? () => {} : createPictureSender(relay);
+let sharedLive = null, sentHands = 0;
+const round3 = v => Math.round((Number(v) || 0) * 1000) / 1000;
+function shareLive() {
+  const live = phase === 'live' && !preview;
+  if (isOutput || !relay || live === sharedLive) return;
+  sharedLive = live;
+  try { relay.publish({live}); } catch (_) {}
+}
+function shareHands(force = false) {
+  const now = performance.now();
+  if (isOutput || !relay || preview || (!force && now - sentHands < 33)) return;
+  sentHands = now;
+  const h = Object.values(hands).filter(hand => Array.isArray(hand?.landmarks)).map(hand => ({m: hand === hands[settings.melodyHand] ? 1 : 0, p: hand.landmarks.map(q => [round3(q[0]), round3(q[1])])}));
+  try { relay.send({t: 'hands', h, c: count, o: octave}); } catch (_) {}
+}
 // Preview means no camera: a browser Preview that hands this App its own camera plays like the device.
 let preview = sdk.context.mode === 'preview';
 let config, gate, phase = 'idle', current = null, epoch = 0, closed = false;
@@ -36,6 +58,7 @@ function renderNote(value) {
 }
 
 function render() {
+  shareLive();
   $('status').textContent = preview ? 'NOTE PREVIEW' : ({idle: 'READY', starting: 'LOADING', live: 'LIVE', error: 'STOPPED'})[phase];
   const voice = config.voices.find(v => v.id === settings.voice);
   const role=config.handRoles.find(r=>r.id===settings.melodyHand);
@@ -77,7 +100,7 @@ async function pump(value) {
   } catch (error) { fail(value, error, preview ? 'Choose Listen in Apps, then tap a note.' : 'Sound stopped. Check output in Menu, then Retry.'); }
 }
 
-function rest() { gate.reset(); landmarks = []; raw = null; hands = {}; bits = {}; $('hands').textContent = 'LEFT — · RIGHT —'; gesture = 'none'; melodyGesture = 'none'; lastResult = -Infinity; tone(null, 0); }
+function rest() { gate.reset(); landmarks = []; raw = null; hands = {}; bits = {}; $('hands').textContent = 'LEFT — · RIGHT —'; gesture = 'none'; melodyGesture = 'none'; lastResult = -Infinity; tone(null, 0); shareHands(true); }
 
 async function release(value) {
   if (!value) return;
@@ -120,6 +143,7 @@ function receive(value, result) {
   lastResult = result.capturedAtMs;
   const valueCount = gate.update(raw, result.capturedAtMs);
   tone(valueCount, config.tracking.staleMs - Math.max(0, age));
+  shareHands();
   const noteSide=settings.melodyHand, controlSide=noteSide==='left'?'right':'left';
   const noteHand=hands[noteSide], controlHand=hands[controlSide];
   $('hands').textContent = noteSide.toUpperCase() + ' ' + (config.notes.find(n=>n.id===noteHand?.note)?.name || '—') + ' · ' + controlSide.toUpperCase() + ' ' + (config.registers.find(r=>r.octave===controlHand?.octave)?.label || '—');
@@ -131,6 +155,7 @@ function draw(frame, value) {
   const width=frame.width, height=frame.height;
   if (source.width !== width || source.height !== height) {source.width=width;source.height=height;$('camera').width=width;$('camera').height=height;}
   sourceCtx.drawImage(frame,0,0);
+  offerPicture(source);
   ctx.save();
   ctx.drawImage(source, 0, 0);
   if (performance.now() - lastResult <= config.tracking.staleMs) for (const hand of landmarks) {
@@ -262,7 +287,78 @@ async function initialize() {
 }
 
 addEventListener('blur', () => { pressed.clear(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && config) void stop(); });
-addEventListener('pagehide', () => { closed = true; clearTimeout(saveTimer); clearInterval(watchdog); if (config) void stop(); });
+if (!isOutput) document.addEventListener('visibilitychange', () => { if (document.hidden && config) void stop(); });
+if (!isOutput) addEventListener('pagehide', () => { closed = true; clearTimeout(saveTimer); clearInterval(watchdog); if (config) void stop(); });
 Object.defineProperty(globalThis, 'PalmNotesDuo', {value: Object.freeze({get state() { return {phase, count, octave, soundingKey, raw, gesture, hands: Object.fromEntries(Object.entries(hands).map(([side,hand]) => [side,{note:hand.note,octave:hand.octave,gesture:hand.gesture,bits:hand.bits}])), frames, inferenceMs, settings: {...settings}, preview}; }})});
-initialize().catch(() => { message('Unable to open PalmNotes Duo.', 'Reload in Menu.'); });
+async function startOutput() {
+  const stats = globalThis.palmNotesOutput = {followed: 0, hands: 0, pictures: 0, drawn: 0};
+  const view = document.createElement('canvas'), g = view.getContext('2d'), backdrop = document.createElement('canvas');
+  view.className = 'output-view'; backdrop.width = 32; backdrop.height = 24; document.body.replaceChildren(view);
+  const pictures = createPictureReceiver(picture => { stats.pictures++; backdrop.getContext('2d').drawImage(picture, 0, 0, backdrop.width, backdrop.height); });
+  let width = 1, height = 1, live = false, shown = 0, glow = 0, color = '#ededed', octaveShift = 0, handsAt = 0, previous = 0, lastNote = null;
+  let outputHands = [], ripples = [];
+  const fit = () => { width = innerWidth || 1; height = innerHeight || 1; const dpr = Math.min(devicePixelRatio || 1, 2, Math.sqrt(1920 * 1080 / (width * height))); view.width = Math.round(width * dpr); view.height = Math.round(height * dpr); g.setTransform(view.width / width, 0, 0, view.height / height, 0, 0); };
+  fit(); addEventListener('resize', fit);
+  try { config = await (await fetch(new URL('instrument.json', import.meta.url))).json(); await sdk.ready(); } catch (_) { return; }
+  const centre = hand => { let x = 0, y = 0; for (const q of hand.p) { x += q[0]; y += q[1]; } return [x / hand.p.length, y / hand.p.length]; };
+  relay?.onMessage(({kind, data} = {}) => {
+    if (!data || typeof data !== 'object') return;
+    if (kind === 'state') { live = data.live === true; stats.followed++; if (!live) { outputHands = []; pictures.clear(); } return; }
+    if (pictures.take(data)) return;
+    if (data.t !== 'hands' || !Array.isArray(data.h)) return;
+    outputHands = data.h.filter(hand => Array.isArray(hand?.p) && hand.p.length === 21 && hand.p.every(q => Array.isArray(q) && Number.isFinite(q[0]) && Number.isFinite(q[1]))).slice(0, 2);
+    handsAt = performance.now(); stats.hands++;
+    const note = config.notes.find(n => n.id === data.c);
+    if (note) { color = note.color; octaveShift = Number.isFinite(data.o) ? Math.max(-1, Math.min(1, data.o)) : 0; }
+    const melody = outputHands.find(hand => hand.m);
+    if (note && data.c !== lastNote && melody && handsAt - (ripples.at(-1)?.at || 0) > 150) ripples.push({at: handsAt, color: note.color, point: centre(melody)});
+    lastNote = note ? data.c : null; if (ripples.length > 6) ripples.shift();
+  });
+  const frame = now => {
+    requestAnimationFrame(frame);
+    const delta = Math.min(.05, (now - previous) / 1000 || 0); previous = now;
+    g.fillStyle = '#101010'; g.fillRect(0, 0, width, height);
+    const fresh = live && pictures.at && now - pictures.at < 1500;
+    shown += ((fresh ? 1 : 0) - shown) * Math.min(1, delta * 6);
+    if (now - handsAt > 400) outputHands = [];
+    glow += ((lastNote !== null && outputHands.length ? 1 : 0) - glow) * Math.min(1, delta * (lastNote !== null ? 12 : 4));
+    if (shown < .99) {
+      // Waiting for the camera: the seven note colours breathe in a row.
+      const unit = Math.min(width, height), gap = unit * .085, y = height / 2;
+      g.save(); g.globalAlpha = 1 - shown;
+      config.notes.forEach((note, i) => { const wave = Math.sin(now / 900 + i * .7), r = unit * .014 * (1 + .25 * wave); g.fillStyle = note.color; g.globalAlpha = (1 - shown) * (.7 + .25 * wave); g.beginPath(); g.arc(width / 2 + (i - 3) * gap, y, r, 0, Math.PI * 2); g.fill(); });
+      g.restore();
+    }
+    if (!pictures.at || shown < .01) return;
+    const pw = pictures.canvas.width, ph = pictures.canvas.height, scale = Math.min(width / pw, height / ph), sw = pw * scale, sh = ph * scale, x = (width - sw) / 2, y = (height - sh) / 2;
+    const cover = Math.max(width / pw, height / ph), point = q => [x + q[0] * sw, y + (1 - q[1]) * sh];
+    g.save(); g.globalAlpha = .3 * shown; g.drawImage(backdrop, (width - pw * cover) / 2, (height - ph * cover) / 2, pw * cover, ph * cover); g.restore();
+    g.save(); g.globalAlpha = shown; g.drawImage(pictures.canvas, x, y, sw, sh);
+    const melody = outputHands.find(hand => hand.m);
+    if (melody && glow > .01) {
+      // The sounding note lights around the melody hand: wider for the low octave, tighter for the high one.
+      const [cx, cy] = point(centre(melody)), radius = sh * .32 * (1 - octaveShift * .22);
+      const light = g.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      light.addColorStop(0, color + '66'); light.addColorStop(1, color + '00');
+      g.globalCompositeOperation = 'lighter'; g.globalAlpha = shown * glow; g.fillStyle = light; g.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+      g.globalCompositeOperation = 'source-over';
+    }
+    ripples = ripples.filter(r => now - r.at < 900);
+    for (const ripple of ripples) {
+      const t = (now - ripple.at) / 900, [cx, cy] = point(ripple.point);
+      g.globalAlpha = shown * (1 - t) * .8; g.strokeStyle = ripple.color; g.lineWidth = Math.max(2, sw / 220) * (1 - t * .6);
+      g.beginPath(); g.arc(cx, cy, sh * (.05 + t * .28), 0, Math.PI * 2); g.stroke();
+    }
+    g.globalAlpha = shown; g.lineCap = 'round'; g.lineJoin = 'round';
+    for (const hand of outputHands) {
+      g.strokeStyle = g.fillStyle = hand.m && lastNote !== null ? color : '#ededed'; g.lineWidth = Math.max(2, sw / 250);
+      g.beginPath(); for (const [a, b] of config.connections) { g.moveTo(...point(hand.p[a])); g.lineTo(...point(hand.p[b])); } g.stroke();
+      for (const i of [4, 8, 12, 16, 20]) { g.beginPath(); g.arc(...point(hand.p[i]), sw / 100, 0, Math.PI * 2); g.fill(); }
+    }
+    g.restore(); stats.drawn++;
+  };
+  requestAnimationFrame(frame);
+}
+
+if (isOutput) void startOutput();
+else initialize().catch(() => { message('Unable to open PalmNotes Duo.', 'Reload in Menu.'); });

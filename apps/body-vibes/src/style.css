@@ -17,3 +17,4 @@ footer{position:absolute;bottom:10px;left:14px;right:14px}
 @media(min-width:700px){header,footer{left:24px;right:24px}.voice{padding:0 20px}.voice strong{font-size:24px}.label{flex-direction:row;align-items:center;gap:10px}.label span{font-size:9px}}
 
 .action{flex:none;min-height:44px;min-width:100px;padding:0 6px;border:0;border-radius:2px;background:transparent;color:#f4f1ed;font:10px monospace;cursor:pointer;touch-action:manipulation}.action:disabled{color:#827b71;cursor:default}.action:not(:disabled):hover,.action:not(:disabled):active{background:#292725}.action:focus-visible{outline:1px solid #f1c66d;outline-offset:-2px}
+:root[data-role=output] header,:root[data-role=output] footer,:root[data-role=output] #prompt{display:none!important}

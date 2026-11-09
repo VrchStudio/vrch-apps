@@ -1,6 +1,12 @@
 import {BodyInstrument,visiblePoint} from './motion.mjs';
 import {createTracker} from './tracker.mjs';
+import {createPictureSender,createPictureReceiver} from './picture-relay.mjs';
 const sdk=globalThis.VrchApp,$=id=>document.getElementById(id);
+// Output role: a picture-only instance (Playground's output, a second screen) draws the camera picture, the body and
+// the sound rings from the controlling instance (VrchApp.output). It plays no sound, opens no camera, reads no
+// controls, saves nothing and shows no text.
+const isOutput=sdk.context?.role==='output',relay=sdk.output||null;document.documentElement.dataset.role=isOutput?'output':'control';
+const POSE_POINTS=[0,11,12,13,14,15,16,23,24];
 const canvas=$('stage'),ctx=canvas.getContext('2d'),source=document.createElement('canvas'),sc=source.getContext('2d');
 const edges=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24]];
 let config,instrument,width=480,height=432,points=[],camera,output,ac,player,tracker,sink,phase='loading',closed=false,lastFrame=0,visualTime=0,previousTime=0;
@@ -18,7 +24,7 @@ function layoutCamera(){
 }
 const layoutObserver=new ResizeObserver(layoutCamera);
 layoutObserver.observe(document.querySelector('header'));layoutObserver.observe(document.querySelector('footer'));
-addEventListener('resize',()=>{resize();layoutCamera();});
+addEventListener('resize',()=>{if(isOutput)return;resize();layoutCamera();});
 function apply(value,now,frameTime=now){
   const lost=['FRAME','HANDS','RESET'].includes(value.mode);
   player?.port.postMessage(lost?{type:'stop'}:{type:'voices',...value,leaseMs:Math.max(0,config.gestures.staleMs-(now-frameTime))});lastAppliedMode=value.mode;
@@ -65,7 +71,7 @@ async function start(){
       const now=performance.now();if(now-lastFrame<45)return;lastFrame=now;
       const w=frame.displayWidth||frame.width,h=frame.displayHeight||frame.height;
       if(source.width!==w||source.height!==h){source.width=w;source.height=h;}
-      sc.drawImage(frame,0,0,w,h);void tracker.frame(source,now,1);
+      sc.drawImage(frame,0,0,w,h);void tracker.frame(source,now,1);offerPicture(source,now);
     });
   }catch(error){fail(error);}
 }
@@ -115,8 +121,8 @@ function startCalibration(){
   const now=performance.now();if(closed||document.hidden||phase!=='live'||!instrument?.calibrateTone(now))return;
   calibrationFeedbackUntil=now+1200;apply(instrument.snapshot(),now,lastResult);renderCalibration(now);
 }
-$('calibrate-tone').addEventListener('click',startCalibration);
-sdk.controls.onEvent(event=>{
+if(!isOutput)$('calibrate-tone').addEventListener('click',startCalibration);
+if(!isOutput)sdk.controls.onEvent(event=>{
   if(event.type==='rotate'&&event.control==='E1'){adjustSensitivity(event.delta);return;}
   if(event.control!=='K2')return;
   if(event.type==='up'||event.type==='cancel')calibrationKeyDown=false;
@@ -138,7 +144,7 @@ function renderIndicators(v){
 }
 function draw(now){
   requestAnimationFrame(draw);const delta=Math.min(.05,(now-previousTime)/1000||0);previousTime=now;
-  renderCalibration(now);if(phase==='error')return;
+  renderCalibration(now);shareLive();if(phase==='error')return;
   const v=instrument?(phase==='live'?instrument.tick(now):instrument.snapshot()):null;
   if(phase==='live'){if(v.mode!==lastAppliedMode&&['FRAME','RESET'].includes(v.mode))apply(v,now);renderIndicators(v);}
   ctx.fillStyle='#111';ctx.fillRect(0,0,width,height);
@@ -146,26 +152,77 @@ function draw(now){
   const availableHeight=Math.max(1,cameraArea.bottom-cameraArea.top);
   const scale=Math.min(width/source.width,availableHeight/source.height),sw=source.width*scale,sh=source.height*scale,x=(width-sw)/2,y=cameraArea.top+(availableHeight-sh)/2;
   cameraRect={x,y,width:sw,height:sh,sourceWidth:source.width,sourceHeight:source.height};
-  const xy=p=>[x+p[0]*sw,y+(1-p[1])*sh];
-  // The SDK already applies the shared Device camera rotation and mirror.
-  ctx.save();ctx.globalAlpha=.8;ctx.drawImage(source,x,y,sw,sh);ctx.restore();
-  const energy=Math.max(...(audio.levels||[0,0,0]));visualTime+=delta*(.15+energy);
-  if(energy>.015){const tone=v?.brightness??.5;ctx.globalAlpha=(.18+energy*.28)*(.6+.4*tone);ctx.lineWidth=1.5;
-    for(let ring=0;ring<4;ring++){ctx.strokeStyle=audio.vocal>.02?config.colors.vocal:audio.bass>.015&&audio.synth>.015?(ring%2?config.colors.bass:config.colors.synth):audio.bass>.015?config.colors.bass:config.colors.synth;ctx.beginPath();for(let k=0;k<=70;k++){const a=k/70*Math.PI*2,r=50+ring*15+Math.sin(a*3+visualTime*3+ring)*energy*13;const px=width/2+Math.cos(a)*r*1.4,py=y+sh*.5+Math.sin(a)*r*.6;k?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.stroke();}ctx.globalAlpha=1;}
-  if(visiblePoint(points[0])&&v){
-    for(const [i,key,color]of [[15,'bassFocus',config.colors.bass],[16,'synthFocus',config.colors.synth]]){
-      const focus=audio[key]||0;if(focus<.025||!visiblePoint(points[i]))continue;
-      ctx.globalAlpha=.15+focus*.65;ctx.strokeStyle=color;ctx.lineWidth=1+focus*3;
-      ctx.beginPath();ctx.moveTo(...xy(points[0]));ctx.lineTo(...xy(points[i]));ctx.stroke();
-      ctx.beginPath();ctx.arc(...xy(points[i]),7+focus*9,0,Math.PI*2);ctx.stroke();
+  paint(ctx,cameraRect,source,points,v?.brightness??.5,audio,1,width/2,delta);
+  if(phase==='live')sharePose(v,now);
+}
+// Draws the camera picture, sound rings, hand links and body into rect; k scales strokes for a larger picture.
+function paint(g,rect,picture,pts,tone,sound,k,cx,delta){
+  const {x,y,width:sw,height:sh}=rect,xy=p=>[x+p[0]*sw,y+(1-p[1])*sh],colors=config.colors;
+  if(picture){g.save();g.globalAlpha=.8;g.drawImage(picture,x,y,sw,sh);g.restore();}
+  const energy=Math.max(...(sound.levels||[0,0,0]));visualTime+=delta*(.15+energy);
+  if(energy>.015){g.globalAlpha=(.18+energy*.28)*(.6+.4*tone);g.lineWidth=1.5*k;
+    for(let ring=0;ring<4;ring++){g.strokeStyle=sound.vocal>.02?colors.vocal:sound.bass>.015&&sound.synth>.015?(ring%2?colors.bass:colors.synth):sound.bass>.015?colors.bass:colors.synth;g.beginPath();for(let i=0;i<=70;i++){const a=i/70*Math.PI*2,r=(50+ring*15+Math.sin(a*3+visualTime*3+ring)*energy*13)*k;const px=cx+Math.cos(a)*r*1.4,py=y+sh*.5+Math.sin(a)*r*.6;i?g.lineTo(px,py):g.moveTo(px,py);}g.stroke();}g.globalAlpha=1;}
+  if(visiblePoint(pts[0])){
+    for(const [i,key,color]of [[15,'bassFocus',colors.bass],[16,'synthFocus',colors.synth]]){
+      const focus=sound[key]||0;if(focus<.025||!visiblePoint(pts[i]))continue;
+      g.globalAlpha=.15+focus*.65;g.strokeStyle=color;g.lineWidth=(1+focus*3)*k;
+      g.beginPath();g.moveTo(...xy(pts[0]));g.lineTo(...xy(pts[i]));g.stroke();
+      g.beginPath();g.arc(...xy(pts[i]),(7+focus*9)*k,0,Math.PI*2);g.stroke();
     }
-    ctx.globalAlpha=1;
+    g.globalAlpha=1;
   }
-  ctx.lineWidth=2.5;ctx.lineCap='round';
-  for(const [a,b]of edges){if(!visiblePoint(points[a])||!visiblePoint(points[b]))continue;ctx.strokeStyle=audio.vocal>.02?config.colors.vocal:[13,15].includes(b)?config.colors.bass:[14,16].includes(b)?config.colors.synth:config.colors.idle;ctx.beginPath();ctx.moveTo(...xy(points[a]));ctx.lineTo(...xy(points[b]));ctx.stroke();}
-  for(const i of [0,11,12,13,14,15,16,23,24]){if(!visiblePoint(points[i]))continue;ctx.fillStyle=i===15?config.colors.bass:i===16?config.colors.synth:'#eee8df';ctx.beginPath();ctx.arc(...xy(points[i]),i===0?5:i>=15?4:2.5,0,Math.PI*2);ctx.fill();}
+  g.lineWidth=2.5*k;g.lineCap='round';
+  for(const [a,b]of edges){if(!visiblePoint(pts[a])||!visiblePoint(pts[b]))continue;g.strokeStyle=sound.vocal>.02?colors.vocal:[13,15].includes(b)?colors.bass:[14,16].includes(b)?colors.synth:colors.idle;g.beginPath();g.moveTo(...xy(pts[a]));g.lineTo(...xy(pts[b]));g.stroke();}
+  for(const i of [0,11,12,13,14,15,16,23,24]){if(!visiblePoint(pts[i]))continue;g.fillStyle=i===15?colors.bass:i===16?colors.synth:'#eee8df';g.beginPath();g.arc(...xy(pts[i]),(i===0?5:i>=15?4:2.5)*k,0,Math.PI*2);g.fill();}
+}
+// ---- Output role ------------------------------------------------------------------------------------------------
+const round=value=>Math.round((Number(value)||0)*1e4)/1e4;
+const offerPicture=isOutput?()=>{}:createPictureSender(relay);
+let sharedLive=null,sentPose=0;
+function shareLive(){
+  const live=phase==='live';if(isOutput||!relay||live===sharedLive)return;sharedLive=live;
+  try{relay.publish({live});}catch(_){}
+}
+function sharePose(v,now){
+  shareLive();if(isOutput||!relay||document.hidden||now-sentPose<33)return;sentPose=now;
+  const p=POSE_POINTS.map(i=>{const q=points[i];return Array.isArray(q)?[round(q[0]),round(q[1]),round(q[3])]:null;});
+  try{relay.send({t:'pose',p,b:round(v?.brightness??.5),s:{levels:(audio.levels||[0,0,0]).map(round),bass:round(audio.bass),synth:round(audio.synth),vocal:round(audio.vocal),bassFocus:round(audio.bassFocus),synthFocus:round(audio.synthFocus)}});}catch(_){}
+}
+async function startOutput(){
+  const stats=globalThis.bodyVibesOutput={followed:0,poses:0,pictures:0,drawn:0};
+  const backdrop=document.createElement('canvas');backdrop.width=32;backdrop.height=24;
+  const pictures=createPictureReceiver(picture=>{stats.pictures++;backdrop.getContext('2d').drawImage(picture,0,0,backdrop.width,backdrop.height);});
+  let live=false,pose=[],poseAt=0,tone=.5,sound={levels:[0,0,0],bass:0,synth:0,vocal:0},previous=0,shown=0;
+  const fit=()=>{const w=innerWidth||1,h=innerHeight||1,dpr=Math.min(devicePixelRatio||1,2,Math.sqrt(1920*1080/(w*h)));canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(canvas.width/w,0,0,canvas.height/h,0,0);width=w;height=h;};
+  fit();addEventListener('resize',fit);
+  try{const response=await fetch(new URL('instrument.json',import.meta.url));if(!response.ok)throw Error('Instrument unavailable');config=await response.json();await sdk.ready();}catch(_){return;}
+  relay?.onMessage(({kind,data}={})=>{
+    if(!data||typeof data!=='object')return;
+    if(kind==='state'){live=data.live===true;stats.followed++;if(!live){pose=[];pictures.clear();sound={levels:[0,0,0],bass:0,synth:0,vocal:0};}return;}
+    if(pictures.take(data))return;
+    if(data.t==='pose'&&Array.isArray(data.p)){
+      pose=[];POSE_POINTS.forEach((index,i)=>{const q=data.p[i];if(Array.isArray(q)&&q.length===3&&q.every(Number.isFinite))pose[index]=[q[0],q[1],0,q[2]];});
+      poseAt=performance.now();tone=Number.isFinite(data.b)?Math.max(0,Math.min(1,data.b)):.5;stats.poses++;stats.visible=pose.filter(q=>visiblePoint(q)).length;
+      const s=data.s||{},n=v=>Number.isFinite(v)?Math.max(0,Math.min(1.5,v)):0;
+      sound={levels:Array.isArray(s.levels)?s.levels.slice(0,3).map(n):[0,0,0],bass:n(s.bass),synth:n(s.synth),vocal:n(s.vocal),bassFocus:n(s.bassFocus),synthFocus:n(s.synthFocus)};
+    }
+  });
+  const frame=now=>{
+    requestAnimationFrame(frame);const delta=Math.min(.05,(now-previous)/1000||0);previous=now;
+    ctx.fillStyle='#111';ctx.fillRect(0,0,width,height);
+    // The picture fades in when it arrives and out when the device stops sending it.
+    const fresh=live&&pictures.at&&now-pictures.at<1500;shown+=((fresh?1:0)-shown)*Math.min(1,delta*6);
+    if(now-poseAt>600){pose=[];sound={...sound,levels:sound.levels.map(v=>v*.9)};}
+    if(!pictures.at||shown<.01)return;
+    const pw=pictures.canvas.width,ph=pictures.canvas.height,scale=Math.min(width/pw,height/ph),sw=pw*scale,sh=ph*scale;
+    const rect={x:(width-sw)/2,y:(height-sh)/2,width:sw,height:sh};
+    ctx.save();ctx.globalAlpha=.35*shown;ctx.imageSmoothingQuality='high';
+    const cover=Math.max(width/pw,height/ph);ctx.drawImage(backdrop,(width-pw*cover)/2,(height-ph*cover)/2,pw*cover,ph*cover);ctx.restore();
+    ctx.save();ctx.globalAlpha=shown;paint(ctx,rect,pictures.canvas,pose,tone,sound,Math.max(1,sh/300),width/2,delta);ctx.restore();stats.drawn++;
+  };
+  requestAnimationFrame(frame);
 }
 globalThis.BodyVibesDiagnostics={snapshot:()=>({phase,gesture:instrument?.snapshot(),audio:{...audio},viewport:{width,height},cameraRect:cameraRect?{...cameraRect}:null,audioState:ac?.state,metrics:structuredClone(metrics)})};
 addEventListener('pagehide',()=>{closed=true;clearTimeout(sensitivitySaveTimer);clearTimeout(sensitivityMonitorTimer);void release();},{once:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){calibrationKeyDown=false;instrument?.lose();player?.port.postMessage({type:'stop'});}});
-requestAnimationFrame(draw);void start();
+if(isOutput)void startOutput();else{requestAnimationFrame(draw);void start();}

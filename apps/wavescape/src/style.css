@@ -385,3 +385,5 @@ html, body {
   white-space: nowrap;
   pointer-events: none;
 }
+:root[data-role=output], :root[data-role=output] body { background: #0b0d0f; overflow: hidden; }
+.output-view { display: block; width: 100vw; height: 100vh; }

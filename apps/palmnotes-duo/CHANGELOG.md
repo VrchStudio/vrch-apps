@@ -1,5 +1,9 @@
 # PalmNotes Duo
 
+## 0.2.0
+
+- Show your camera picture and both hands on a large output or second screen; the note you play lights up in its colour.
+
 ## 0.1.4
 
 - Ask you to allow sound and press K2 again when the browser has not started sound, instead of pointing to the output settings.

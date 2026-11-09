@@ -30,4 +30,5 @@ body.is-preview .scale-note { min-height: 44px; min-width: 0; }
 @media(max-width:360px) { .instrument { padding-inline: 8px; }h1 { font-size: 11px; }h1 strong { font-size: 15px; }#registers { gap: 4px; }body.is-preview #notes { grid-template-columns: repeat(4,minmax(0,1fr)); }body.is-preview .instrument { grid-template-rows:44px minmax(100px,1fr) 166px; }body.is-preview .performance { grid-template-rows:66px 96px; } }
 @media(min-width:700px) { .instrument { padding-inline: 24px; grid-template-rows: 52px minmax(160px,1fr) 112px; }.performance { grid-template-rows:80px 28px; }#note { font-size: 64px; }#registers { gap: 18px; }.scale-note { font-size: 13px; } }
 @media(prefers-reduced-motion:no-preference) { #note { transition: color 100ms linear; }.scale-note { transition: border-color 100ms linear; } }
-
+:root[data-role=output], :root[data-role=output] body { background: #101010; overflow: hidden; }
+.output-view { display: block; width: 100vw; height: 100vh; }
