@@ -2016,7 +2016,7 @@
     },
     "a591c7e9-3faa-4207-a1c2-2a88153ed934": {
       "slug": "shader-editor",
-      "latest": "0.1.3",
+      "latest": "0.2.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -2093,6 +2093,25 @@
             "updateApi": 1
           },
           "notes": "- Keep routine tracking messages out of the browser console's errors."
+        },
+        "0.2.0": {
+          "version": "0.2.0",
+          "name": "Shader Editor",
+          "tag": "shader-editor-v0.2.0",
+          "sourceCommit": "0208aefbc9b3f212415f7aa8938798c94bb4ec9a",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/shader-editor-v0.2.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/shader-editor-v0.2.0/shader-editor-0.2.0.vrchapp",
+          "size": 32253483,
+          "sha256": "4e935aba63e4cbc4b3ebb2352440c4590d6b5fd55b7710a14d89635e9e117d0f",
+          "packageDigest": "4e935aba63e4cbc4b3ebb2352440c4590d6b5fd55b7710a14d89635e9e117d0f",
+          "revision": "eb57a2dd2b9a00818efd2a00da6c2b8eda732eee5902d6ddf02425724a78a1c2",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the visual you are editing on a large output or second screen, with its sound, tracking and image sources.\n- Use the current shared visual engine and controls."
         }
       },
       "guide": {
