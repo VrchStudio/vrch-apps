@@ -3576,7 +3576,7 @@
     },
     "b5ad6149-dc87-473a-87c0-c1a6cf3fdf6c": {
       "slug": "visuals-player",
-      "latest": "0.3.0",
+      "latest": "0.3.1",
       "versions": {
         "0.1.3": {
           "version": "0.1.3",
@@ -3691,6 +3691,25 @@
             "updateApi": 1
           },
           "notes": "- Turn the camera on or off with the camera button beside mute on the device screen."
+        },
+        "0.3.1": {
+          "version": "0.3.1",
+          "name": "Visuals Player",
+          "tag": "visuals-player-v0.3.1",
+          "sourceCommit": "e22d940c61451022856569274ad43a157d7100c7",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/visuals-player-v0.3.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/visuals-player-v0.3.1/visuals-player-0.3.1.vrchapp",
+          "size": 40102857,
+          "sha256": "3bb6b9223e9325feb67fa0b7a78e17a4b5f7a62f3a5252ee62378c4a4a99f02e",
+          "packageDigest": "3bb6b9223e9325feb67fa0b7a78e17a4b5f7a62f3a5252ee62378c4a4a99f02e",
+          "revision": "46833bc32befb12f3c2378bf03844e0f287495dec1d70a29f75837c10fe8eccb",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Keep the speaker button on the device screen with every sound choice: with Silent or Mic / Line in it shows as muted, and a tap plays the music.\n- Mark the camera button with a small cross while the camera is off, and colour both buttons the same way: pink while the music plays or the camera is on."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPlZpc3VhbHMgUGxheWVyPC90aXRsZT4KICA8cmVjdCB4PSIzIiB5PSI1IiB3aWR0aD0iMjYiIGhlaWdodD0iMjIiIHJ4PSIyIiBzdHJva2U9IiNkZWRlZGUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik02IDIyYzMtNiA2LTYgOSAwczYgNiAxMCAwIiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNNiAxN2MzLTYgNi02IDkgMHM2IDYgMTAgMCIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTcgOC41djVsNC0yLjV6IiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo=",
@@ -3731,7 +3750,7 @@
               },
               {
                 "control": "Speaker · Tap",
-                "action": "Mute or unmute the music, with a short fade."
+                "action": "Mute or unmute the music, with a short fade. With Silent or Mic / Line in, play the music."
               },
               {
                 "control": "Camera · Tap",
