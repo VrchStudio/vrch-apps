@@ -9,6 +9,7 @@
 - Show Disco Ball and Magic Circle on a large output or second screen, and mark Apps with an output in the Playground catalog.
 - Show Shader Editor, Shaker Shaker and Vape Grain on a large output or second screen.
 - Show Body Vibes, PalmNotes Duo and Wavescape on a large output or second screen.
+- Mute Visuals Player from a speaker button on the device screen, with the sound fading out and back in.
 
 ### Fixed
 

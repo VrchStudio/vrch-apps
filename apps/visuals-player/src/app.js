@@ -467,6 +467,20 @@
       if (!held && event.type === 'up') pressKey('K3');
     }
   });
+  // Mute fades the music out and back in; it shows only while Music is the sound (the input is never played back).
+  function renderMute() {
+    const button = $('mute');
+    if (!button || !music) return;
+    const muted = music.muted;
+    button.hidden = isOutput || music.source !== 'music';
+    button.setAttribute('aria-pressed', String(muted)); button.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
+    button.firstElementChild.className = 'fas ' + (muted ? 'fa-volume-xmark' : 'fa-volume-high');
+  }
+  $('mute').addEventListener('click', event => {
+    event.stopPropagation();
+    if (isOutput || !music) return;
+    music.setMuted(!music.muted); interact('tap'); remember();
+  });
   // A tap on the picture opens Player; the panels close with their own close buttons or the same key.
   $('stage').addEventListener('click', () => { if (!isOutput && !open && active) { interact('tap'); openPlayer(); } });
   $('playerClose').addEventListener('click', () => closeAll());
@@ -479,7 +493,7 @@
     saveTimer = setTimeout(save, SAVE_MS);
   }
   async function save() {
-    const value = {schema_version: 1, scene: active?.definition.scene_id || null, source: music?.source || 'music', track: music?.index || 0, auto,
+    const value = {schema_version: 1, scene: active?.definition.scene_id || null, source: music?.source || 'music', track: music?.index || 0, muted: !!music?.muted, auto,
       camera: cameraWanted, picture: pictureIndex, instances, picker: pickerStore};
     try {
       const result = await VrchApp.data.set(DATA_KEY, value, {expectedVersion: saved.version});
@@ -624,7 +638,8 @@
       if (pictureIndex >= pictures.length) pictureIndex = 0;
       pictureImage(pictureIndex); pictureImage(pictureIndex + 1);
       music = new VisualsMusic({sdk: VrchApp, tracks, external: isOutput,
-        onChange: () => { renderPlayer(); publish(); }, onSection: sectionChanged});
+        onChange: () => { renderPlayer(); renderMute(); publish(); }, onSection: sectionChanged});
+      if (!isOutput && restored.muted === true) music.muted = true;
       if (Number.isInteger(restored.track) && tracks[restored.track]) music.setTrack(restored.track, 0, performance.now(), false);
       mirror.setAudioProvider(() => music.features(performance.now()));
       catalog = new VrchSceneCatalog.PresetCatalog();
@@ -650,6 +665,7 @@
       present(firstKey, null);
     }
     if (followed) follow(followed);
+    renderMute();
     if (typeof restored.source === 'string' && restored.source !== 'music') void music.setSource(restored.source);
     VrchApp.ready().then(() => { monitorDirty = true; publish(); if (restored.camera) void startCamera(); }, () => {});
     requestAnimationFrame(() => requestAnimationFrame(() => { stats.firstFrameAt = performance.now(); }));

@@ -6,6 +6,8 @@
   'use strict';
   const {SR, FFT, MIN_DB, MAX_DB, Spectrum, TrackFeatures} = VisualsSpectrum;
   const HOST_LATENCY_S = 0.03, RETRY_MS = 3000, KEEP_TRACKS = 2;
+  // Sound never starts or stops abruptly: muting, unmuting, starting and leaving Music fade the level.
+  const FADE_S = 0.6, START_FADE_S = 0.5, STOP_FADE_S = 0.4;
   const stale = () => Object.assign(Error('stale'), {code: 'stale'});
 
   class VisualsMusic {
@@ -16,12 +18,27 @@
       this.anchor = {index: 0, offset: 0, at: performance.now()};
       this.output = null; this.opening = null; this.epoch = 0; this.retryAt = 0; this.error = null;
       this.input = null; this.relayed = null; this.lastFeatures = null; this.lastAt = -1; this.section = -1; this.hidden = false;
+      this.muted = false;
       this.trim();
     }
 
     get audible() { return !!this.output?.playing; }
     get title() { return this.tracks[this.index]?.title || ''; }
-    state() { return {source: this.source, index: this.index, title: this.title, audible: this.audible, position: this.position(performance.now()), error: this.error?.code || null}; }
+    state() { return {source: this.source, index: this.index, title: this.title, audible: this.audible, muted: this.muted, level: this.output ? Math.round(this.output.gain.gain.value * 1000) / 1000 : 0, position: this.position(performance.now()), error: this.error?.code || null}; }
+
+    // Muted, the track keeps playing at no level, so unmuting fades it back in time with the picture.
+    setMuted(muted) {
+      this.muted = muted === true;
+      if (this.output) this.fade(this.output, this.level(), FADE_S);
+      this.onChange(this.state());
+    }
+    level() { return this.muted ? 0 : 1; }
+    // An exponential approach from wherever the level is now, so a fade can turn around halfway.
+    fade(output, target, seconds) {
+      const gain = output.gain.gain, now = output.ctx.currentTime, from = gain.value;
+      gain.cancelScheduledValues(now); gain.setValueAtTime(from, now);
+      gain.setTargetAtTime(target, now, seconds / 4); gain.setValueAtTime(target, now + seconds);
+    }
 
     // A track is its precomputed features (about 1 MB) and, only while sound plays, its file as a blob: the App's opaque
     // frame cannot hand its own package URL to Web Audio. Whole tracks are never decoded, so the picture follows the
@@ -133,6 +150,7 @@
           if (epoch !== this.epoch) throw stale();
           const audio = new Audio(); audio.preload = 'auto';
           const source = ctx.createMediaElementSource(audio), gain = ctx.createGain();
+          gain.gain.value = 0;
           source.connect(gain).connect(sink);
           output = this.output = {ctx, handle, audio, source, gain, url: null, index: -1, playing: false,
             latency: (ctx.baseLatency || 0) + (ctx.outputLatency || 0) + HOST_LATENCY_S};
@@ -167,6 +185,7 @@
       await audio.play();
       if (this.output !== output || output.url !== url) return;
       output.playing = !this.hidden;
+      this.fade(output, this.level(), START_FADE_S);
       this.onChange(this.state());
     }
     // The next track follows the end of the current one.
@@ -177,12 +196,21 @@
       this.onChange(this.state());
       void this.startAt(performance.now(), 0).catch(error => { if (this.output === output) { this.error = error; this.stopOutput(); this.onChange(this.state()); } });
     }
-    stopOutput() {
+    // fade: leaving Music lets the sound die away; errors and closing stop it at once.
+    stopOutput(fade = false) {
       const output = this.output;
       this.output = null; this.epoch++; this.opening = null;
       if (!output) return;
       // The picture carries on from the same position on the silent clock.
       if (output.playing) this.anchor = {index: this.index, offset: Math.max(0, output.audio.currentTime - output.latency), at: performance.now()};
+      if (fade && output.playing && output.gain.gain.value > 0.001) {
+        output.playing = false; this.fade(output, 0, STOP_FADE_S);
+        setTimeout(() => this.closeOutput(output), STOP_FADE_S * 1000 + 60);
+        return;
+      }
+      this.closeOutput(output);
+    }
+    closeOutput(output) {
       try { output.audio.pause(); output.audio.removeAttribute('src'); output.audio.load(); output.source.disconnect(); } catch (_) {}
       this.releaseSounds();
       void Promise.allSettled([output.handle.close(), output.ctx.state === 'closed' ? null : output.ctx.close()]);
@@ -201,7 +229,7 @@
       if (!['music', 'input', 'silent'].includes(source)) return;
       const same = source === this.source;
       this.source = source; this.error = null; this.relayed = null;
-      if (source !== 'music') this.stopOutput();
+      if (source !== 'music') this.stopOutput(true);
       if (source !== 'input') this.closeInput();
       this.onChange(this.state());
       if (source === 'music') { this.retryAt = 0; this.wake(); }

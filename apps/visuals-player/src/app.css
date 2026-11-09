@@ -18,4 +18,9 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000}
 /* The E1 cursor, shown with the control chrome that hover uses. */
 .player-row .ui-grid-btn.is-cursor:not(.is-active){border-color:var(--vrch-theme-border);background:var(--vrch-surface-hover)}
 @media(max-width:380px){#player .scene-picker-dialog{width:90vw}}
-body[data-role=output] :is(#player,#visual-settings,.scene-picker-overlay){display:none!important}
+body[data-role=output] :is(#player,#visual-settings,.scene-picker-overlay,#mute){display:none!important}
+/* The one control on the device's picture: mute, in the corner, out of the way while a panel is open. */
+.player__mute{position:fixed;top:10px;right:10px;z-index:2;display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid rgba(255,255,255,.16);border-radius:50%;background:rgba(0,0,0,.45);color:rgba(255,255,255,.85);font-size:16px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:background-color .2s,color .2s,border-color .2s}
+.player__mute:hover{background:rgba(0,0,0,.65);color:#fff}
+.player__mute[aria-pressed=true]{border-color:var(--vrch-theme-border);color:var(--vrch-theme-text)}
+.player__mute[hidden],body[data-open]:not([data-open='']) .player__mute{display:none}

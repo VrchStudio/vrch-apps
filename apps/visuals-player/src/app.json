@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "b5ad6149-dc87-473a-87c0-c1a6cf3fdf6c",
   "name": "Visuals Player",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "icon": "assets/visuals-player.svg",
   "entry": "index.html",
   "roles": [
@@ -51,6 +51,10 @@
           {
             "control": "K4 · Press or tap the picture",
             "action": "Sound (Music, Mic / Line in, Silent), track, auto change and camera. E1 chooses, E1 press selects."
+          },
+          {
+            "control": "Speaker · Tap",
+            "action": "Mute or unmute the music, with a short fade."
           }
         ]
       },

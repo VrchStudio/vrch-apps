@@ -1,5 +1,10 @@
 # Visuals Player
 
+## 0.2.0
+
+- Mute or unmute the music with the speaker button on the device screen; the sound fades out and back in, and the picture keeps the beat.
+- Starting the music and switching to Silent or Mic / Line in fade the sound instead of cutting it.
+
 ## 0.1.6
 
 - Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy.
