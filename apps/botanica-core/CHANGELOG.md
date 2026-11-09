@@ -1,5 +1,10 @@
 # Botanica Core
 
+## 2.2.1
+
+- Keep the output garden sharp on a second screen: it no longer lowers its resolution when that does not make it smoother.
+- Name the icon Botanica Core.
+
 ## 2.2.0
 
 - Rename Botanica Engine to Botanica Core.

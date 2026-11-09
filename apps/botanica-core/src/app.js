@@ -434,9 +434,10 @@
     setInterval(share, 2000);
     void start();
   }
-  // The output: the garden alone, following the controlling instance; a 4K screen still renders about 1080p of pixels.
+  // The output: the garden alone, following the controlling instance. It starts at the screen's own pixels;
+  // a 4K screen still renders about 1080p of pixels.
   async function initOutput() {
-    try { viz = window.BotanicaViz.create($('gl'), { maxPixels: 1920 * 1080 }); } catch (_) { viz = null; }
+    try { viz = window.BotanicaViz.create($('gl'), { maxPixels: 1920 * 1080, maxScale: Math.max(1, window.devicePixelRatio || 1), scale: Math.max(1, window.devicePixelRatio || 1) }); } catch (_) { viz = null; }
     let shown = 'dawn';
     const follow = ({ kind, data } = {}) => {
       if (!viz || !data || typeof data !== 'object') return;

@@ -6,7 +6,10 @@
  *   → feedback trails → bloom (¼ res) → composite (datamosh glitch, chromatic
  *   aberration, pixel crush, scanlines, komorebi rays).
  * Geometry is static; motion lives in shaders driven by ~40 uniforms.
- * Render scale adapts to the measured frame time, within options.maxPixels (a large output screen). */
+ * Render scale starts at options.scale and adapts to the measured frame time, within options.maxPixels
+ * and options.maxScale.
+ * A step down that does not shorten the frame time is undone: the limit is not pixels, and
+ * fewer pixels would only blur the picture. */
 (() => {
   'use strict';
 
@@ -567,7 +570,7 @@ void main() {
     let glitch = 0, glitchUntil = 0, glitchSeed = 0, seedAt = 0, gate = 1, gateKind = -1, gateSlice = 0.1;
     let tA = 0, speed = 1, speedMode = 0, speedUntil = 0, speedDur = 1, stutStart = 0, stutSlice = 0, stutUntil = 0, desat = 0;
     let frozen = 0, frozenT = 0, crushUntil = 0, camBump = 0, spinPhase = 0;
-    let scale = 1, maxScale = Math.min(1.2, window.devicePixelRatio || 1), W = 1, H = 1;
+    let maxScale = options.maxScale || Math.min(1.2, window.devicePixelRatio || 1), scale = Math.min(options.scale || 1, maxScale), floor = 0.6, lastDrop = null, W = 1, H = 1;
     let frames = 0, accDt = 0, lastT = 0, lost = false, fps = 0, ping = 0;
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
 
@@ -584,8 +587,10 @@ void main() {
       frames++; accDt += dt;
       if (frames >= 40) {
         const avg = accDt / frames; frames = 0; accDt = 0; fps = 1000 / avg;
-        if (avg > 19 && scale > 0.6) { scale = Math.max(0.6, scale - 0.15); resize(); }
-        else if (avg < 17.2 && scale < Math.min(maxScale, Math.sqrt(maxPixels / (W * H)))) { scale = Math.min(maxScale, scale + 0.1); resize(); }
+        if (avg > 19 && lastDrop && avg > lastDrop.avg * 0.93) { floor = scale = lastDrop.scale; lastDrop = null; resize(); }
+        else if (avg > 19 && scale > floor) { lastDrop = { scale, avg }; scale = Math.max(floor, scale - 0.15); resize(); }
+        else if (avg < 17.2 && scale < Math.min(maxScale, Math.sqrt(maxPixels / (W * H)))) { lastDrop = null; scale = Math.min(maxScale, scale + 0.1); resize(); }
+        else lastDrop = null;
       }
     }
 
