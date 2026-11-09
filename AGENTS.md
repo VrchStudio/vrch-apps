@@ -5,6 +5,7 @@
 - Keep the packaged guide accurate; the official catalog publishes guide and icon metadata from the exact latest released source.
 - Keep each App's UUID stable. Update its version once per release and add short user-facing release notes.
 - Use `python3 tools/apps.py check/build <app>` and focused tests. Build only from `apps/<app>/src`; never include device data, credentials or local working files.
+- Every App's source lives only here, in `apps/<app>/src`; edit it here. Files an App takes from VRCH Pages (the visuals engine in Visuals Player and Shader Editor) are refreshed with `python3 tools/pages_sync.py <app> [--write]`, never edited by hand; tests that need Pages find it at VRCH_PAGES_ROOT or ../vrch-web-viewer-pages.
 - Preserve unknown App files and JSON fields. Keep packaged third-party license notices. Do not alter a published version's content.
 - Run `python3 -m unittest discover -s tests -v` when changing the shared build/release tool. Keep package format compatible with the device host.
 - Release only after an explicit publish request, except a bug-fix update to an App: once its fix is pushed and its checks pass, release it without asking again. Use `tools/apps.py release` or the Release App workflow; do not manually upload alternate packages or edit the generated stable catalog.
