@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.2
+
+- Install Visuals Player from Official Apps on the device: the release package now matches the package the device checks.
+
 ## 0.3.1
 
 - Keep the speaker button on the device screen with every sound choice: with Silent or Mic / Line in it shows as muted, and a tap plays the music.

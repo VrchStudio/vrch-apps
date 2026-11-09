@@ -34,7 +34,9 @@ class Packages(unittest.TestCase):
     def build(self):
         return apps.build('demo',root=self.root,source_commit='a'*40)
 
-    def test_deferred_files_come_last_in_presentation_order(self):
+    def test_package_keeps_path_order_with_deferred_files(self):
+        # The device installs an official App only when its own rebuild of the package (path order, stored, fixed
+        # headers) has the release digest, so Playground deferred files never change the order.
         (self.src/'media').mkdir()
         for name in ('a.mp3','a.vpf','b.mp3'):
             (self.src/'media'/name).write_bytes(name.encode())
@@ -42,15 +44,22 @@ class Packages(unittest.TestCase):
         presentation={'schemaVersion':1,'categories':[{'id':'tools','label':'Tools'}],'apps':{'demo':{'category':'tools','deferred':['media/a.vpf','media/a.mp3','media/']}}}
         (self.root/'catalog/presentation.json').write_text(json.dumps(presentation))
         path,release=self.build()
-        with zipfile.ZipFile(path) as archive:
-            self.assertEqual(archive.namelist(),['app.json','icon.svg','index.html','unknown.bin','media/a.vpf','media/a.mp3','media/b.mp3'])
         manifest,records,revision=apps.source('demo',root=self.root)
         self.assertEqual(release['revision'],revision)
-        # Without deferred files the package keeps path order.
-        (self.root/'catalog/presentation.json').write_text(json.dumps({**presentation,'apps':{'demo':{'category':'tools'}}}))
-        path,_=self.build()
         with zipfile.ZipFile(path) as archive:
-            self.assertEqual(archive.namelist(),[name for name,_ in records])
+            self.assertEqual(archive.namelist(),sorted(archive.namelist(),key=lambda n:n.encode('utf-8')))
+        rebuilt=Path(self.temp.name)/'device.zip'
+        with zipfile.ZipFile(rebuilt,'w',compression=zipfile.ZIP_STORED,allowZip64=True) as archive:
+            for name,data in sorted(records,key=lambda r:r[0].encode('utf-8')):
+                info=zipfile.ZipInfo(name,date_time=(1980,1,1,0,0,0))
+                info.create_system=3
+                info.external_attr=(0o100644)<<16
+                info.compress_type=zipfile.ZIP_STORED
+                info.file_size=len(data)
+                with archive.open(info,'w') as part:
+                    part.write(data)
+        self.assertEqual(rebuilt.read_bytes(),path.read_bytes())
+        self.assertEqual(release['packageDigest'],hashlib.sha256(rebuilt.read_bytes()).hexdigest())
 
     def test_official_icon_required(self):
         for value in (None, '', 'missing.svg', 'index.html', 'https://example.com/icon.svg'):
