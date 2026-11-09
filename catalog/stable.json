@@ -1602,7 +1602,7 @@
     },
     "95d295da-7cf2-40ec-934a-07818d892b68": {
       "slug": "body-vibes",
-      "latest": "0.6.0",
+      "latest": "0.6.1",
       "versions": {
         "0.5.1": {
           "version": "0.5.1",
@@ -1717,6 +1717,25 @@
             "updateApi": 1
           },
           "notes": "- Show your camera picture, body and sound rings on a large output or second screen while you play."
+        },
+        "0.6.1": {
+          "version": "0.6.1",
+          "name": "BODY VIBES",
+          "tag": "body-vibes-v0.6.1",
+          "sourceCommit": "170864be4b334135dd7331fdbecf1ea89a346921",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/body-vibes-v0.6.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/body-vibes-v0.6.1/body-vibes-0.6.1.vrchapp",
+          "size": 43693066,
+          "sha256": "10e8663f5d7db984e4ee06abba111115b4b7f22dbbde3bcfef9ae8a096877d05",
+          "packageDigest": "10e8663f5d7db984e4ee06abba111115b4b7f22dbbde3bcfef9ae8a096877d05",
+          "revision": "b97c4a333495d8ccc5bb1a3b47ae7ba27992efc684bee5de17bffc9a1484cc97",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy."
         }
       },
       "guide": {
