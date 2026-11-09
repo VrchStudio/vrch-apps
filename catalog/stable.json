@@ -781,7 +781,7 @@
     },
     "ebdf21dc-2abf-40af-af1d-20d032fe5862": {
       "slug": "wavescape",
-      "latest": "1.0.1",
+      "latest": "1.1.0",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -820,6 +820,25 @@
             "updateApi": 1
           },
           "notes": "- Add a VRCH-style vector wavetable icon for Launcher, My Apps and Guide.\n- Fix device audio startup while preserving saved patches and sequences."
+        },
+        "1.1.0": {
+          "version": "1.1.0",
+          "name": "Wavescape",
+          "tag": "wavescape-v1.1.0",
+          "sourceCommit": "a12cc5f09d96b9f0420cf0d2a5714d731bffc36a",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/wavescape-v1.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/wavescape-v1.1.0/wavescape-1.1.0.vrchapp",
+          "size": 95040,
+          "sha256": "eabf7328faa819616ca15bd3a4e947b1ea3a9d26f79fa778e5d4f712c0a52749",
+          "packageDigest": "eabf7328faa819616ca15bd3a4e947b1ea3a9d26f79fa778e5d4f712c0a52749",
+          "revision": "f9d0de06b253dcd1d2f4bc0dc90989c57de0f6f186fe197b91d3388705514d45",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the wavetable full screen on a large output or second screen, glowing with the sound and pulsing with the sequencer."
         }
       },
       "guide": {
