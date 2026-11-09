@@ -1407,7 +1407,7 @@
     },
     "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31": {
       "slug": "palmnotes-duo",
-      "latest": "0.1.4",
+      "latest": "0.2.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -1503,6 +1503,25 @@
             "updateApi": 1
           },
           "notes": "- Ask you to allow sound and press K2 again when the browser has not started sound, instead of pointing to the output settings.\n- Keep routine tracking messages out of the browser console's errors."
+        },
+        "0.2.0": {
+          "version": "0.2.0",
+          "name": "PalmNotes Duo",
+          "tag": "palmnotes-duo-v0.2.0",
+          "sourceCommit": "bb0108c3755f239cbd14658f3ac49e41b0e3ddc1",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/palmnotes-duo-v0.2.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/palmnotes-duo-v0.2.0/palmnotes-duo-0.2.0.vrchapp",
+          "size": 16740853,
+          "sha256": "47ae00c701571dcee09d7ca8d9c5cb224a83bc760fe77926f58b1bbf3eb3f9ed",
+          "packageDigest": "47ae00c701571dcee09d7ca8d9c5cb224a83bc760fe77926f58b1bbf3eb3f9ed",
+          "revision": "7a8fa8cf65f90c1f1e39b11b1f4a17ba8bdd5507f4527960fb3eb37865141e9f",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show your camera picture and both hands on a large output or second screen; the note you play lights up in its colour."
         }
       },
       "guide": {
