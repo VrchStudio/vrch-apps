@@ -14,5 +14,6 @@
 
 ### Fixed
 
+- Keep the Visuals Player speaker button on screen with Silent or Mic / Line in, and mark the camera button with a cross while the camera is off.
 - Start Visuals Player in the Playground from its one release download as soon as the first files arrive.
 - Publish a lightweight App index with icons and guides loaded separately.

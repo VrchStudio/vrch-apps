@@ -484,19 +484,23 @@
     if (isOutput || !camera || cameraState === 'starting') return;
     if (camera.on) stopCamera(); else void startCamera();
   });
-  // Mute fades the music out and back in; it shows only while Music is the sound (the input is never played back).
+  // The speaker is always there. With Music it mutes and unmutes with a fade; with Silent or Mic / Line in (nothing is
+  // played back) it shows as muted, and a tap brings the music back.
   function renderMute() {
     const button = $('mute');
     if (!button || !music) return;
-    const muted = music.muted;
-    button.hidden = isOutput || music.source !== 'music';
-    button.setAttribute('aria-pressed', String(muted)); button.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
+    const playing = music.source === 'music', muted = !playing || music.muted;
+    button.hidden = isOutput;
+    button.setAttribute('aria-pressed', String(muted)); button.setAttribute('aria-label', !playing ? 'Play music' : muted ? 'Unmute' : 'Mute');
+    button.title = button.getAttribute('aria-label');
     button.firstElementChild.className = 'fas ' + (muted ? 'fa-volume-xmark' : 'fa-volume-high');
   }
   $('mute').addEventListener('click', event => {
     event.stopPropagation();
     if (isOutput || !music) return;
-    music.setMuted(!music.muted); interact('tap'); remember();
+    if (music.source !== 'music') { music.setMuted(false); void music.setSource('music').then(renderPlayer); }
+    else music.setMuted(!music.muted);
+    interact('tap'); remember(); renderMute();
   });
   // A tap on the picture opens Player; the panels close with their own close buttons or the same key.
   $('stage').addEventListener('click', () => { if (!isOutput && !open && active) { interact('tap'); openPlayer(); } });
