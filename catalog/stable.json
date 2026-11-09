@@ -1426,7 +1426,7 @@
     },
     "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31": {
       "slug": "palmnotes-duo",
-      "latest": "0.2.0",
+      "latest": "0.2.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -1541,6 +1541,25 @@
             "updateApi": 1
           },
           "notes": "- Show your camera picture and both hands on a large output or second screen; the note you play lights up in its colour."
+        },
+        "0.2.1": {
+          "version": "0.2.1",
+          "name": "PalmNotes Duo",
+          "tag": "palmnotes-duo-v0.2.1",
+          "sourceCommit": "66bbae182940e0a58ff283f49cc3d187706c9663",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/palmnotes-duo-v0.2.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/palmnotes-duo-v0.2.1/palmnotes-duo-0.2.1.vrchapp",
+          "size": 16741374,
+          "sha256": "aed798dabfcdf175f6558b494a5c416154f3036eb13b346353e481dcbfdf612b",
+          "packageDigest": "aed798dabfcdf175f6558b494a5c416154f3036eb13b346353e481dcbfdf612b",
+          "revision": "bc78c6756b2ac35fddc15cf0b4b64cc0ec2ae32cfb23378e1aaeba00dbbac309",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy."
         }
       },
       "guide": {
