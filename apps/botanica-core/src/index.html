@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Botanica Engine</title>
+<link rel="stylesheet" href="style.css">
+<script src="/apps/sdk/apps-v1.js"></script>
+<script src="viz.js"></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<canvas id="gl" aria-label="Holographic garden"></canvas>
+<main class="hud">
+  <header class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 3c3 4 3 8 0 12-3-4-3-8 0-12Z" /><path d="M16 15c4-3 8-3 12 0-4 3-8 3-12 0Z" /><path d="M16 15c-4-3-8-3-12 0 4 3 8 3 12 0Z" />
+        <path d="M16 15c3 4 3 8 0 12-3-4-3-8 0-12Z" /><circle cx="16" cy="15" r="1.6" />
+      </svg>
+      <div class="name"><b>BOTANICA</b><small>植物系 · PETALCORE ENGINE</small></div>
+    </div>
+    <div class="form" id="form"></div>
+    <button class="play" id="play" type="button"><i></i><span id="playTxt">GROW</span></button>
+  </header>
+
+  <div class="stage" id="stage">
+    <aside class="layers" id="layers"></aside>
+    <div class="specimen">
+      <span class="no" id="specNo">SPECIMEN 01 / 08</span>
+      <span class="sname" id="specName">Dewfall</span>
+      <span class="jp" id="specJp">露</span>
+      <span class="meta" id="meta">C · ROYAL ROAD · 86 BPM</span>
+    </div>
+    <div class="sect" id="sect"><span id="sectName">STANDBY</span><small id="sectJp">待機</small></div>
+    <div class="flash" id="flash"></div>
+    <div class="pads" id="pads"></div>
+  </div>
+
+  <section class="panel">
+    <nav class="tabs" id="tabs"></nav>
+    <div class="cells" id="cells"></div>
+    <div class="presets" id="presets"></div>
+  </section>
+  <p class="notice" id="notice" role="status" hidden></p>
+</main>
+</body>
+</html>
