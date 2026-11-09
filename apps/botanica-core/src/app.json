@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "db065989-bdb9-4c22-8c80-a15f92c65154",
   "name": "Botanica Core",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "entry": "index.html",
   "roles": [
     "output"

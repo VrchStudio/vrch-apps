@@ -1,5 +1,9 @@
 # Botanica Core
 
+## 2.2.2
+
+- Keep the second-screen garden at least at the screen's own size on a busy device, so the device stays smooth too.
+
 ## 2.2.1
 
 - Keep the output garden sharp on a second screen: it no longer lowers its resolution when that does not make it smoother.
