@@ -319,7 +319,7 @@
     },
     "ce96ad6b-8e44-4661-83f4-823bd546aa19": {
       "slug": "magic-circle",
-      "latest": "1.0.3",
+      "latest": "1.1.0",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -396,6 +396,25 @@
             "updateApi": 1
           },
           "notes": "- Start sound as soon as the App opens, without pressing E1 first."
+        },
+        "1.1.0": {
+          "version": "1.1.0",
+          "name": "Magic Circle",
+          "tag": "magic-circle-v1.1.0",
+          "sourceCommit": "1daf252b28ee60beea149b38940d4a3f4632b605",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/magic-circle-v1.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/magic-circle-v1.1.0/magic-circle-1.1.0.vrchapp",
+          "size": 268937,
+          "sha256": "572f4dd8f84381cdd7dd1aac804951ab631729bbe60e1e6f8624b87d1168e76f",
+          "packageDigest": "572f4dd8f84381cdd7dd1aac804951ab631729bbe60e1e6f8624b87d1168e76f",
+          "revision": "839fff386874ea3e1e6886440f29bc40a50ebabcfd03543245dc194a5c77a559",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the circle on a large output or second screen, following the device's pattern, palette, pulses and input."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPk1hZ2ljIENpcmNsZTwvdGl0bGU+CiAgPHBhdGggZD0iTTE2IDF2NG0wIDIydjRNMSAxNmg0bTIyIDBoNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxMSIgc3Ryb2tlPSIjZjBlZWU4IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJtMTYgOSAyLjIgNC44TDIzIDE2bC00LjggMi4yTDE2IDIzbC0yLjItNC44TDkgMTZsNC44LTIuMloiIGZpbGw9IiNmZjE0OTMiLz4KPC9zdmc+Cg==",
