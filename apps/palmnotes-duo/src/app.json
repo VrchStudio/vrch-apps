@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "f221d9b4-84fb-46f9-a490-6ddd7e8e2b31",
   "name": "PalmNotes Duo",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "roles": [
     "output"
   ],

@@ -30,13 +30,32 @@
     try { return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11])); }
     catch (_) { return false; }
   })();
-  const RELAY_WIDTH = 256, RELAY_HEIGHT = 192, RELAY_LIMIT = 15000;
+  // The camera picture reaches a picture-only output at its own size, as a JPEG data URL in parts: output messages are
+  // limited to 16 KiB. A picture larger than the parts allow drops to a lower quality.
+  const PICTURE_PART = 15000, PICTURE_PARTS = 16, PICTURE_QUALITIES = [0.82, 0.68, 0.5];
+  function pictureParts(url) {
+    const n = Math.ceil(url.length / PICTURE_PART);
+    return Array.from({length: n}, (_, i) => ({i, n, d: url.slice(i * PICTURE_PART, (i + 1) * PICTURE_PART)}));
+  }
+  // Joins the parts of the newest picture; a part of a newer picture drops an unfinished one.
+  class PictureJoin {
+    constructor() { this.id = null; this.parts = []; this.got = 0; }
+    take(data) {
+      if (!Number.isInteger(data?.id) || !Number.isInteger(data.n) || data.n < 1 || data.n > PICTURE_PARTS
+        || !Number.isInteger(data.i) || data.i < 0 || data.i >= data.n || typeof data.d !== 'string') return null;
+      if (data.id !== this.id || this.parts.length !== data.n) { this.id = data.id; this.parts = new Array(data.n); this.got = 0; }
+      if (this.parts[data.i] === undefined) { this.parts[data.i] = data.d; this.got++; }
+      if (this.got < data.n) return null;
+      const url = this.parts.join(''); this.id = null; this.parts = []; this.got = 0;
+      return url;
+    }
+  }
 
   class VisualsCamera {
     constructor({sdk, onFrame = () => {}, onEnded = () => {}}) {
       this.sdk = sdk; this.onFrame = onFrame; this.onEnded = onEnded;
       this.handle = null; this.canvas = document.createElement('canvas'); this.context = this.canvas.getContext('2d');
-      this.relayCanvas = null; this.relayBusy = false; this.frames = 0; this.session = 0;
+      this.relayBusy = false; this.frames = 0; this.session = 0;
     }
     get on() { return !!this.handle; }
     async open() {
@@ -63,18 +82,16 @@
       this.frames++;
       this.onFrame(this.canvas);
     }
-    // A small JPEG of the current picture for a picture-only output, within the 16 KiB output message limit.
+    // The current picture as a JPEG data URL for a picture-only output (sent in parts).
     async relayFrame() {
       if (!this.handle || this.relayBusy || !this.frames) return null;
       this.relayBusy = true;
       try {
-        if (!this.relayCanvas) { this.relayCanvas = document.createElement('canvas'); this.relayCanvas.width = RELAY_WIDTH; this.relayCanvas.height = RELAY_HEIGHT; }
-        this.relayCanvas.getContext('2d').drawImage(this.canvas, 0, 0, RELAY_WIDTH, RELAY_HEIGHT);
-        for (const quality of [0.6, 0.4, 0.25]) {
-          const blob = await new Promise(resolve => this.relayCanvas.toBlob(resolve, 'image/jpeg', quality));
+        for (const quality of PICTURE_QUALITIES) {
+          const blob = await new Promise(resolve => this.canvas.toBlob(resolve, 'image/jpeg', quality));
           if (!blob) return null;
           const url = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
-          if (url.length <= RELAY_LIMIT) return url;
+          if (url.length <= PICTURE_PART * PICTURE_PARTS) return url;
         }
         return null;
       } catch (_) { return null; } finally { this.relayBusy = false; }
@@ -87,7 +104,7 @@
   }
   // Draws relayed output frames into a canvas that the output's effects read.
   class RelayPicture {
-    constructor() { this.canvas = document.createElement('canvas'); this.canvas.width = RELAY_WIDTH; this.canvas.height = RELAY_HEIGHT; this.busy = false; this.pending = null; this.frames = 0; }
+    constructor() { this.canvas = document.createElement('canvas'); this.canvas.width = 640; this.canvas.height = 480; this.busy = false; this.pending = null; this.frames = 0; }
     async show(url, onDrawn) {
       if (typeof url !== 'string' || !url.startsWith('data:image/jpeg;base64,')) return;
       this.pending = url;
@@ -98,7 +115,8 @@
           const next = this.pending; this.pending = null;
           const image = new Image(); image.src = next;
           try { await image.decode(); } catch (_) { continue; }
-          this.canvas.getContext('2d').drawImage(image, 0, 0, this.canvas.width, this.canvas.height);
+          if (this.canvas.width !== image.naturalWidth || this.canvas.height !== image.naturalHeight) { this.canvas.width = image.naturalWidth; this.canvas.height = image.naturalHeight; }
+          this.canvas.getContext('2d').drawImage(image, 0, 0);
           this.frames++;
           onDrawn(this.canvas);
         }
@@ -106,7 +124,7 @@
     }
   }
   window.VisualsCamera = Object.freeze({
-    Camera: VisualsCamera, RelayPicture, simd, resolveResource,
+    Camera: VisualsCamera, RelayPicture, PictureJoin, pictureParts, simd, resolveResource,
     analysisOptions: Object.freeze({WorkerCtor: PackageWorker, PageWorkerCtor: null, resolveResourceUrl: resolveResource, cacheWorkers: true}),
   });
 })();

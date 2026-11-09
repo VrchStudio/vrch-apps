@@ -1,5 +1,9 @@
 # Shader Editor
 
+## 0.2.1
+
+- Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy.
+
 ## 0.2.0
 
 - Show the visual you are editing on a large output or second screen, with its sound, tracking and image sources.

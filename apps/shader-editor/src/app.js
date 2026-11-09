@@ -355,8 +355,10 @@
   // A picture-only instance (Playground's output, a second screen) shows the visual being edited and nothing else.
   // The editor publishes the visual, its parameters and scene time; audio, tracking values and live image sources follow
   // as events. The output reads only the packaged catalog: no workspace, media, controls or text.
-  const FRAME_WIDTH = 256, FRAME_LIMIT = 15000, AUDIO_MS = 33, TRACK_MS = 66, FRAME_MS = 100;
-  let shownAt = 0, published = '', lastAudio = null, sentAudio = null, lastTrack = 0, lastFrame = 0, frameKey = 'A', frameBusy = false;
+  // Live pictures reach the output at their own size (up to FRAME_MAX_WIDTH) as JPEG data URLs in parts: output
+  // messages are limited to 16 KiB. A picture larger than the parts allow drops to a lower quality.
+  const FRAME_MAX_WIDTH = 960, FRAME_PART = 15000, FRAME_PARTS = 16, AUDIO_MS = 33, TRACK_MS = 66, FRAME_MS = 100;
+  let shownAt = 0, published = '', lastAudio = null, sentAudio = null, lastTrack = 0, lastFrame = 0, frameKey = 'A', frameBusy = false, frameId = 0, frameCanvas = null;
   function compact(sample) {
     if (!sample || typeof sample !== 'object') return null;
     const out = {};
@@ -375,15 +377,21 @@
     try { relay.publish(state); } catch (_) {}
   }
   function send(data) { try { relay.send(data); } catch (_) {} }
+  function sendFrame(key, url) {
+    const id = ++frameId, n = Math.ceil(url.length / FRAME_PART);
+    for (let i = 0; i < n; i++) send({type: 'frame', key, id, i, n, d: url.slice(i * FRAME_PART, (i + 1) * FRAME_PART)});
+  }
   async function frameData(canvas) {
-    const height = Math.max(1, Math.round(FRAME_WIDTH * canvas.height / Math.max(1, canvas.width)));
-    const small = document.createElement('canvas'); small.width = FRAME_WIDTH; small.height = height;
-    small.getContext('2d').drawImage(canvas, 0, 0, FRAME_WIDTH, height);
-    for (const quality of [0.6, 0.4, 0.25]) {
+    const scale = Math.min(1, FRAME_MAX_WIDTH / Math.max(1, canvas.width));
+    const width = Math.max(1, Math.round(canvas.width * scale)), height = Math.max(1, Math.round(canvas.height * scale));
+    const small = frameCanvas ||= document.createElement('canvas');
+    if (small.width !== width || small.height !== height) { small.width = width; small.height = height; }
+    small.getContext('2d').drawImage(canvas, 0, 0, width, height);
+    for (const quality of [0.82, 0.68, 0.5]) {
       const blob = await new Promise(resolve => small.toBlob(resolve, 'image/jpeg', quality));
       if (!blob) return null;
       const url = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
-      if (url.length <= FRAME_LIMIT) return url;
+      if (url.length <= FRAME_PART * FRAME_PARTS) return url;
     }
     return null;
   }
@@ -405,7 +413,7 @@
       frameKey = keys.includes(frameKey === 'A' ? 'B' : 'A') ? (frameKey === 'A' ? 'B' : 'A') : keys[0];
       lastFrame = now; frameBusy = true;
       const key = frameKey;
-      void frameData(liveSource(key)).then(data => { if (data && liveSource(key)) send({type: 'frame', key, data}); }, () => {}).finally(() => { frameBusy = false; });
+      void frameData(liveSource(key)).then(data => { if (data && liveSource(key)) sendFrame(key, data); }, () => {}).finally(() => { frameBusy = false; });
     }
   }
   function watchAudio(target) {
@@ -414,7 +422,17 @@
     target.setAudioProvider = provider => set(provider ? () => { const sample = provider(); lastAudio = sample; return sample; } : (lastAudio = null, null));
   }
   class OutputPicture {
-    constructor() { this.canvas = document.createElement('canvas'); this.busy = false; this.pending = null; this.live = false; }
+    constructor() { this.canvas = document.createElement('canvas'); this.busy = false; this.pending = null; this.live = false; this.id = null; this.parts = []; this.got = 0; }
+    // Joins the parts of the newest picture; a part of a newer picture drops an unfinished one.
+    take(data) {
+      if (!Number.isInteger(data.id) || !Number.isInteger(data.n) || data.n < 1 || data.n > FRAME_PARTS
+        || !Number.isInteger(data.i) || data.i < 0 || data.i >= data.n || typeof data.d !== 'string') return null;
+      if (data.id !== this.id || this.parts.length !== data.n) { this.id = data.id; this.parts = new Array(data.n); this.got = 0; }
+      if (this.parts[data.i] === undefined) { this.parts[data.i] = data.d; this.got++; }
+      if (this.got < data.n) return null;
+      const url = this.parts.join(''); this.id = null; this.parts = []; this.got = 0;
+      return url;
+    }
     async show(url, onDrawn) {
       if (typeof url !== 'string' || !url.startsWith('data:image/jpeg;base64,')) return;
       this.pending = url;
@@ -427,7 +445,7 @@
           try { await image.decode(); } catch (_) { continue; }
           if (this.canvas.width !== image.naturalWidth || this.canvas.height !== image.naturalHeight) { this.canvas.width = image.naturalWidth; this.canvas.height = image.naturalHeight; }
           this.canvas.getContext('2d').drawImage(image, 0, 0);
-          this.live = true; onDrawn();
+          this.live = true; window.__shaderOutput.picture = [this.canvas.width, this.canvas.height]; onDrawn();
         }
       } finally { this.busy = false; }
     }
@@ -470,7 +488,7 @@
       if (kind === 'state') follow(data);
       else if (data.type === 'audio') relayed = data.sample && typeof data.sample === 'object' ? data.sample : null;
       else if (data.type === 'track' && data.values && typeof data.values === 'object') mirror.effect?.signalBus?.setExternalValues(data.values);
-      else if (data.type === 'frame' && pictures[data.key]) void pictures[data.key].show(data.data, sources);
+      else if (data.type === 'frame' && pictures[data.key]) { const url = pictures[data.key].take(data); if (url) void pictures[data.key].show(url, sources); }
     });
     const count_ = () => { window.__shaderOutput.frames++; requestAnimationFrame(count_); };
     requestAnimationFrame(count_);

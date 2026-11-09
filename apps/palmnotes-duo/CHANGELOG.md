@@ -1,5 +1,9 @@
 # PalmNotes Duo
 
+## 0.2.1
+
+- Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy.
+
 ## 0.2.0
 
 - Show your camera picture and both hands on a large output or second screen; the note you play lights up in its colour.

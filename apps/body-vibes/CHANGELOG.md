@@ -1,5 +1,9 @@
 # BODY VIBES
 
+## 0.6.1
+
+- Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy.
+
 ## 0.6.0
 
 - Show your camera picture, body and sound rings on a large output or second screen while you play.

@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.1.6
+
+- Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy.
+
 ## 0.1.5
 
 - Start sooner in the Playground: one download, and the picture plays as soon as its first files arrive.

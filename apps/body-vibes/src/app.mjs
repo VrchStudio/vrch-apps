@@ -191,7 +191,7 @@ function sharePose(v,now){
 async function startOutput(){
   const stats=globalThis.bodyVibesOutput={followed:0,poses:0,pictures:0,drawn:0};
   const backdrop=document.createElement('canvas');backdrop.width=32;backdrop.height=24;
-  const pictures=createPictureReceiver(picture=>{stats.pictures++;backdrop.getContext('2d').drawImage(picture,0,0,backdrop.width,backdrop.height);});
+  const pictures=createPictureReceiver(picture=>{stats.pictures++;stats.pictureSize=[picture.width,picture.height];backdrop.getContext('2d').drawImage(picture,0,0,backdrop.width,backdrop.height);});
   let live=false,pose=[],poseAt=0,tone=.5,sound={levels:[0,0,0],bass:0,synth:0,vocal:0},previous=0,shown=0;
   const fit=()=>{const w=innerWidth||1,h=innerHeight||1,dpr=Math.min(devicePixelRatio||1,2,Math.sqrt(1920*1080/(w*h)));canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(canvas.width/w,0,0,canvas.height/h,0,0);width=w;height=h;};
   fit();addEventListener('resize',fit);

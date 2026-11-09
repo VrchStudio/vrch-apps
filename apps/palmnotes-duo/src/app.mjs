@@ -294,7 +294,7 @@ async function startOutput() {
   const stats = globalThis.palmNotesOutput = {followed: 0, hands: 0, pictures: 0, drawn: 0};
   const view = document.createElement('canvas'), g = view.getContext('2d'), backdrop = document.createElement('canvas');
   view.className = 'output-view'; backdrop.width = 32; backdrop.height = 24; document.body.replaceChildren(view);
-  const pictures = createPictureReceiver(picture => { stats.pictures++; backdrop.getContext('2d').drawImage(picture, 0, 0, backdrop.width, backdrop.height); });
+  const pictures = createPictureReceiver(picture => { stats.pictures++; stats.pictureSize = [picture.width, picture.height]; backdrop.getContext('2d').drawImage(picture, 0, 0, backdrop.width, backdrop.height); });
   let width = 1, height = 1, live = false, shown = 0, glow = 0, color = '#ededed', octaveShift = 0, handsAt = 0, previous = 0, lastNote = null;
   let outputHands = [], ripples = [];
   const fit = () => { width = innerWidth || 1; height = innerHeight || 1; const dpr = Math.min(devicePixelRatio || 1, 2, Math.sqrt(1920 * 1080 / (width * height))); view.width = Math.round(width * dpr); view.height = Math.round(height * dpr); g.setTransform(view.width / width, 0, 0, view.height / height, 0, 0); };

@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "b5ad6149-dc87-473a-87c0-c1a6cf3fdf6c",
   "name": "Visuals Player",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "icon": "assets/visuals-player.svg",
   "entry": "index.html",
   "roles": [

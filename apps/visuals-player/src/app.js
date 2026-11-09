@@ -9,7 +9,7 @@
   const KNOBS = ['E1', 'E2', 'E3', 'E4'], SPEEDS = [1, 2, 4], HOLD_MS = 650;
   // Auto change follows the music's sections; without sections (input) it waits this long.
   const AUTO_MIN_MS = 24000, AUTO_FALLBACK_MS = 40000, PLAYED_IDLE_MS = 60000, SAVE_MS = 800;
-  const SLOW_FPS = 45, SLOW_SECONDS = 3, TRACK_RELAY_MS = 66, FRAME_RELAY_MS = 100, AUDIO_RELAY_MS = 33, TIMING_RELAY_MS = 4000;
+  const SLOW_FPS = 45, SLOW_SECONDS = 3, TRACK_RELAY_MS = 66, FRAME_RELAY_MS = 66, AUDIO_RELAY_MS = 33, TIMING_RELAY_MS = 4000;
   const COLLECTIONS = ['curated'];
   // Image visuals that read best with a particular picture; the others take the next one in turn.
   const PICTURE_FOR = {'vrch.matrix': 'portrait', 'user.vp-rain-glass': 'rain-street', 'user.vp-print-echo': 'keys'};
@@ -28,7 +28,8 @@
   let degradeLevel = 0, slowSeconds = 0, baselineFps = 0, lastTrackRelay = 0, lastFrameRelay = 0, lastAudioRelay = 0, lastTimingRelay = 0;
   let cameraWanted = false, cameraState = 'off', cameraError = '';
   const camera = !isOutput && VrchApp.camera ? new VisualsCamera.Camera({sdk: VrchApp, onFrame: cameraFrame, onEnded: cameraEnded}) : null;
-  const picture = isOutput ? new VisualsCamera.RelayPicture() : null;
+  const picture = isOutput ? new VisualsCamera.RelayPicture() : null, pictureJoin = isOutput ? new VisualsCamera.PictureJoin() : null;
+  let pictureId = 0;
 
   // Read-only diagnostics for tests and measurements.
   const stats = window.__visualsPlayer = {role: isOutput ? 'output' : 'control', startedAt: performance.now(), firstFrameAt: null,
@@ -529,7 +530,7 @@
     if (kind === 'state') follow(data);
     else if (data.type === 'audio') music?.relay(data.features);
     else if (data.type === 'track' && data.values && typeof data.values === 'object') mirror?.effect?.signalBus?.setExternalValues(data.values);
-    else if (data.type === 'frame') void picture.show(data.data, canvas => mirror?.setSources(canvas, canvas));
+    else if (data.type === 'frame') { const url = pictureJoin.take(data); if (url) void picture.show(url, canvas => { stats.relayedPicture = [canvas.width, canvas.height]; mirror?.setSources(canvas, canvas); }); }
   });
   function relayLive(now) {
     if (isOutput || !relay || !active) return;
@@ -552,7 +553,7 @@
     }
     if (needsPicture(active.definition) && now - lastFrameRelay >= FRAME_RELAY_MS) {
       lastFrameRelay = now;
-      void camera.relayFrame().then(data => { if (data && camera.on) send({type: 'frame', data}); });
+      void camera.relayFrame().then(url => { if (!url || !camera.on) return; const id = ++pictureId; for (const part of VisualsCamera.pictureParts(url)) send({type: 'frame', id, ...part}); });
     }
   }
 
