@@ -2111,7 +2111,7 @@
     },
     "a591c7e9-3faa-4207-a1c2-2a88153ed934": {
       "slug": "shader-editor",
-      "latest": "0.2.0",
+      "latest": "0.2.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -2207,6 +2207,25 @@
             "updateApi": 1
           },
           "notes": "- Show the visual you are editing on a large output or second screen, with its sound, tracking and image sources.\n- Use the current shared visual engine and controls."
+        },
+        "0.2.1": {
+          "version": "0.2.1",
+          "name": "Shader Editor",
+          "tag": "shader-editor-v0.2.1",
+          "sourceCommit": "1575b116d30d212288d3833f3a09ef66a91de068",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/shader-editor-v0.2.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/shader-editor-v0.2.1/shader-editor-0.2.1.vrchapp",
+          "size": 32255017,
+          "sha256": "aa475ee5e80fd0f710fe12fd31d3a7b69ace87da8fad6a6d475260d46c1adab9",
+          "packageDigest": "aa475ee5e80fd0f710fe12fd31d3a7b69ace87da8fad6a6d475260d46c1adab9",
+          "revision": "68aa33cd426b0bff5f11a54a7bcfb6ae20d27993b66f8debacc3eb718a32fd83",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy."
         }
       },
       "guide": {
