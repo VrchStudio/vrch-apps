@@ -3786,7 +3786,7 @@
     },
     "db065989-bdb9-4c22-8c80-a15f92c65154": {
       "slug": "botanica-core",
-      "latest": "2.2.0",
+      "latest": "2.2.1",
       "versions": {
         "2.1.0": {
           "version": "2.1.0",
@@ -3825,9 +3825,28 @@
             "updateApi": 1
           },
           "notes": "- Rename Botanica Engine to Botanica Core.\n- Show the garden on a large output or second screen, following the device's specimen, notes, glitches and sections.\n- Include the font licenses."
+        },
+        "2.2.1": {
+          "version": "2.2.1",
+          "name": "Botanica Core",
+          "tag": "botanica-core-v2.2.1",
+          "sourceCommit": "d29c60a8b15f42cb6a251f796fcb42caec72c2cf",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/botanica-core-v2.2.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/botanica-core-v2.2.1/botanica-core-2.2.1.vrchapp",
+          "size": 210809,
+          "sha256": "49adc0a8cc44a6452000c2d54059fe09bb3d6820dd3204e52f635cc9cf19ebfe",
+          "packageDigest": "49adc0a8cc44a6452000c2d54059fe09bb3d6820dd3204e52f635cc9cf19ebfe",
+          "revision": "e339ef51b09228bf1ccf235b5a23e980c00cddd3f0ae299f20110611a2241d32",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Keep the output garden sharp on a second screen: it no longer lowers its resolution when that does not make it smoother.\n- Name the icon Botanica Core."
         }
       },
-      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+Qm90YW5pY2EgRW5naW5lPC90aXRsZT4KICA8cGF0aCBkPSJNMzIgNmM2IDggNiAxNiAwIDI0LTYtOC02LTE2IDAtMjRaIiBzdHJva2U9IiNlOGU4ZTMiIHN0cm9rZS13aWR0aD0iMyIvPgogIDxwYXRoIGQ9Ik0zMiAzMGM4LTYgMTYtNiAyNCAwLTggNi0xNiA2LTI0IDBabTAgMGMtOC02LTE2LTYtMjQgMCA4IDYgMTYgNiAyNCAwWiIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8cGF0aCBkPSJNMzIgMzR2MjJNMjIgNThsNC0xMCA2IDggNi04IDQgMTAiIHN0cm9rZT0iI2FhYTlhNSIgc3Ryb2tlLXdpZHRoPSIyLjUiLz4KICA8cGF0aCBkPSJNMTAgMTRoNW00IDBoM000NCA1MGg0bTQgMGgzTTQ2IDEybDMgM200IDRsMiAyIiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMyIvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzAiIHI9IjMuNSIgZmlsbD0iI2ZmMTQ5MyIgc3Ryb2tlPSJub25lIi8+Cjwvc3ZnPgo=",
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+Qm90YW5pY2EgQ29yZTwvdGl0bGU+CiAgPHBhdGggZD0iTTMyIDZjNiA4IDYgMTYgMCAyNC02LTgtNi0xNiAwLTI0WiIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8cGF0aCBkPSJNMzIgMzBjOC02IDE2LTYgMjQgMC04IDYtMTYgNi0yNCAwWm0wIDBjLTgtNi0xNi02LTI0IDAgOCA2IDE2IDYgMjQgMFoiIHN0cm9rZT0iI2U4ZThlMyIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPHBhdGggZD0iTTMyIDM0djIyTTIyIDU4bDQtMTAgNiA4IDYtOCA0IDEwIiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMi41Ii8+CiAgPHBhdGggZD0iTTEwIDE0aDVtNCAwaDNNNDQgNTBoNG00IDBoM000NiAxMmwzIDNtNCA0bDIgMiIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMwIiByPSIzLjUiIGZpbGw9IiNmZjE0OTMiIHN0cm9rZT0ibm9uZSIvPgo8L3N2Zz4K",
       "guide": {
         "description": "A petalcore synthesizer that grows glitchy, organic songs around a holographic glass flower.",
         "sections": [
