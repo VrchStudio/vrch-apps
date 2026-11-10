@@ -12,6 +12,7 @@ Update notifications require a My Apps platform release with official update sup
 - [Metronome](apps/metronome): keep time with adjustable tempo, meter and subdivisions.
 - [Drum 808](apps/drum-808): program twelve synthesized drum voices on a 16-step sequencer.
 - [Magic Circle](apps/magic-circle): perform with audio-reactive geometry and synthesized sound.
+- [XY Scope](apps/xy-scope): play an oscilloscope synthesizer whose two channels draw the figure you hear, or watch any incoming sound as a wave, XY figure or spectrum.
 
 - [Wavescape](apps/wavescape): play a two-layer wavetable synthesizer with a sequencer and arpeggiator.
 
@@ -91,6 +92,14 @@ node tests/drum808_audio_browser.cjs
 ```
 
 It exercises the actual Player, SDK and PCM output bridge; browser audio devices are fixtures and newer `setSinkId` policy refusal is emulated on older Chrome. Physical sound still needs device acceptance.
+
+XY Scope has the same check, and two in the real Playground: the synthesizer (silent first picture, the picture against the samples at the host output, the output panel and the share link) and input mode (a tone file as the microphone):
+
+```sh
+node tests/xy_scope_audio_browser.cjs
+node tests/xy_scope_browser.cjs
+node tests/xy_scope_input_browser.cjs
+```
 
 ### Catalog loading
 
