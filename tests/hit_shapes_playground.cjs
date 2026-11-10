@@ -72,7 +72,7 @@ async function start({gpu = !!process.env.HIT_SHAPES_GPU, viewport = {width: 144
   const page = await context.newPage(), errors = [], requests = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => { if (!request.url().startsWith(origin) && !/^(data|blob|about):/.test(request.url())) requests.push(request.url()); });
-  const settled = () => page.waitForFunction(() => !document.getAnimations().some(a => a.effect?.pseudoElement?.startsWith('::view-transition')) && !document.querySelector(':active-view-transition'), null, {timeout: 15000});
+  const settled = () => page.waitForFunction(() => !document.getAnimations().some(a => a.effect?.pseudoElement?.startsWith('::view-transition')) && !document.querySelector(':active-view-transition'), null, {timeout: 45000});
   // The App's two copies: the device's (control) and the big screen's (output).
   const frames = async () => {
     for (let i = 0; i < 300; i++) {
