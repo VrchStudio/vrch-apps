@@ -119,6 +119,22 @@
     lastCount = count;
     trace.draw(points, count, {colour: COLOURS[colour][1], glow: glowSeconds(glow), dt, fresh: !!stroke?.fresh, rate: stroke?.rate});
     if (count && firstFrameAt === null) firstFrameAt = performance.now();
+    if (gaps.length < 2000) { gaps.push(dt * 1000); busy += performance.now() - lastNow; }
+  }
+  // Every five seconds one console line of measured numbers, for whoever observes the App (apps_observe reads an
+  // App's console output): frames a second, the gaps between frames, time spent per frame, and what is being drawn.
+  const gaps = [];
+  let busy = 0;
+  function report() {
+    if (gaps.length < 2) { gaps.length = 0; busy = 0; return; }
+    const sorted = gaps.slice(1).sort((a, b) => a - b), total = sorted.reduce((a, b) => a + b, 0), round = v => Math.round(v * 10) / 10, canvas = trace.canvas;
+    const line = {role: isOutput ? 'output' : 'control', fps: round(1000 * sorted.length / total), gapP95: round(sorted[Math.floor(sorted.length * 0.95)]), gapMax: round(sorted[sorted.length - 1]),
+      busyMs: round(busy / gaps.length), trace: trace.kind, canvas: [canvas.width, canvas.height], dpr: window.devicePixelRatio, mode: isOutput ? following?.mode || null : mode, ...window.__xy.probe()};
+    for (const key of ['fx', 'fy', 'peakHz', 'tunerHz']) if (key in line) line[key] = Math.round(line[key] * 100) / 100;
+    for (const key of ['rmsL', 'rmsR', 'wander']) if (key in line) line[key] = Math.round(line[key] * 1e4) / 1e4;
+    if (!isOutput && engine) Object.assign(line, {engine: engine.ctx.state, firstMs: Math.round(firstFrameAt || 0), glMs: Math.round(marks.trace - marks.script)});
+    console.debug('scope ' + JSON.stringify(line));
+    gaps.length = 0; busy = 0;
   }
 
   /* ---------- sound ---------- */
@@ -599,6 +615,7 @@
     trace = window.XYTrace.create($('beam'));
     marks.trace = performance.now();
     new ResizeObserver(layout).observe($('stage'));
+    setInterval(report, 5000);
     if (isOutput) {
       layout(); show(0, 1 / 60, 0, 0);
       await sdk.ready();

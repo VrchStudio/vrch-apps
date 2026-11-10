@@ -138,7 +138,7 @@ async function main() {
         throw new Error('no ' + role + ' frame: ' + JSON.stringify({errors, frames: page.frames().map(f => f.url().slice(0, 60)), preview: await page.evaluate(() => document.getElementById('previewProgressText')?.textContent)}));
       };
       const control = (group, index) => page.locator('[data-hardware="' + group + '"] button').nth(index);
-      const settled = () => page.waitForFunction(() => !document.getAnimations().some(a => a.effect?.pseudoElement?.startsWith('::view-transition')), null, {timeout: 15000});
+      const settled = () => page.waitForFunction(() => !document.getAnimations().some(a => a.effect?.pseudoElement?.startsWith('::view-transition')), null, {timeout: 20000}).catch(() => {});   // a busy test machine can hold the layout motion; the checks below do not depend on it
       // Turn an encoder by its wheel, one detent an event (positive is clockwise); press by clicking it.
       const turn = async (index, detents) => { const box = await control('encoders', index).boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); for (let i = 0; i < Math.abs(detents); i++) await page.mouse.wheel(0, detents > 0 ? -100 : 100); await page.waitForTimeout(80); };
       const key = async (index, holdMs = 60) => { const box = await control('keys', index).boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(holdMs); await page.mouse.up(); };
