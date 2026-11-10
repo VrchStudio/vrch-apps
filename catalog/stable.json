@@ -4484,6 +4484,223 @@
           }
         ]
       }
+    },
+    "110249b3-0bb3-4f82-be29-1aa191df36dc": {
+      "slug": "xy-scope",
+      "latest": "0.1.0",
+      "versions": {
+        "0.1.0": {
+          "version": "0.1.0",
+          "name": "XY Scope",
+          "tag": "xy-scope-v0.1.0",
+          "sourceCommit": "9084d31f879b9ace516fbe88e89c887a1ff9a178",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/xy-scope-v0.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/xy-scope-v0.1.0/xy-scope-0.1.0.vrchapp",
+          "size": 87879,
+          "sha256": "4d4c80741358622645a4a36aa4b1390e294b856623d867d6cb8e214383728a0d",
+          "packageDigest": "4d4c80741358622645a4a36aa4b1390e294b856623d867d6cb8e214383728a0d",
+          "revision": "6241faf2b23d7614e8efafafd7e28124f7e20c97822ac6ed0705f173de461bcf",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- First version: an oscilloscope synthesizer whose left and right channels draw the figure you hear, on the device and on a large output, with an input mode that shows any incoming sound as a wave, XY figure or spectrum with a tuner."
+        }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+T3NjaWxsb3Njb3BlPC90aXRsZT4KICA8cmVjdCB4PSI2IiB5PSI2IiB3aWR0aD0iNTIiIGhlaWdodD0iNTIiIHJ4PSIxMyIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMiAxNHYzNk0xNCAzMmgzNiIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjEuNSIgb3BhY2l0eT0iLjU1Ii8+CiAgPHBhdGggZD0iTTMyIDMyYzUtMTEgMTctMTEgMTcgMHMtMTIgMTEtMTcgMFMxNSAyMSAxNSAzMnMxMiAxMSAxNyAwIiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMy41Ii8+Cjwvc3ZnPgo=",
+      "guide": {
+        "description": "An oscilloscope synthesizer: the left channel moves the beam across, the right moves it up, so the figure you see is the sound you hear.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "K2 · Press",
+                "action": "Hold the tone. The figure is now drawn by the sound itself."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Change the interval between left and right. An octave draws a figure 8."
+              },
+              {
+                "control": "K3 · Hold",
+                "action": "Strike: it sounds while held, then spirals into the centre."
+              }
+            ]
+          },
+          {
+            "title": "Tone page",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Pitch in semitones, A1 to A4."
+              },
+              {
+                "control": "E1 · Press",
+                "action": "Back to A2."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Ratio of right to left, in whole-number steps."
+              },
+              {
+                "control": "E2 · Press",
+                "action": "Free ratio: turn through every value in between. Press again to snap back."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Drift: detune the right channel up to 2 Hz. The figure tumbles and the notes beat."
+              },
+              {
+                "control": "E3 · Press",
+                "action": "No drift: the figure rests where it is."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Shape: from sine to angular waves."
+              },
+              {
+                "control": "E4 · Press",
+                "action": "Back to sine."
+              }
+            ]
+          },
+          {
+            "title": "Motion page",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Spin the figure, up to one turn a second either way."
+              },
+              {
+                "control": "E1 · Press",
+                "action": "No spin."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Decay: how long a strike rings, 0.2 to 6 seconds."
+              },
+              {
+                "control": "E2 · Press",
+                "action": "Back to 1.5 seconds."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Glow: how long the beam's light lingers."
+              },
+              {
+                "control": "E3 · Press",
+                "action": "Back to the default glow."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Next beam colour."
+              }
+            ]
+          },
+          {
+            "title": "Keys",
+            "controls": [
+              {
+                "control": "K1 · Press",
+                "action": "Open Menu for Guide, audio, Reload or Exit."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Hold on or off."
+              },
+              {
+                "control": "K3 · Hold",
+                "action": "Strike."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Other page: Tone or Motion."
+              },
+              {
+                "control": "K4 · Hold",
+                "action": "Input mode, and back to the synth."
+              }
+            ]
+          },
+          {
+            "title": "Input mode",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Wave: time across the screen, 5 to 100 ms."
+              },
+              {
+                "control": "E1 · Press",
+                "action": "Back to 20 ms."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Display gain."
+              },
+              {
+                "control": "E2 · Press",
+                "action": "Automatic gain."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Next view: Wave, XY, Spectrum."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Glow."
+              },
+              {
+                "control": "E4 · Press",
+                "action": "Back to the default glow."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Freeze the picture, or let it run."
+              }
+            ]
+          },
+          {
+            "title": "Touch",
+            "controls": [
+              {
+                "control": "Picture · Hold",
+                "action": "Strike, same as K3."
+              },
+              {
+                "control": "Synth, Input · Tap",
+                "action": "Switch mode, same as holding K4."
+              },
+              {
+                "control": "Value · Drag",
+                "action": "Change it."
+              },
+              {
+                "control": "Value · Tap",
+                "action": "Same as pressing its knob."
+              },
+              {
+                "control": "Tone, Motion · Tap",
+                "action": "Show that page."
+              },
+              {
+                "control": "Hold, Freeze · Tap",
+                "action": "Same as K2."
+              }
+            ]
+          },
+          {
+            "title": "Audio",
+            "text": "Stereo: left is across, right is up. The beam shows the very samples sent to the output, so listen on Line-out or headphones to hear the two notes apart; a single speaker plays their sum. Opens silent. After a sound, while nothing plays, the figure stays as a faint preview of what the next key will sound. Input mode shows the audio input as a pocket oscilloscope with a tuner: it opens the input only when you switch to it and never plays it back. XY needs a stereo source such as Line-in. Choose inputs and outputs and set levels in Menu. In Preview, enable Listen to preview first."
+          },
+          {
+            "title": "Saved settings",
+            "text": "Pitch, ratio, drift, shape, spin, decay, glow, colour, the page and the input view, window and gain save automatically. Reopening keeps them and starts silent, in synth mode."
+          }
+        ]
+      }
     }
   }
 }
