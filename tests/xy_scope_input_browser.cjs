@@ -95,6 +95,7 @@ async function listens(hz, result) {
 
     /* ---- leaving input mode lets the microphone go, and the synth plays as before ---- */
     await s.toSynth();
+    assert.equal(await app.evaluate(() => document.getElementById('tuner').textContent), '', 'the tuner reading goes with input mode');
     await v.page.waitForFunction(() => __tracks.length > 0 && __tracks.every(track => track.readyState === 'ended'), null, {timeout: 5000})
       .catch(async () => { throw new Error('the microphone is released on leaving input mode: ' + JSON.stringify(await s.tracks())); });
     await v.page.evaluate(() => __host.reset());

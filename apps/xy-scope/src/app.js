@@ -256,7 +256,7 @@
   }
   function setMode(next) {
     if (next === mode) return;
-    mode = next; frozen = false; sweepCount = 0; tuned = ''; steady = 0; loudest = 0;
+    mode = next; frozen = false; sweepCount = 0; tuned = ''; $('tuner').textContent = ''; steady = 0; loudest = 0;
     if (mode === 'input') { holding = false; striking = false; push(); void openInput(); }
     else { closeInput(); notice(''); }
     dirty = true; publish();
@@ -553,7 +553,6 @@
     });
     $('mode').textContent = listening ? 'Input' : 'Synth';
     $('hold').textContent = listening ? 'Freeze' : 'Hold'; $('hold').classList.toggle('on', listening ? frozen : holding);
-    if (!listening && tuned) { tuned = ''; $('tuner').textContent = ''; }
     document.documentElement.style.setProperty('--beam', 'rgb(' + COLOURS[state.colour][1].map(v => Math.round(40 + v * 215)).join(',') + ')');
     clearTimeout(monitorTimer);
     monitorTimer = setTimeout(() => {
