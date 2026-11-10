@@ -4162,6 +4162,136 @@
           }
         ]
       }
+    },
+    "2626ce58-0b22-4656-8088-4263f0e1ff4b": {
+      "slug": "hit-shapes",
+      "latest": "0.1.0",
+      "versions": {
+        "0.1.0": {
+          "version": "0.1.0",
+          "name": "Hit Shapes",
+          "tag": "hit-shapes-v0.1.0",
+          "sourceCommit": "0e3482fb10dff1ae234a2614ad06d73f156064d6",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/hit-shapes-v0.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/hit-shapes-v0.1.0/hit-shapes-0.1.0.vrchapp",
+          "size": 63335,
+          "sha256": "4651c98e6e698f0c47bb80592c9d88edd0561c0f1a6a90e2bab5a9c3fdf13006",
+          "packageDigest": "4651c98e6e698f0c47bb80592c9d88edd0561c0f1a6a90e2bab5a9c3fdf13006",
+          "revision": "3e7d7258409b3e7aa717772dff1ad6c18223e02f17e3eadb98e8a6644825cda3",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- A drum machine where every hit has a shape: eight voices on 16 steps draw the rhythm as a picture, on the device and on a big screen."
+        }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSI+CiAgPGNpcmNsZSBjeD0iMjQiIGN5PSIzOCIgcj0iMTciIGZpbGw9IiNhYWE5YTUiLz4KICA8cGF0aCBkPSJNNCAyNmg1NnY3SDR6IiBmaWxsPSIjZThlOGUzIi8+CiAgPGNpcmNsZSBjeD0iNDciIGN5PSIxNSIgcj0iNy41IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxwYXRoIGQ9Ik00OSA0M2w4IDEzSDQxeiIgZmlsbD0iI2U4ZThlMyIvPgogIDxwYXRoIGQ9Ik03IDYwdi01bTcgNXYtOG03IDh2LTVtNyA1di01IiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMi41Ii8+Cjwvc3ZnPgo=",
+      "guide": {
+        "description": "A drum machine where every hit has a shape. Eight voices on 16 steps draw the rhythm as a picture, on the device and on a big screen.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "K2 · Press",
+                "action": "Start the preset beat; press again to stop."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Next pattern, A–D, and its picture. While playing, it switches at the end of the bar."
+              },
+              {
+                "control": "Step pad · Tap",
+                "action": "Cycle the step for the selected voice: on, accent, off."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Tempo, 40–240 BPM."
+              },
+              {
+                "control": "E1 · Press",
+                "action": "Swing: Off, Light, Medium, Heavy. Off-beat shapes move later with their sound."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "Select a voice. Its shapes stand out."
+              },
+              {
+                "control": "E2 · Press",
+                "action": "Mute or unmute the selected voice. A muted voice leaves the picture."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Tune the selected voice. Higher pitch, higher shape."
+              },
+              {
+                "control": "E3 · Press",
+                "action": "Reset its tune."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Decay of the selected voice. A longer sound keeps its shape longer."
+              },
+              {
+                "control": "E4 · Press",
+                "action": "Reset its decay."
+              },
+              {
+                "control": "K1 · Press",
+                "action": "Open Menu for Guide, audio, Reload or Exit."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Start or stop."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Play the selected voice once, playing or stopped."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Next pattern."
+              },
+              {
+                "control": "K4 · Hold",
+                "action": "Next colors, three sets."
+              }
+            ]
+          },
+          {
+            "title": "Touch",
+            "controls": [
+              {
+                "control": "Step pad · Tap",
+                "action": "Cycle on, accent, off. Each pad sits under its step in the picture."
+              },
+              {
+                "control": "Voice · Tap",
+                "action": "Select it. It lights when it plays."
+              },
+              {
+                "control": "Picture · Tap",
+                "action": "Same as K3."
+              }
+            ]
+          },
+          {
+            "title": "Shapes",
+            "text": "Disc: bass drum. Bar: snare. Ticks along the bottom: closed hat. Ring: open hat. Squares: clap. Triangle: low tom. Slash: rim shot. Two rectangles: cowbell. Time runs left to right; an accent is larger and brighter."
+          },
+          {
+            "title": "Saved settings",
+            "text": "Patterns, tempo, swing, mutes, tune, decay and colors save automatically. Reopening keeps them and starts stopped."
+          }
+        ]
+      }
     }
   }
 }
