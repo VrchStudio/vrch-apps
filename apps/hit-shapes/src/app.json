@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "2626ce58-0b22-4656-8088-4263f0e1ff4b",
   "name": "Hit Shapes",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -58,12 +58,20 @@
             "action": "Mute or unmute the selected voice. A muted voice leaves the picture."
           },
           {
+            "control": "E2 · Hold",
+            "action": "Undo the last recorded hit or roll."
+          },
+          {
             "control": "E3 · Turn",
             "action": "Tune the selected voice. Higher pitch, higher shape, and the whole picture leans with the tuning of all voices."
           },
           {
             "control": "E3 · Press",
             "action": "Reset its tune."
+          },
+          {
+            "control": "E3 · Hold",
+            "action": "Record on or off. It starts off: K3 only plays."
           },
           {
             "control": "E4 · Turn",
@@ -87,7 +95,7 @@
           },
           {
             "control": "K3 · Press",
-            "action": "Play the selected voice. While the pattern plays, the hit is written into the nearest step."
+            "action": "Play the selected voice. With Record on, a hit played while the pattern runs is written into the nearest step."
           },
           {
             "control": "K3 · Hold",
@@ -117,6 +125,14 @@
           {
             "control": "Picture · Tap",
             "action": "Same as K3: tap to play the voice, hold to roll."
+          },
+          {
+            "control": "Record button · Tap",
+            "action": "Record on or off, same as holding E3."
+          },
+          {
+            "control": "Undo button · Tap",
+            "action": "Undo the last recorded hit or roll. It shows once something is recorded."
           },
           {
             "control": "Style button · Tap",

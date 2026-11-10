@@ -79,6 +79,7 @@ class Engine extends AudioWorkletProcessor {
     // nearer step. skip: a step written ahead of its time is not played a second time when the bar gets there.
     this.at = 0; this.stepLength = 1; this.into = 0;
     this.skip = new Int8Array(TRACKS).fill(-1);
+    this.rec = false; // Record: only then are hits by hand and rolls written into the pattern
     this.port.onmessage = ({data}) => this.message(data);
   }
 
@@ -112,6 +113,7 @@ class Engine extends AudioWorkletProcessor {
         else this.queued = m.index === this.pattern ? -1 : m.index;
         break;
       case 'start': this.running = true; this.step = 0; this.toNext = 0; this.first = true; this.skip.fill(-1); break;
+      case 'record': this.rec = !!m.on; break;
       case 'roll': this.roll = m.on ? m.track : -1; this.rollHeld = 0; this.rollWait = this.rollStart(); break;
       case 'stop': this.running = false; break;
       // Hits are triggered at the start of the next render quantum so the reported frame is exact.
@@ -174,10 +176,10 @@ class Engine extends AudioWorkletProcessor {
     }
     this.port.postMessage({type: 'step', step: this.step, pattern: this.pattern, queued: this.queued, mask, accents, frame, first: this.first});
     this.first = false;
-    // A voice held down rolls: a hit on every step, written into the pattern. Where the pattern already plays the
-    // voice on this step, that is the roll's hit.
+    // A voice held down rolls: a hit on every step, written into the pattern while Record is on. Where the pattern
+    // already plays the voice on this step, that is the roll's hit.
     if (this.roll >= 0 && this.rollHeld >= this.rollStart()) {
-      const n = this.roll, cell = this.write(n, this.step);
+      const n = this.roll, cell = this.rec ? this.write(n, this.step) : -1;
       if (!((mask >> n) & 1)) { this.trigger(n, VELOCITY); this.port.postMessage({type: 'hit', track: n, frame, cell}); }
     }
     this.at = this.step; this.into = 0;
@@ -275,9 +277,10 @@ class Engine extends AudioWorkletProcessor {
     if (this.hits.length) {
       for (const m of this.hits) {
         this.trigger(m.track, VELOCITY);
-        // While the pattern plays, the hit is written into the nearer step: the one being played, or the next one.
+        // With Record on, while the pattern plays, the hit is written into the nearer step: the one being played, or
+        // the next one.
         let cell = -1;
-        if (this.running && !this.first) {
+        if (this.rec && this.running && !this.first) {
           const late = this.into >= this.stepLength / 2, step = late ? (this.at + 1) % STEPS : this.at;
           cell = this.write(m.track, step);
           if (late) this.skip[m.track] = step;

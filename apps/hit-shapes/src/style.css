@@ -11,7 +11,10 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 /* Style and colours, over the picture's corner. */
 #chips{position:absolute;right:6px;top:6px;display:flex;gap:5px}
 #chips button{width:30px;height:30px;border:1px solid var(--grid);border-radius:4px;background:var(--bg);color:var(--ink)}
-#styleChip svg{display:block;width:18px;height:18px;margin:5px}
+#styleChip svg,#undoChip svg{display:block;width:18px;height:18px;margin:5px}
+#chips button[hidden]{display:none}
+#recChip i{display:block;width:12px;height:12px;margin:8px;border-radius:50%;border:2px solid var(--ink);box-sizing:border-box}
+#recChip.on i{background:var(--rec);border-color:var(--rec)}
 #colorChip{display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:6px}
 #colorChip i{display:block}
 #voices{flex:0 0 46px;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;padding:4px var(--pad) 0}

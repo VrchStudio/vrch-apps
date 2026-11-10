@@ -1,5 +1,10 @@
 # Hit Shapes
 
+## 0.6.0
+
+- Record is now a switch that starts off: K3 only plays until you hold E3 or tap the Record button.
+- Undo the last recorded hit or roll: hold E2 or tap the Undo button.
+
 ## 0.5.0
 
 - Hold K3, or a finger on the picture, to roll the selected voice: one more hit on every step.

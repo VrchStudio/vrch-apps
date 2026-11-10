@@ -64,7 +64,7 @@ const stage = createStage($('picture'), {maxPixels: isOutput ? 1920 * 1080 : Inf
 
 let state = defaults(), ready = false, disposed = false;
 // playing: Start was pressed. running: the engine has begun the bar, so the picture follows the hits.
-const ui = {playing: false, running: false, queued: -1, lit: new Uint8Array(TRACKS), playhead: -1};
+const ui = {playing: false, running: false, rec: false, queued: -1, lit: new Uint8Array(TRACKS), playhead: -1};
 const held = new Set();
 let dirty = true, monitorDirty = true, monitorBusy = false, publishDirty = true;
 
@@ -97,7 +97,7 @@ let engine = null, opening = null, audioEpoch = 0, hitSeq = 0;
 const clock = [];
 const post = message => engine?.node.port.postMessage(message);
 function syncEngine() {
-  post({type: 'cells', value: state.cells});
+  post({type: 'cells', value: state.cells}); post({type: 'record', on: ui.rec});
   post({type: 'tempo', value: state.bpm});
   post({type: 'swing', value: SWING[state.swing][1]});
   post({type: 'mutes', value: state.mutes});
@@ -176,8 +176,14 @@ function onEngine({data: m}) {
       invalidate(); persist();
     }
   } else if (m.type === 'hit') {
-    // While the pattern plays the engine writes a hit by hand, or a roll's, into the step nearest to it.
-    if (m.cell >= 0 && !state.cells[m.cell]) { state.cells[m.cell] = 1; invalidate(); persist(); }
+    // With Record on, while the pattern plays, the engine writes a hit by hand, or a roll's, into the step nearest
+    // to it. Each press of K3 is one take, remembered so that it can be taken back.
+    if (m.cell >= 0 && !state.cells[m.cell]) {
+      state.cells[m.cell] = 1;
+      if (!take) { take = []; takes.push(take); }
+      take.push(m.cell);
+      invalidate(); persist();
+    }
     send({t: 'hit', voice: m.track, time, ...stage.strike({voice: m.track, time})});
   }
 }
@@ -308,12 +314,29 @@ function hit() {
 }
 // K3 or a finger held down rolls the voice: after the first hit, one more on every step until it is let go.
 let rolling = false;
-function hold() { rolling = true; hit(); }
+// Record starts off every time the App opens: K3 only plays. takes: the steps each press of K3 wrote, newest last.
+const takes = [];
+let take = null;
+function hold() {
+  take = null;
+  if (ui.rec) { take = []; takes.push(take); if (takes.length > 32) takes.shift(); }
+  rolling = true; hit();
+}
+function setRecord(on) { ui.rec = on; post({type: 'record', on}); invalidate(); }
+// Take back the last press of K3 that wrote something: its steps are cleared, unless they were made accents since.
+function undo() {
+  let last = takes.pop();
+  while (last && !last.length) last = takes.pop();
+  if (!last) return;
+  if (last === take) take = null;
+  for (const index of last) if (state.cells[index] === 1) { state.cells[index] = 0; post({type: 'cell', index, value: 0}); }
+  invalidate(); persist();
+}
 function release() { if (!rolling) return; rolling = false; post({type: 'roll', on: false}); }
 function nextShape() { state.alt ^= 1 << state.sel; invalidate(); persist(); }
 
 /* ---------- controls ---------- */
-let holdTimer = 0, heldLong = false, themeTimer = 0, themeLong = false, shapeTimer = 0, shapeLong = false;
+let holdTimer = 0, heldLong = false, themeTimer = 0, themeLong = false, shapeTimer = 0, shapeLong = false, recTimer = 0, recLong = false, undoTimer = 0;
 if (!isOutput) VrchApp.controls.onEvent(event => {
   if (!ready) return;
   const c = event.control;
@@ -332,8 +355,17 @@ if (!isOutput) VrchApp.controls.onEvent(event => {
       themeLong = false;
       clearTimeout(themeTimer);
       themeTimer = setTimeout(() => { themeLong = true; nextTheme(); }, HOLD_MS);
-    } else if (c === 'E2') toggleMute();
-    else if (c === 'E3') setTune(0);
+    } else if (c === 'E2') {
+      // A press mutes at once. Held, it takes back the last recording instead, and the mute is put back as it was.
+      toggleMute();
+      clearTimeout(undoTimer);
+      undoTimer = setTimeout(() => { toggleMute(); undo(); }, HOLD_MS);
+    } else if (c === 'E3') {
+      // A press resets the tune when the knob comes up; a hold switches Record on or off instead.
+      recLong = false;
+      clearTimeout(recTimer);
+      recTimer = setTimeout(() => { recLong = true; setRecord(!ui.rec); }, HOLD_MS);
+    }
     else if (c === 'E4') {
       // A press resets the decay when the knob comes up; a hold gives the voice its other shape instead.
       shapeLong = false;
@@ -351,6 +383,8 @@ if (!isOutput) VrchApp.controls.onEvent(event => {
   } else if (event.type === 'up' || event.type === 'cancel') {
     if (!held.delete(c)) return;
     if (c === 'E1') { clearTimeout(themeTimer); if (event.type === 'up' && !themeLong) cycleSwing(); }
+    if (c === 'E2') clearTimeout(undoTimer);
+    if (c === 'E3') { clearTimeout(recTimer); if (event.type === 'up' && !recLong) setTune(0); }
     if (c === 'E4') { clearTimeout(shapeTimer); if (event.type === 'up' && !shapeLong) setDecay(50); }
     if (c === 'K3') release();
     if (c !== 'K4') return;
@@ -389,6 +423,8 @@ function build() {
   for (const type of ['pointerup', 'pointercancel', 'pointerleave']) $('picture').addEventListener(type, release);
   addEventListener('blur', release);
   press($('styleChip'), nextStyle);
+  press($('recChip'), () => setRecord(!ui.rec));
+  press($('undoChip'), undo);
   press($('colorChip'), nextTheme);
 }
 const toggle = (el, name, on) => { if (el.classList.contains(name) !== on) el.classList.toggle(name, on); };
@@ -396,7 +432,7 @@ function render() {
   const palette = PALETTES[state.theme], root = document.documentElement.style;
   if (view.theme !== state.theme || view.alt !== state.alt) {
     view.theme = state.theme; view.alt = state.alt;
-    root.setProperty('--bg', palette.bg); root.setProperty('--ink', palette.ink); root.setProperty('--grid', palette.grid);
+    root.setProperty('--rec', palette.colors[0]); root.setProperty('--bg', palette.bg); root.setProperty('--ink', palette.ink); root.setProperty('--grid', palette.grid);
     [...$('colorChip').children].forEach((swatch, i) => { swatch.style.background = palette.colors[i]; });
     view.glyphs.forEach((glyph, t) => {
       glyph.width = Math.round(glyph.clientWidth * devicePixelRatio) || 64; glyph.height = Math.round(glyph.clientHeight * devicePixelRatio) || 40;
@@ -408,6 +444,8 @@ function render() {
     $('styleChip').innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="' + STYLE_SIGNS[state.style] + '"/></svg>';
     $('styleChip').setAttribute('aria-label', 'Style: ' + STYLES[state.style]);
   }
+  toggle($('recChip'), 'on', ui.rec); $('recChip').setAttribute('aria-pressed', String(ui.rec));
+  $('undoChip').hidden = !takes.some(steps => steps.length);
   view.voices.forEach((b, t) => { toggle(b, 'selected', t === state.sel); toggle(b, 'muted', !!((state.mutes >> t) & 1)); });
   const color = stage.color(SHAPES[state.sel].color);
   view.steps.forEach((b, s) => {
@@ -425,7 +463,7 @@ function updateMonitor() {
     E1: item('BPM', state.bpm + (state.swing ? ' · ' + SWING[state.swing][0] + ' swing' : '')),
     E2: item('Voice', id + ((state.mutes >> state.sel) & 1 ? ' · Muted' : '')),
     E3: item('Tune', tune > 0 ? '+' + tune : tune), E4: item('Decay', state.decay[state.sel]),
-    K2: item(ui.playing ? 'Stop' : 'Start', ''), K3: item('Hit', id), K4: item(STYLES[state.style], pattern),
+    K2: item(ui.playing ? 'Stop' : 'Start', ''), K3: item(ui.rec ? 'Rec' : 'Hit', id), K4: item(STYLES[state.style], pattern),
   }).catch(() => {}).finally(() => { monitorBusy = false; });
 }
 function layout() {
@@ -490,7 +528,7 @@ window.__hitShapes = {
   get frames() { return stage.frames; },
   state: () => ({
     pattern: isOutput ? shown.pattern : state.pattern, bpm: state.bpm, swing: state.swing, voice: SHAPES[state.sel].id,
-    playing: ui.playing, theme: state.theme, style: STYLES[state.style],
+    playing: ui.playing, theme: state.theme, style: STYLES[state.style], record: ui.rec, takes: takes.filter(steps => steps.length).length,
     voices: SHAPES.map(({id}, t) => ({
       id, tune: state.tune[t], decay: state.decay[t], mute: !!((state.mutes >> t) & 1), other: !!((state.alt >> t) & 1),
       steps: Array.from({length: STEPS}, (_, s) => '.xX'[state.cells[cellIndex(isOutput ? 0 : state.pattern, t, s)]]).join(''),
@@ -501,7 +539,7 @@ window.__hitShapes = {
 
 addEventListener('error', event => status('Error: ' + (event.message || 'unknown')));
 addEventListener('resize', layout);
-addEventListener('pagehide', () => { disposed = true; clearTimeout(saveTimer); clearTimeout(holdTimer); clearTimeout(themeTimer); clearTimeout(shapeTimer); closeAudio(); }, {once: true});
+addEventListener('pagehide', () => { disposed = true; clearTimeout(saveTimer); clearTimeout(holdTimer); clearTimeout(themeTimer); clearTimeout(shapeTimer); clearTimeout(recTimer); clearTimeout(undoTimer); closeAudio(); }, {once: true});
 // The App's name is written once, in app.json.
 fetch('app.json').then(response => response.json()).then(manifest => { document.title = manifest.name; }).catch(() => {});
 if (!isOutput) build();

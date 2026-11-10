@@ -342,7 +342,8 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     assert(now.voices[0].tune > 0 && now.voices[0].decay > 50, 'E3 tunes and E4 lengthens the selected voice: ' + JSON.stringify(now.voices[0]));
     assert.deepEqual((await output.evaluate(() => __hitShapes.state())).voices[0], now.voices[0], 'the output takes tune and decay');
     result.turned = now.voices[0];
-    await pg.encoder(2).click(); await pg.encoder(3).click(); await page.waitForTimeout(200);
+    // The knobs reset when they come up, and the Playground cancels a tap whose knob loses the focus before then.
+    await pg.encoder(2).click(); await page.waitForTimeout(250); await pg.encoder(3).click(); await page.waitForTimeout(250);
     now = await control.evaluate(() => __hitShapes.state());
     assert.deepEqual([now.voices[0].tune, now.voices[0].decay], [0, 50], 'pressing E3 and E4 resets them');
     await pg.turn(1, -40);
@@ -359,19 +360,39 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     await tap('#steps .step:nth-child(3)'); assert.equal(await cell(), 1); await tap('#steps .step:nth-child(3)'); assert.equal(await cell(), 2);
     await control.waitForFunction(() => __hitShapes.hits().some(hit => hit.voice === 'LT' && hit.step === 2 && hit.accent && hit.drawnAt), null, {timeout: 5000});
     await tap('#steps .step:nth-child(3)'); assert.equal(await cell(), 0);
-    // A hit played while the pattern runs is written into the nearest step. K3 held rolls, a hit on every step, and
-    // those are written too.
+    // Record starts off: a hit played while the pattern runs only sounds. E3 held switches Record on (the Playground
+    // presses a knob only once the pointer has rested on it a while, hence the long hold); then a hit is written into the
+    // nearest step, and K3 held rolls, a hit on every step, and those are written too. Undo takes back one press of K3
+    // at a time: the Undo button, or E2 held, which leaves the mute as it was.
     const row = frame => frame.evaluate(() => __hitShapes.state().voices[5].steps);
-    assert.equal(await row(control), '.'.repeat(16));
+    const count = async () => (await row(control)).replace(/\./g, '').length;
+    const tom = async () => { const at = await control.evaluate(() => __hitShapes.state()); return {record: at.record, takes: at.takes, tune: at.voices[5].tune, mute: at.voices[5].mute}; };
+    const holdKnob = async index => { const box = await pg.encoder(index).boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(1300); await page.mouse.up(); await page.waitForTimeout(300); };
+    const start = await tom();
+    assert.equal(start.record, false, 'Record starts off');
     await pg.key(2).click(); await page.waitForTimeout(500);
-    let written = await row(control);
-    assert.equal(written.replace(/\./g, '').length, 1, 'one hit, one step: ' + written);
-    assert.equal(await row(output), written, 'the big screen has the same pattern');
+    assert.equal(await count(), 0, 'with Record off a hit is not written');
+    assert.equal(await control.evaluate(() => document.querySelector('#undoChip').hidden), true, 'nothing to undo, no Undo button');
+    await holdKnob(2);
+    assert.deepEqual(await tom(), {...start, record: true}, 'holding E3 switches Record on and keeps the tune');
+    await pg.key(2).click(); await page.waitForTimeout(500);
+    assert.equal(await count(), 1, 'one hit, one step: ' + await row(control));
+    assert.equal(await row(output), await row(control), 'the big screen has the same pattern');
     const k3 = await pg.key(2).boundingBox(); await page.mouse.move(k3.x + k3.width / 2, k3.y + k3.height / 2); await page.mouse.down(); await page.waitForTimeout(900); await page.mouse.up(); await page.waitForTimeout(400);
-    written = await row(control);
-    result.stepsWrittenByRoll = written.replace(/\./g, '').length;
-    assert(result.stepsWrittenByRoll >= 5 && result.stepsWrittenByRoll <= 10, 'a held K3 rolls on every step and writes them: ' + written);
-    await control.evaluate(() => { for (let s = 0; s < 16; s++) { const i = cellIndex(state.pattern, state.sel, s); if (state.cells[i]) { state.cells[i] = 0; post({type: 'cell', index: i, value: 0}); } } invalidate(); persist(); });
+    result.stepsWrittenByRoll = (await count()) - 1;
+    assert(result.stepsWrittenByRoll >= 4 && result.stepsWrittenByRoll <= 9, 'a held K3 rolls on every step and writes them: ' + await row(control));
+    assert.equal((await tom()).takes, 2);
+    await shot('recording'); await shot('device-recording', '#stageDevice');
+    await tap('#undoChip'); await page.waitForTimeout(300);
+    assert.equal(await count(), 1, 'Undo takes back the roll and leaves the hit before it: ' + await row(control));
+    await holdKnob(1);
+    assert.deepEqual([await count(), (await tom()).mute], [0, false], 'holding E2 takes back the hit and leaves the voice unmuted');
+    assert.equal(await row(output), '.'.repeat(16), 'the big screen follows the undo');
+    assert.equal(await control.evaluate(() => document.querySelector('#undoChip').hidden), true);
+    await tap('#recChip'); await page.waitForTimeout(300);
+    assert.equal((await tom()).record, false, 'the Record button switches it off');
+    await pg.key(2).click(); await page.waitForTimeout(500);
+    assert.equal(await count(), 0, 'and hits are no longer written');
     await pg.key(1).click(); await page.waitForTimeout(700);
     assert.equal((await control.evaluate(() => __hitShapes.state())).playing, false);
     // K3 and a tap on the picture play the selected voice while stopped, and draw it.
