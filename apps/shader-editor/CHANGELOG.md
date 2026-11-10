@@ -1,5 +1,9 @@
 # Shader Editor
 
+## 0.2.2
+
+- Show a camera or image source at once when its size changes, such as the camera's first picture; it no longer stays black.
+
 ## 0.2.1
 
 - Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy.

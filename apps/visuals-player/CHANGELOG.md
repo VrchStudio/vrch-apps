@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.3
+
+- Show the camera at once the first time you turn it on in a visual that uses pictures; it no longer stays black until the camera is turned off and on again.
+
 ## 0.3.2
 
 - Install Visuals Player from Official Apps on the device: the release package now matches the package the device checks.

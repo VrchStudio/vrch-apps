@@ -142,6 +142,8 @@
     const isVideo = typeof root.HTMLVideoElement !== 'undefined' && source instanceof root.HTMLVideoElement;
     const texture = isVideo && typeof THREE.VideoTexture === 'function' ? new THREE.VideoTexture(source) : new THREE.Texture(source);
     texture.needsUpdate = true;
+    // Three allocates a texture's GPU storage once, at the size of its first upload.
+    texture.userData.vrchSourceSize = sourceSize(source);
     texture.generateMipmaps = false;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
@@ -729,8 +731,17 @@
         }
       } else if (next && oldTexture && !oldTexture.isVideoTexture) {
         // Canvas-backed sources retain their DOM identity while their pixels
-        // change. Mark only the declared logical source for upload.
-        oldTexture.needsUpdate = true;
+        // change. Mark only the declared logical source for upload. A canvas
+        // that changed size (a camera picture sized by its first frame) needs
+        // new storage: uploads into the old size fail and the source stays black.
+        const held = oldTexture.userData && oldTexture.userData.vrchSourceSize;
+        const size = sourceSize(next);
+        if (held && (held.width !== size.width || held.height !== size.height)) {
+          oldTexture.dispose();
+          this.sourceTextures[index] = makeTexture(next);
+        } else {
+          oldTexture.needsUpdate = true;
+        }
       }
       if (slotState) {
         this.sourceSlots[index] = Object.assign(defaultSlot(index === 0 ? 'A' : 'B'), clone(slotState));
