@@ -106,18 +106,46 @@
     if (count) Signal.render(sig, p, points, count);
     return count;
   }
+  // Faint preview. Once the figure has been silent for a moment the screen shows, at a fraction of the light, what
+  // the next key will play: the same signal from the very state the sound stopped in, held at full size. The samples
+  // themselves stay silent, in the speakers and in what probe() reports.
+  // GHOST: share of the usual light. The screen's brightness curve is not straight: this reads as a dim figure.
+  const GHOST = 0.045, GHOST_BELOW = 0.01, GHOST_AFTER = 0.4, GHOST_FADE = 0.5;
+  let quietFor = 0, ghostLevel = 0, ghostSig = null, ghostAge = 0;
+  const snaps = [];   // the engine's latest signal states, each with the frame it belongs to
+  // Is what was just put in points[] silence, and has it been for a while?
+  function quiet(count, dt) {
+    let peak = 0;
+    for (let i = 0; i < 2 * count; i++) { const value = Math.abs(points[i]); if (value > peak) peak = value; }
+    if (count) quietFor = peak < GHOST_BELOW ? quietFor + dt : 0;
+    if (quietFor <= GHOST_AFTER) { ghostLevel = 0; ghostSig = null; }
+    return quietFor > GHOST_AFTER;
+  }
+  // The preview for the same n samples into points[]. from() gives the signal state they start at; it is asked at
+  // first and about once a second after, so the preview cannot wander from the signal.
+  function ghost(n, dt, p, from) {
+    ghostAge += dt;
+    if (!ghostSig || ghostAge > 1) { const state = from(); if (state) { ghostSig = Object.assign(state, {hold: 1, strike: 0}); ghostAge = 0; } }
+    if (!ghostSig) return 0;
+    if (n) Signal.render(ghostSig, preview(p), points, n);
+    ghostLevel = Math.min(GHOST, ghostLevel + GHOST * dt / GHOST_FADE);
+    return n;
+  }
   // What was drawn, kept for half a second in speaker units, for the checks in window.__xy.
   const history = new Float32Array(HISTORY * 2);
   let historyAt = 0, historyFill = 0, lastCount = 0;
-  // stroke: {fresh, rate} for a picture that is not the running signal (see trace.js); those are not kept.
-  function show(count, dt, colour, glow, stroke) {
-    for (let i = 0; i < count && !stroke; i++) {
+  function keep(count) {
+    for (let i = 0; i < count; i++) {
       history[2 * historyAt] = points[2 * i] * LEVEL; history[2 * historyAt + 1] = points[2 * i + 1] * LEVEL;
       historyAt = (historyAt + 1) % HISTORY;
     }
-    if (!stroke) historyFill = Math.min(HISTORY, historyFill + count);
+    historyFill = Math.min(HISTORY, historyFill + count);
+  }
+  // stroke: {fresh, rate, level} for a picture that is not the running signal (see trace.js); those are not kept.
+  function show(count, dt, colour, glow, stroke) {
+    if (!stroke) keep(count);
     lastCount = count;
-    trace.draw(points, count, {colour: COLOURS[colour][1], glow: glowSeconds(glow), dt, fresh: !!stroke?.fresh, rate: stroke?.rate});
+    trace.draw(points, count, {colour: COLOURS[colour][1], glow: glowSeconds(glow), dt, fresh: !!stroke?.fresh, rate: stroke?.rate, level: stroke?.level});
     if (count && firstFrameAt === null) firstFrameAt = performance.now();
     if (gaps.length < 2000) { gaps.push(dt * 1000); busy += performance.now() - lastNow; }
   }
@@ -178,7 +206,7 @@
   }
   function closeAudio() {
     const old = engine;
-    engine = null; ++audioEpoch; source = 'analytic'; base = null; snapshot = null;
+    engine = null; ++audioEpoch; source = 'analytic'; base = null; snapshot = null; snaps.length = 0; quietFor = 0; ghostLevel = 0; ghostSig = null;
     if (!old) return;
     try { old.node.disconnect(); } catch (_) { /* gone */ }
     void Promise.allSettled([old.output.close(), old.ctx.state === 'closed' ? null : old.ctx.close()]);
@@ -217,7 +245,7 @@
     have = m.frame + frames; lastBlockAt = performance.now();
     const made = lastBlockAt - have / PER_MS;
     base = base === null ? made : Math.min(made, base + 0.02);
-    if (m.s) snapshot = {frame: m.frame, s: m.s};
+    if (m.s) { snapshot = {frame: m.frame, s: m.s}; snaps.push(snapshot); if (snaps.length > 12) snaps.shift(); }
   }
 
   /* ---------- input mode: the pocket oscilloscope ---------- */
@@ -256,7 +284,7 @@
   }
   function setMode(next) {
     if (next === mode) return;
-    mode = next; frozen = false; sweepCount = 0; tuned = ''; $('tuner').textContent = ''; steady = 0; loudest = 0;
+    mode = next; frozen = false; sweepCount = 0; tuned = ''; $('tuner').textContent = ''; steady = 0; loudest = 0; quietFor = 0; ghostLevel = 0; ghostSig = null;
     if (mode === 'input') { holding = false; striking = false; push(); void openInput(); }
     else { closeInput(); notice(''); }
     dirty = true; publish();
@@ -363,7 +391,22 @@
       }
     }
     if (source === 'analytic') count = own(dt, preview(settings()));
+    else if (quiet(count, dt)) {
+      keep(count);
+      count = ghost(count, dt, settings(), () => engineAt(drawn - count));
+      show(count, dt, state.colour, state.glow, {level: ghostLevel});
+      return;
+    }
     show(count, dt, state.colour, state.glow);
+  }
+  // The engine's signal state at a frame now on screen, from the newest state it sent that is not later than that.
+  function engineAt(frame) {
+    let best = null;
+    for (const snap of snaps) if (snap.frame <= frame && (!best || snap.frame > best.frame)) best = snap;
+    if (!best) return null;
+    const s = Object.assign(revive(best.s), {hold: 1, strike: 0});
+    advance(s, preview(settings()), clamp(frame - best.frame, 0, SR));
+    return s;
   }
 
   /* ---------- the large output ---------- */
@@ -436,7 +479,16 @@
       advance(sig, p, clamp(Math.round((wall - arriving.sAt) * PER_MS), 0, SR * 5));
       arriving = null; owed = 0;
     }
-    show(own(dt, p), dt, colour, glow);
+    // The same faint preview as on the device, found the same way from the samples this screen works out itself.
+    const before = quietFor > 0 ? Signal.copy(sig) : null;
+    let count = own(dt, p);
+    if (!following.preview && quiet(count, dt)) {
+      keep(count);
+      count = ghost(count, dt, following.p, () => before);
+      show(count, dt, colour, glow, {level: ghostLevel});
+      return;
+    }
+    show(count, dt, colour, glow);
   }
 
   /* ---------- saved settings and the share link ---------- */
@@ -604,7 +656,7 @@
     get firstFrameAt() { return firstFrameAt; },
     get trace() { return trace?.kind; },
     state: () => ({mode, pitchHz: settings().freq, ratio: settings().ratio, free: state.free, drift: state.drift, shape: state.shape / 100, spin: state.spin,
-      decay: state.decay, glow: state.glow / 100, colour: COLOURS[state.colour][0], holding, page: PAGES[state.page].name,
+      decay: state.decay, glow: state.glow / 100, colour: COLOURS[state.colour][0], holding, page: PAGES[state.page].name, ghost: ghostLevel > 0,
       ...(mode === 'input' ? {view: VIEWS[state.view], windowMs: state.window, gain: state.auto ? 'auto' : state.gain, frozen, listening: !!input} : {})}),
     // In input mode: what the input heard (fx, fy, rms per channel), the spectrum's loudest frequency, the tuner's
     // reading, and how much the Wave sweep moved since the frame before (0 = standing still).

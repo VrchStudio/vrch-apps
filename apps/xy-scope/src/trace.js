@@ -6,7 +6,8 @@
 //        count    how many pairs to draw; the beam carries on from the last point of the previous call
 //        look     {colour: [r, g, b], glow: seconds the phosphor keeps its light, dt: seconds since the last draw,
 //                  fresh: true to lift the beam and start a new stroke at the first point,
-//                  rate: points per second being drawn, if not the 48000 of a running signal}
+//                  rate: points per second being drawn, if not the 48000 of a running signal,
+//                  level: share of the usual light, for a faint picture (1 if left out)}
 //      extent()   half the canvas width and height in figure units, for strokes that span the screen
 // OUT  one beam on a black screen, added up like light: brighter where it moves slowly, fading like phosphor.
 //      Nothing else is drawn here: no text, no scale, no grid.
@@ -155,7 +156,7 @@
         gl.uniform2f(beam.u.u_unit, unit, unit); gl.uniform2f(beam.u.u_half, width / 2, height / 2);
         gl.uniform1f(beam.u.u_reach, reach); gl.uniform1f(beam.u.u_sigma, sigma);
         // A resting figure is equally bright whatever the afterglow: the longer the glow, the less each pass adds.
-        gl.uniform1f(beam.u.u_energy, BRIGHT * unit * sigma / ((look.rate || RATE) * glow) * (float ? 1 : 0.125));
+        gl.uniform1f(beam.u.u_energy, BRIGHT * unit * sigma / ((look.rate || RATE) * glow) * (float ? 1 : 0.125) * (look.level ?? 1));
         gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices); gl.drawElements(gl.TRIANGLES, segments * 6, gl.UNSIGNED_SHORT, 0);
         gl.disable(gl.BLEND); gl.disableVertexAttribArray(a); gl.disableVertexAttribArray(b);
@@ -193,12 +194,12 @@
       context.globalCompositeOperation = 'source-over'; context.fillStyle = 'rgba(0,0,0,' + (1 - Math.exp(-look.dt / Math.max(look.glow, 1 / 240))).toFixed(3) + ')'; context.fillRect(0, 0, width, height);
       if (!count) return;
       if (look.fresh) last = null;
-      context.globalCompositeOperation = 'lighter'; context.lineWidth = Math.max(1, SPOT * 2 * Math.min(width, height)); context.lineJoin = context.lineCap = 'round';
+      context.globalCompositeOperation = 'lighter'; context.globalAlpha = Math.sqrt(look.level ?? 1); context.lineWidth = Math.max(1, SPOT * 2 * Math.min(width, height)); context.lineJoin = context.lineCap = 'round';
       context.strokeStyle = 'rgb(' + look.colour.map(v => Math.round(Math.min(1, v) * 255)).join(',') + ')';
       context.beginPath();
       const first = last || [points[0], points[1]]; context.moveTo(width / 2 + first[0] * unit, height / 2 - first[1] * unit);
       for (let i = 0; i < count; i++) context.lineTo(width / 2 + points[2 * i] * unit, height / 2 - points[2 * i + 1] * unit);
-      context.stroke(); last = [points[2 * count - 2], points[2 * count - 1]];
+      context.stroke(); context.globalAlpha = 1; last = [points[2 * count - 2], points[2 * count - 1]];
     }
     resize();
     const extent = () => { const short = Math.min(canvas.width, canvas.height); return [options.view * canvas.width / short, options.view * canvas.height / short]; };

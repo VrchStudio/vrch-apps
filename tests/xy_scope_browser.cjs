@@ -25,7 +25,7 @@ async function main() {
     const opened = await probe(app);
     result.deviceFps = await fps(app);
     assert.equal(opened.source, 'analytic'); assert(opened.samples * result.deviceFps > 40000 && opened.rmsL > 0.1, 'a full figure is drawn before any sound: ' + JSON.stringify(opened));
-    assert.deepEqual(await state(app), {mode: 'synth', pitchHz: 110, ratio: 1.5, free: false, drift: 0.1, shape: 0, spin: 0, decay: 1.5, glow: 0.35, colour: 'Green', holding: false, page: 'Tone'});
+    assert.deepEqual(await state(app), {mode: 'synth', pitchHz: 110, ratio: 1.5, free: false, drift: 0.1, shape: 0, spin: 0, decay: 1.5, glow: 0.35, colour: 'Green', holding: false, page: 'Tone', ghost: false});
     assert.equal(await v.page.evaluate(() => __host.peak), 0, 'nothing sounds on opening');
     assert.deepEqual(v.prompts, []);
     for (const frame of v.page.frames()) assert.deepEqual(await frame.evaluate(() => window.__asked || []).catch(() => []), [], 'no microphone or camera request');
@@ -93,6 +93,47 @@ async function main() {
     const died = await Promise.all([probe(app), probe(out)]), heardNow = await v.page.evaluate(() => __host.recent[__host.recent.length - 1]);
     result.strike = {decay, drawnRmsAfter: died[0].rmsL, outputRmsAfter: died[1].rmsL, heardPeakAfter: heardNow.peak};
     assert(died[0].rmsL < 0.25 * 2e-3 && died[1].rmsL < 0.25 * 2e-3 && heardNow.peak < 0.5 * 2e-3, 'after Decay the strike is gone from the screen, the output and the sound: ' + JSON.stringify(result.strike));
+
+    /* ---- with nothing sounding, the figure stays as a faint preview on both screens; the samples stay silent ---- */
+    // How wide the lit part of a picture is (as a share of its width) and how much light there is in all (mean
+    // brightness, 0..255). The device's beam canvas is read in the frame right after the App drew it (the device
+    // screen carries labels over it); the output is a plain picture and is measured from a screenshot.
+    const seen = async frame => frame === app
+      ? frame.evaluate(() => new Promise(resolve => {
+        // A frame in which the browser has already taken the picture away reads as black: look again, a few times.
+        let tries = 0;
+        const look = () => {
+          const canvas = document.getElementById('beam'), copy = document.createElement('canvas'), width = copy.width = canvas.width, height = copy.height = canvas.height;
+          const g = copy.getContext('2d'); g.drawImage(canvas, 0, 0);
+          const d = g.getImageData(0, 0, width, height).data;
+          let x0 = width, x1 = 0, sum = 0;
+          for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) { const value = Math.max(d[4 * (y * width + x)], d[4 * (y * width + x) + 1], d[4 * (y * width + x) + 2]); sum += value; if (value > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; } }
+          if (sum || ++tries > 30) resolve({wide: Math.max(0, x1 - x0) / width, light: Math.round(sum / (width * height) * 100) / 100});
+          else requestAnimationFrame(look);
+        };
+        requestAnimationFrame(look);
+      }))
+      : v.page.evaluate(async url => {
+        const image = new Image(); image.src = url; await image.decode();
+        const copy = document.createElement('canvas'), width = copy.width = image.naturalWidth, height = copy.height = image.naturalHeight;
+        const g = copy.getContext('2d'); g.drawImage(image, 0, 0);
+        const d = g.getImageData(0, 0, width, height).data;
+        let x0 = width, x1 = 0, sum = 0;
+        for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) { const value = Math.max(d[4 * (y * width + x)], d[4 * (y * width + x) + 1], d[4 * (y * width + x) + 2]); sum += value; if (value > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; } }
+        return {wide: Math.max(0, x1 - x0) / width, light: Math.round(sum / (width * height) * 100) / 100};
+      }, 'data:image/png;base64,' + (await frame.locator('#beam').screenshot()).toString('base64'));
+    await v.page.evaluate(() => __host.reset()); await v.page.waitForTimeout(1300);
+    const faint = {device: await seen(app), output: await seen(out), probes: await Promise.all([probe(app), probe(out)]), heardPeak: await v.page.evaluate(() => __host.peak)};
+    assert.deepEqual([(await state(app)).ghost, (await state(out)).ghost], [true, true], 'the faint preview is on, on both screens');
+    await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'faint-preview.png')});
+    await v.key(1); await app.waitForFunction(() => __xy.state().holding && __xy.probe().rmsL > 0.2, null, {timeout: 8000}); await v.page.waitForTimeout(500);
+    faint.held = {device: await seen(app), output: await seen(out), ghost: [(await state(app)).ghost, (await state(out)).ghost]};
+    await v.key(1); await v.page.waitForTimeout(400);
+    result.faint = faint;
+    assert(faint.device.wide > 0.3 && faint.output.wide > 0.15, 'the preview shows the whole figure, not a dot: ' + JSON.stringify(faint));
+    for (const screen of ['device', 'output']) assert(faint[screen].light > faint.held[screen].light * 0.04 && faint[screen].light < faint.held[screen].light * 0.5, 'the preview is clearly fainter than the sounding figure, and can be seen: ' + JSON.stringify(faint));
+    assert(faint.probes.every(q => q.rmsL < 2e-3 && q.rmsR < 2e-3) && faint.heardPeak < 2e-3, 'the preview is not in the samples or the sound: ' + JSON.stringify(faint));
+    assert.deepEqual(faint.held.ghost, [false, false], 'a sounding figure is drawn at full light');
 
     /* ---- no clicks: fast turns of pitch, ratio and drift, and hold on and off ---- */
     await v.key(1); await v.page.waitForTimeout(300); await v.page.evaluate(() => __host.reset()); await app.evaluate(() => __tap.reset());

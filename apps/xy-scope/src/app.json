@@ -199,7 +199,7 @@
       },
       {
         "title": "Audio",
-        "text": "Stereo: left is across, right is up. The beam shows the very samples sent to the output, so listen on Line-out or headphones to hear the two notes apart; a single speaker plays their sum. Opens silent. Input mode shows the audio input as a pocket oscilloscope with a tuner: it opens the input only when you switch to it and never plays it back. XY needs a stereo source such as Line-in. Choose inputs and outputs and set levels in Menu. In Preview, enable Listen to preview first."
+        "text": "Stereo: left is across, right is up. The beam shows the very samples sent to the output, so listen on Line-out or headphones to hear the two notes apart; a single speaker plays their sum. Opens silent. After a sound, while nothing plays, the figure stays as a faint preview of what the next key will sound. Input mode shows the audio input as a pocket oscilloscope with a tuner: it opens the input only when you switch to it and never plays it back. XY needs a stereo source such as Line-in. Choose inputs and outputs and set levels in Menu. In Preview, enable Listen to preview first."
       },
       {
         "title": "Saved settings",
