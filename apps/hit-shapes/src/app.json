@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "2626ce58-0b22-4656-8088-4263f0e1ff4b",
   "name": "Hit Shapes",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -46,6 +46,10 @@
             "action": "Swing: Off, Light, Medium, Heavy. Off-beat shapes move later with their sound."
           },
           {
+            "control": "E1 · Hold",
+            "action": "Next colors."
+          },
+          {
             "control": "E2 · Turn",
             "action": "Select a voice. Its shapes stand out."
           },
@@ -80,10 +84,6 @@
           {
             "control": "K3 · Press",
             "action": "Play the selected voice once, playing or stopped."
-          },
-          {
-            "control": "K3 · Hold",
-            "action": "Next colors."
           },
           {
             "control": "K4 · Press",

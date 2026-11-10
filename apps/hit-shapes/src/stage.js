@@ -43,9 +43,16 @@ const createStage = (() => {
   // second stay small, so no large part of the picture ever flashes quickly.
   const CALM_MS = 334;
   const KEEP_BARS = 9; // hits older than this are forgotten
-  // A kick shoves the other shapes away from itself: this far (in units of u) right beside it, half as far REACH away,
-  // and they are back within a few tenths of a second.
-  const SHOVE = 0.32, REACH = 4, SHOVE_MS = 110;
+  // A kick shoves the other shapes away from itself: this far (in units of u) right beside it, half as far REACH away.
+  // They are flung out within a few frames and drift back over the next third of a second: a recoil, not a jump, so
+  // a wide shove does not change much of the picture from one frame to the next.
+  const SHOVE = 0.64, REACH = 4, SHOVE_IN_MS = 35, SHOVE_MS = 180;
+  const SHOVE_PEAK = (() => { const at = SHOVE_IN_MS * Math.log(1 + SHOVE_MS / SHOVE_IN_MS); return (1 - Math.exp(-at / SHOVE_IN_MS)) * Math.exp(-at / SHOVE_MS); })();
+  // Kicks closer together than SHOVE_FULL_MS shove less, and closer than SHOVE_NONE_MS not at all: a full shove comes
+  // at most twice a second, and nothing jitters. A crowded pattern shares the shove out: with more
+  // than ROOMY steps switched on, every shape moves less in proportion.
+  const SHOVE_FULL_MS = 500, SHOVE_NONE_MS = 250, ROOMY = 32;
+  const recoil = ms => (1 - Math.exp(-ms / SHOVE_IN_MS)) * Math.exp(-ms / SHOVE_MS) / SHOVE_PEAK; // 0, up to 1, back to 0
   // The whole picture's answer to the knobs. lean: all voices' Tune added up, -1 to 1 (two voices turned all the way
   // are the whole of it). hold: all voices' Decay away from the middle, added up, -1 to 1 (likewise).
   const LEAN = 0.16;   // Score: how far the lanes rise or fall by the edges of the screen, in rows
@@ -101,7 +108,7 @@ const createStage = (() => {
    * shove                 how far a kick shoves the other shapes, as a share of SHOVE (1 unless given): Score's shapes
    *                       are large and lie close, so they move less */
   const score = {
-    depth: false, single: true, shove: 0.62,
+    depth: false, single: true, shove: 0.7,
     // Rows of steps chosen so a step's cell is as close to square as the screen allows; u keeps every shape's share
     // of the picture the same on any screen, so nothing stretches and a circle stays a circle.
     measure(W, H, inset) {
@@ -152,7 +159,7 @@ const createStage = (() => {
   const RINGS = {BD: [0.45, 1], LT: [0.57, -1], SD: [0.68, 0.5], CB: [0.75, -0.5], CP: [0.83, 0.5], RS: [0.89, -0.5], OH: [0.96, 0.5], CH: [1, 0]};
   const ROUND = {BD: true, OH: true}; // shapes that look the same whichever way they are turned are not turned
   const orbit = {
-    depth: true, single: false, bars: 4, swell: 0.55, shove: 1.3,
+    depth: true, single: false, bars: 4, swell: 0.55, shove: 1.7,
     measure(W, H) {
       const R = Math.min(W, H) * 0.41;
       return {W, H, cx: W / 2, cy: H / 2, R, u: R / 5.2, far: Math.hypot(W, H)};
@@ -216,7 +223,7 @@ const createStage = (() => {
   // Where each voice sits within its step's cell, in row heights from the row's middle: the cell reads as one sign.
   const SIGNS = {BD: 0.04, SD: -0.04, CH: 0.44, OH: -0.2, CP: -0.3, LT: 0.1, RS: -0.12, CB: 0.2};
   const weave = {
-    depth: true, single: false, shove: 1.5,
+    depth: true, single: false, shove: 2.6,
     measure(W, H, inset) {
       const cols = W / H < 1.066 ? 8 : STEPS, side = columns(W, cols, Math.sqrt(W * H / 144), inset), rh = side.cw * 1.12;
       const rows = STEPS / cols; // rows per bar
@@ -315,10 +322,11 @@ const createStage = (() => {
     function add(v, record) {
       const list = records[v];
       while (list.length && list[0].bar < record.bar - KEEP_BARS && list[0].time < record.time - 2000) list.shift();
-      record.punch = 1; record.tune = model.tune[v]; record.drawnAt = 0; record.heardAt = 0;
+      record.punch = 1; record.gap = 1e9; record.tune = model.tune[v]; record.drawnAt = 0; record.heardAt = 0;
       for (let i = list.length - 1; i >= 0 && !record.silent; i--) {
         if (list[i].silent) continue;
-        record.punch = Math.max(0.2, Math.min(1, (record.time - list[i].time) / CALM_MS));
+        record.gap = record.time - list[i].time; // since this voice was last heard
+        record.punch = Math.max(0.2, Math.min(1, record.gap / CALM_MS));
         break;
       }
       list.push(record);
@@ -395,8 +403,8 @@ const createStage = (() => {
       it.v = v; it.x = q.x; it.y = q.y; it.u = q.u; it.angle = q.angle; it.left = q.left; it.right = q.right;
       it.step = Math.max(0, Math.floor(pos)); it.level = level * (style.swell || 1); it.strength = strength; it.size = grow * shown * (1 + HOLD * clock.hold * (1 - level) * (1 - level));
       it.t = record ? (lastT - record.time) / 1000 : 1000; it.layer = layer; it.order = order;
-      // Kicks that come faster than twice a second shove less, and from about five a second not at all: nothing jitters.
-      it.shove = v === BD && record && level > 0 ? Math.max(0, (record.punch - 0.4) / 0.6) * (record.accent ? 1 : 0.8) * Math.exp(-it.t * 1000 / SHOVE_MS) : 0;
+      it.shove = v === BD && record && level > 0 ? Math.max(0, Math.min(1, (record.gap - SHOVE_NONE_MS) / (SHOVE_FULL_MS - SHOVE_NONE_MS))) * (record.accent ? 1 : 0.8) * recoil(it.t * 1000) * Math.min(1, level * 6) : 0;
+      it.ringing = v === BD && level > 0;
     }
 
     // A muted voice leaves the picture: only a hit by hand, which still sounds, is drawn.
@@ -464,16 +472,19 @@ const createStage = (() => {
       // Older bars lie behind newer ones; within a bar later voices in shapes.js lie over earlier ones, and the
       // selected voice over them all.
       const drawn = items.slice(0, count).sort((a, b) => a.layer - b.layer || a.order - b.order);
-      // A ringing kick shoves the other shapes away from where it sits. They jump with the hit and ease back.
+      // A ringing kick shoves the other shapes away from where it sits.
       kicks.length = 0;
-      for (const it of drawn) if (it.shove > 0.01) kicks.push(it.x, it.y, it.shove * it.u * SHOVE * (style.shove || 1), it.u * REACH);
+      let on = 0;
+      for (let v = 0; v < SHAPES.length; v++) for (let k = 0; !((model.mutes >> v) & 1) && k < STEPS; k++) if (model.cells[v * STEPS + k]) on++;
+      const far = SHOVE * (style.shove || 1) * Math.min(1, ROOMY / Math.max(1, on));
+      for (const it of drawn) if (it.shove > 0.01) kicks.push(it.x, it.y, it.shove * it.u * far, it.u * REACH);
       for (const it of kicks.length ? drawn : []) {
-        if (it.shove > 0) continue;
+        if (it.ringing) continue;
         let mx = 0, my = 0;
         for (let k = 0; k < kicks.length; k += 4) {
           const dx = it.x - kicks[k], dy = it.y - kicks[k + 1], d = Math.hypot(dx, dy);
           if (d < 1) continue;
-          const far = d / kicks[k + 3], f = kicks[k + 2] / (1 + far * far) / d;
+          const away = d / kicks[k + 3], f = kicks[k + 2] / (1 + away * away) / d;
           mx += dx * f; my += dy * f;
         }
         it.x += mx; it.y += my;

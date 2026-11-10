@@ -10,7 +10,7 @@ const PATTERN_NAMES = 'ABCD';
 // queues them, and the audio device adds its own delay. The picture waits this long so a shape appears when its hit
 // is heard. Measured in the Playground on desktop Chrome: 65-94 ms in all, about 40 ms of it the audio device's own.
 const LATENCY_MS = 75;
-const HOLD_MS = 500; // K4 held this long changes the style instead of the pattern; K3 held this long changes the colours
+const HOLD_MS = 500; // K4 held this long changes the style instead of the pattern; E1 held this long changes the colours instead of the swing
 // Preset patterns, one row per voice: '.' off, 'x' on, 'X' accent. D starts empty.
 const PRESETS = [
   {BD: 'X...x...x...x...', CP: '....X.......X...', OH: '..x...x...x...x.', CH: 'xx.xxx.xxx.xxx.x'},
@@ -302,7 +302,7 @@ function hit() {
 }
 
 /* ---------- controls ---------- */
-let holdTimer = 0, heldLong = false, themeTimer = 0;
+let holdTimer = 0, heldLong = false, themeTimer = 0, themeLong = false;
 if (!isOutput) VrchApp.controls.onEvent(event => {
   if (!ready) return;
   const c = event.control;
@@ -316,12 +316,16 @@ if (!isOutput) VrchApp.controls.onEvent(event => {
   } else if (event.type === 'down') {
     if (held.has(c)) return;
     held.add(c);
-    if (c === 'E1') cycleSwing();
-    else if (c === 'E2') toggleMute();
+    if (c === 'E1') {
+      // A press changes the swing when the knob comes up; a hold changes the colours instead. Neither makes a sound.
+      themeLong = false;
+      clearTimeout(themeTimer);
+      themeTimer = setTimeout(() => { themeLong = true; nextTheme(); }, HOLD_MS);
+    } else if (c === 'E2') toggleMute();
     else if (c === 'E3') setTune(0);
     else if (c === 'E4') setDecay(50);
     else if (c === 'K2') togglePlay();
-    else if (c === 'K3') { hit(); clearTimeout(themeTimer); themeTimer = setTimeout(nextTheme, HOLD_MS); } // held: next colours
+    else if (c === 'K3') hit();
     else if (c === 'K4') {
       // A press changes the pattern when the key comes up; a hold changes the style instead.
       heldLong = false;
@@ -330,7 +334,7 @@ if (!isOutput) VrchApp.controls.onEvent(event => {
     }
   } else if (event.type === 'up' || event.type === 'cancel') {
     if (!held.delete(c)) return;
-    if (c === 'K3') clearTimeout(themeTimer);
+    if (c === 'E1') { clearTimeout(themeTimer); if (event.type === 'up' && !themeLong) cycleSwing(); }
     if (c !== 'K4') return;
     clearTimeout(holdTimer);
     if (event.type === 'up' && !heldLong) nextPattern();

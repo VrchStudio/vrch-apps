@@ -1,5 +1,10 @@
 # Hit Shapes
 
+## 0.4.1
+
+- Hold E1 for the next colors. Holding K3 no longer changes them, so changing colors makes no sound.
+- A kick shoves the shapes around it about three times as far, flinging them out and letting them drift back.
+
 ## 0.4.0
 
 - Tune and Decay now change the whole picture: it leans as the voices are tuned up or down, and longer decays make every trace larger and longer-lived.

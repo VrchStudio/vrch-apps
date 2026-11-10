@@ -114,18 +114,18 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     assert.equal((await kickAt({mutes: 1})).count, 0, 'a muted voice is not drawn');
     result.tuneCenterY = [high.centerY, flat.centerY, low.centerY].map(v => round(v, 1)); result.decayPixels = [short.count, normal.count, long.count];
 
-    // A kick shoves the shapes near it aside for a moment: the clap two steps on sits somewhere else than it would
-    // without the kick, and is back where it belongs well within a second.
+    // A kick shoves the shapes near it aside: the clap two steps on is flung somewhere else than it would be without
+    // the kick, and is back where it belongs well within a second.
     result.shovePx = await control.evaluate(() => {
       const out = {};
       for (const style of [0, 1, 2]) {
         const clap = (mutes, after) => { const run = simulate({width: 960, height: 540, rows: {BD: '....x...........', CP: '......x.........'}, style, mutes, loops: 1}); return blob(run.pixels(4 * run.stepMs + after), 960, PALETTES[0].colors[3], 60); };
         const moved = after => { const alone = clap(1, after), shoved = clap(0, after); return Math.round(Math.hypot(shoved.centerX - alone.centerX, shoved.centerY - alone.centerY) * 10) / 10; };
-        out[STYLES[style]] = [moved(30), moved(900)];
+        out[STYLES[style]] = [moved(60), moved(900)];
       }
       return out;
     });
-    for (const [name, [during, later]] of Object.entries(result.shovePx)) assert(during > 1 && during < 40 && later < 0.5, name + ': a kick shoves its neighbours aside and they come back: ' + [during, later]);
+    for (const [name, [during, later]] of Object.entries(result.shovePx)) assert(during > 5 && during < 40 && later < 0.5, name + ': a kick shoves its neighbours aside and they come back: ' + [during, later]);
     // Score moves on too: four bars in, its lanes have closed toward the middle of the row and its shapes are larger.
     const clapIn = bar => control.evaluate(n => { const run = simulate({width: 960, height: 540, rows: {CP: '....x...........'}, loops: n + 1}); return blob(run.pixels((n * 16 + 8) * run.stepMs), 960, PALETTES[0].colors[3], 60); }, bar);
     const [open, closed] = [await clapIn(0), await clapIn(4)];
@@ -156,6 +156,19 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
       const measured = await control.evaluate(o => flashing(o), {width: Math.round(width * scale), height: Math.round(height * scale), rows: FULL, bpm: 240, theme});
       result.flashing[name + ' palette ' + theme] = Object.fromEntries(Object.entries(measured).map(([key, value]) => [key, round(value)]));
       assert(measured.fast < 0.25 && measured.bursts <= 3, name + ' palette ' + theme + ': ' + JSON.stringify(measured));
+    }
+    // The kick's shove at full strength: roomy patterns of large shapes at tempos where every kick shoves all the way
+    // or nearly, with long decays, on a wide and an upright screen.
+    const ROOMY = {
+      'halves': {BD: 'X...X...X...X...', SD: 'x.x.x.x.x.x.x.x.', CP: 'x.x.x.x.x.x.x.x.', LT: 'x.x.x.x.x.x.x.x.', OH: 'x.x.x.x.x.x.x.x.', CB: 'x...x...x...x...'},
+      'off the beat': Object.fromEntries(Object.keys(FULL).map(id => [id, id === 'BD' ? 'X...X...X...X...' : '..x...x...x...x.'])),
+    };
+    for (const style of [0, 1, 2]) for (const [label, rows] of Object.entries(ROOMY)) for (const bpm of [120, 150]) for (const [name, [width, height]] of [['16:9', SIZES['16:9']], ['9:16', SIZES['9:16']]]) {
+      const scale = 480 / Math.max(width, height);
+      const measured = await control.evaluate(o => flashing(o), {width: Math.round(width * scale), height: Math.round(height * scale), rows, bpm, style, decay: Object.fromEntries(Object.keys(FULL).map(id => [id, 100]))});
+      const key = ['Score ', 'Orbit ', 'Weave '][style] + 'kick shoving, ' + label + ', ' + bpm + ' BPM, ' + name;
+      result.flashing[key] = Object.fromEntries(Object.entries(measured).map(([k, value]) => [k, round(value)]));
+      assert(measured.fast < 0.25 && measured.bursts <= 3, key + ': ' + JSON.stringify(measured));
     }
     // The knobs at their ends: every voice tuned all the way and every decay long, on every beat and on every step.
     for (const style of [0, 1, 2]) for (const [label, rows, bpm] of [['every fourth step at 200 BPM', Object.fromEntries(Object.keys(FULL).map(id => [id, 'X...'.repeat(4)])), 200], ['every step', FULL, 240]]) for (const [name, [width, height]] of [['16:9', SIZES['16:9']], ['9:16', SIZES['9:16']]]) {
@@ -231,15 +244,26 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     now = await control.evaluate(() => __hitShapes.state());
     assert.deepEqual([now.theme, now.style], [0, 'Weave'], 'the style button is the same as holding K4');
     await tap('#styleChip'); await tap('#styleChip');
-    // K3 held: next colours, on the device and on the big screen. A short press only plays the voice.
-    const k3 = async ms => { const box = await pg.key(2).boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(ms); await page.mouse.up(); await page.waitForTimeout(300); };
-    await k3(120);
-    assert.equal((await control.evaluate(() => __hitShapes.state())).theme, 0, 'a short press of K3 keeps the colours');
-    await k3(750);
-    assert.equal((await control.evaluate(() => __hitShapes.state())).theme, 1, 'holding K3 changes the colours'); assert.equal((await output.evaluate(() => __hitShapes.state())).theme, 1, 'the output takes the colours from K3');
-    await k3(750); await k3(750);
-    assert.equal((await control.evaluate(() => __hitShapes.state())).theme, 0);
-    await page.waitForTimeout(1200); // the voice played by those presses rings out
+    // E1 held: next colours, on the device and on the big screen, and the swing stays (the Playground presses a knob
+    // only once the pointer has rested on it a while, hence the long hold). A short press changes the swing
+    // and keeps the colours. Neither makes a sound.
+    const e1 = async ms => { const box = await pg.encoder(0).boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(ms); await page.mouse.up(); await page.waitForTimeout(300); };
+    const looks = async () => { const at = await control.evaluate(() => __hitShapes.state()); return [at.theme, at.swing]; };
+    const [, swing] = await looks();
+    await e1(1300);
+    assert.deepEqual(await looks(), [1, swing], 'holding E1 changes the colours and keeps the swing'); assert.equal((await output.evaluate(() => __hitShapes.state())).theme, 1, 'the output takes the colours from E1');
+    await e1(1300); await e1(1300);
+    assert.deepEqual(await looks(), [0, swing]);
+    await e1(100);
+    now = await looks();
+    assert(now[0] === 0 && now[1] !== swing, 'a short press of E1 changes the swing and keeps the colours: ' + JSON.stringify(now));
+    await e1(100); await e1(100); await e1(100);
+    assert.deepEqual(await looks(), [0, swing], 'four presses bring the swing round again');
+    // K3 held is only a hit: the colours stay.
+    const box3 = await pg.key(2).boundingBox(); await page.mouse.move(box3.x + box3.width / 2, box3.y + box3.height / 2); await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up();
+    assert.equal((await looks())[0], 0, 'holding K3 keeps the colours');
+    assert.equal(result.silentBeforeStart < 0.001, true);
+    await page.waitForTimeout(1300); // the voice played by K3 rings out
 
     /* ---------- playing ---------- */
     await pg.key(1).click();
