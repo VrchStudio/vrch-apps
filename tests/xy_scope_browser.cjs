@@ -106,9 +106,8 @@ async function main() {
     assert.equal(engineStream.breaks, 0, 'the engine posts every frame it plays');
     if (process.env.XY_SCOPE_DEBUG) console.log('STEP', JSON.stringify(await v.page.evaluate(() => ({nodes: __host.nodes, stepAt: __host.stepAt, blocks: __host.blocks, now: Math.round(performance.now()), dialogs: [...document.querySelectorAll('dialog[open]')].map(d => d.textContent.trim().slice(0, 80))}))), JSON.stringify(await app.evaluate(() => ({notice: document.getElementById('notice').textContent, state: __xy.state(), timing: {...__xy.timing(), frames: undefined, marks: undefined}}))));
     assert(result.largestStep < steepest * 1.05, 'no jump between neighbouring samples: ' + result.largestStep + ' against ' + steepest);
-    await v.key(1); await v.page.waitForTimeout(200);
 
-    /* ---- the Motion page, colours, and what is saved ---- */
+    /* ---- the Motion page, colours, and what is saved (the tone is still held, so each picture shows the figure) ---- */
     await v.key(3); await v.page.waitForTimeout(200);
     assert.equal((await state(app)).page, 'Motion');
     result.colours = [];
@@ -127,6 +126,7 @@ async function main() {
     assert(/^v1\./.test(link.searchParams.get('s') || ''), 'the address carries the figure: ' + link.search);
     result.shareState = link.searchParams.get('s');
     await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'figure-5-4.png')});
+    await v.key(1); await v.page.waitForTimeout(200);
     const w = await visit('&s=' + encodeURIComponent(result.shareState)), theirs = await w.find('control');
     await theirs.waitForFunction(() => __xy.firstFrameAt !== null); await w.page.waitForTimeout(800);
     const got = await state(theirs), gotView = await view(theirs);

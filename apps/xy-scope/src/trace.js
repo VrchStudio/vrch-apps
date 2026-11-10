@@ -137,11 +137,14 @@
       let segments = 0;
       if (look.fresh) last = null;
       for (let i = Math.max(0, count - MAX_SEGMENTS); i < count; i++) {
-        const bx = points[2 * i], by = points[2 * i + 1], ax = last ? last[0] : bx, ay = last ? last[1] : by;
+        const bx = points[2 * i], by = points[2 * i + 1];
+        // A new stroke begins at its first point without resting there: no bright dot where a sweep starts.
+        if (!last) { last = [bx, by]; continue; }
+        const ax = last[0], ay = last[1];
         for (let corner = 0, at = segments * 24; corner < 4; corner++, at += 6) {
           data[at] = ax; data[at + 1] = ay; data[at + 2] = bx; data[at + 3] = by; data[at + 4] = corner & 1; data[at + 5] = corner & 2 ? 1 : -1;
         }
-        (last ||= [0, 0])[0] = bx; last[1] = by; segments++;
+        last[0] = bx; last[1] = by; segments++;
       }
       if (segments) {
         gl.useProgram(beam.p); gl.bindBuffer(gl.ARRAY_BUFFER, quads); gl.bufferSubData(gl.ARRAY_BUFFER, 0, data.subarray(0, segments * 24));
