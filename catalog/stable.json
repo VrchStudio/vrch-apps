@@ -2653,7 +2653,7 @@
     },
     "5b1752ad-ea1d-45cb-9ba1-9ad1dd89783f": {
       "slug": "disco-ball",
-      "latest": "1.8.0",
+      "latest": "1.8.1",
       "versions": {
         "1.7.0": {
           "version": "1.7.0",
@@ -2711,6 +2711,25 @@
             "updateApi": 1
           },
           "notes": "- Show the spinning ball on a large output or second screen, lighting in time with the device."
+        },
+        "1.8.1": {
+          "version": "1.8.1",
+          "name": "Disco Ball",
+          "tag": "disco-ball-v1.8.1",
+          "sourceCommit": "ea46682428f4b602861788b498e43870e7299172",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/disco-ball-v1.8.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/disco-ball-v1.8.1/disco-ball-1.8.1.vrchapp",
+          "size": 53102,
+          "sha256": "9f24624f68d96d34fb2faaa9f0bd0ec39e97ce7fd5ec1590bcf4c4ac70e9893b",
+          "packageDigest": "9f24624f68d96d34fb2faaa9f0bd0ec39e97ce7fd5ec1590bcf4c4ac70e9893b",
+          "revision": "b4e86d48b83aedd627e7b525450ea724fabeba10ccbf558ce76523387a729ed0",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show Stopped instead of an audio error when the App opens before you press anything."
         }
       },
       "guide": {
