@@ -480,7 +480,7 @@
       arriving = null; owed = 0;
     }
     // The same faint preview as on the device, found the same way from the samples this screen works out itself.
-    const before = quietFor > 0 ? Signal.copy(sig) : null;
+    const before = quietFor > 0 && (!ghostSig || ghostAge + dt > 1) ? Signal.copy(sig) : null;   // only when ghost() will ask
     let count = own(dt, p);
     if (!following.preview && quiet(count, dt)) {
       keep(count);
