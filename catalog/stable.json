@@ -1110,7 +1110,7 @@
     },
     "94f420c4-fd6e-4b50-835e-8577322ed483": {
       "slug": "shaker-shaker",
-      "latest": "0.2.0",
+      "latest": "0.2.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -1168,6 +1168,25 @@
             "updateApi": 1
           },
           "notes": "- Show the chamber and its grains on a large output or second screen, moving with every shake and tap."
+        },
+        "0.2.1": {
+          "version": "0.2.1",
+          "name": "Shaker Shaker",
+          "tag": "shaker-shaker-v0.2.1",
+          "sourceCommit": "0637456a0a782ccb47ea03f820e3ae12e8642308",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/shaker-shaker-v0.2.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/shaker-shaker-v0.2.1/shaker-shaker-0.2.1.vrchapp",
+          "size": 276112,
+          "sha256": "581fda725458ff0369484656993907e2bf6064318da72c671d89ed2fefa00921",
+          "packageDigest": "581fda725458ff0369484656993907e2bf6064318da72c671d89ed2fefa00921",
+          "revision": "cca571a7a7fafddc3b2eb75baf8571e6ee0a86b1d41470753d179862d8e8c53b",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show no sound error when the App opens before you tap; the first tap starts the sound."
         }
       },
       "guide": {
