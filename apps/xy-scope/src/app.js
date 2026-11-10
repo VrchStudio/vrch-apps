@@ -12,6 +12,7 @@
   if (context.name) document.title = context.name;
 
   const SR = Signal.SR, PER_MS = SR / 1000, LEVEL = Signal.LEVEL;
+  const marks = {script: performance.now()};
   // Sound is heard later than the engine makes it: the host carries it in 20 ms blocks and the audio device adds its
   // own delay. The picture waits the same time, less the frame a screen takes to show what was drawn.
   const AUDIO_LATENCY_MS = 60, SCREEN_LATENCY_MS = 16, DISPLAY_DELAY_MS = AUDIO_LATENCY_MS - SCREEN_LATENCY_MS;
@@ -86,9 +87,9 @@
   const preview = p => ({...p, hold: 1, strike: 0});
   function own(dt, p) {
     owed += dt * SR;
-    const count = clamp(Math.floor(owed), 1, MAX_POINTS);
-    owed = Math.max(0, owed - count);
-    Signal.render(sig, p, points, count);
+    const count = Math.min(Math.floor(owed), MAX_POINTS);
+    owed = Math.min(owed - count, 1);
+    if (count) Signal.render(sig, p, points, count);
     return count;
   }
   // What was drawn, kept for half a second in speaker units, for the checks in window.__xy.
@@ -189,7 +190,8 @@
 
   function frame(now) {
     requestAnimationFrame(frame);
-    const dt = clamp((now - lastNow) / 1000, 0.001, 0.1); lastNow = now;
+    if (now <= lastNow) return;   // a host may run animation callbacks twice in one frame
+    const dt = clamp((now - lastNow) / 1000, 0, 0.1); lastNow = now;
     if (dirty) { dirty = false; render(); }
     let count = 0;
     if (engine && engine.began >= 0 && base !== null) {
@@ -230,7 +232,8 @@
   }
   function outputFrame(now) {
     requestAnimationFrame(outputFrame);
-    const dt = clamp((now - lastNow) / 1000, 0.001, 0.1), wall = epoch(now); lastNow = now;
+    if (now <= lastNow) return;
+    const dt = clamp((now - lastNow) / 1000, 0, 0.1), wall = epoch(now); lastNow = now;
     while (queue.length && queue[0].at <= wall) { following = queue.shift(); arriving = following; }
     if (!following) { show(0, dt, 0, 0); return; }
     const p = following.preview ? preview(following.p) : following.p;
@@ -358,9 +361,11 @@
     }, 40);
   }
   function layout() {
-    let inset = 0;
-    try { inset = sdk.context.safeInsets?.left || 0; } catch (_) { /* default */ }
+    let inset = 0, bars = false;
+    try { const now = sdk.context; inset = now.safeInsets?.left || 0; bars = now.viewport?.monitorHeight > 0; } catch (_) { /* default */ }
     document.documentElement.style.setProperty('--inset-left', inset + 'px');
+    // While the host shows its E/K bars the values and keys are labelled there: the screen is left to the beam.
+    document.documentElement.classList.toggle('bars', bars);
     trace.resize();
   }
 
@@ -387,13 +392,14 @@
     state: () => ({mode: 'synth', pitchHz: settings().freq, ratio: settings().ratio, free: state.free, drift: state.drift, shape: state.shape / 100, spin: state.spin,
       decay: state.decay, glow: state.glow / 100, colour: COLOURS[state.colour][0], holding, page: PAGES[state.page].name}),
     probe: () => ({source, samples: lastCount, fx: pitchOf(0), fy: pitchOf(1), rmsL: rmsOf(0), rmsR: rmsOf(1)}),
-    timing: () => ({displayDelayMs: DISPLAY_DELAY_MS, audioLatencyMs: AUDIO_LATENCY_MS, base, have, drawn, began: engine ? engine.began : null, context: engine ? engine.ctx.state : null, frames: drawLog.slice()}),
+    timing: () => ({displayDelayMs: DISPLAY_DELAY_MS, audioLatencyMs: AUDIO_LATENCY_MS, base, have, drawn, began: engine ? engine.began : null, context: engine ? engine.ctx.state : null, marks: {...marks, first: firstFrameAt}, frames: drawLog.slice()}),
     signal: () => bare(isOutput || source !== 'audio' || !snapshot ? sig : snapshot.s),
   };
 
   /* ---------- start ---------- */
   async function init() {
     trace = window.XYTrace.create($('beam'));
+    marks.trace = performance.now();
     new ResizeObserver(layout).observe($('stage'));
     if (isOutput) {
       layout(); show(0, 1 / 60, 0, 0);
@@ -404,6 +410,7 @@
     }
     build();
     try { const saved = await sdk.data.get('state'); version = saved.version; restore(saved.value); } catch (_) { /* first run */ }
+    marks.loaded = performance.now();
     applyShare(context.share);
     layout(); render();
     // One full figure at once, before the first animation frame.

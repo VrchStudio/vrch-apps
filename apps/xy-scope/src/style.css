@@ -24,3 +24,6 @@ footer{flex:0 0 50px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
 .cell.touch .lab{color:var(--beam)}
 :root[data-role=output] main{padding:0}
 :root[data-role=output] header,:root[data-role=output] footer,:root[data-role=output] .cross{display:none}
+:root.bars main{position:relative}
+:root.bars header{position:absolute;left:var(--inset-left,0px);right:0;top:0;z-index:1;pointer-events:none}
+:root.bars #pages,:root.bars #hold,:root.bars footer{display:none}
