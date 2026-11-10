@@ -1,5 +1,11 @@
 # Hit Shapes
 
+## 0.4.0
+
+- Tune and Decay now change the whole picture: it leans as the voices are tuned up or down, and longer decays make every trace larger and longer-lived.
+- Hold K3 for the next colors.
+- Orbit shows each pattern as its own picture: every step the kick plays casts a ray across the screen, and the trails are already there before Start.
+
 ## 0.3.0
 
 - A kick now shoves the shapes around it aside for a moment, in every style.

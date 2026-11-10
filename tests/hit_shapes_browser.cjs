@@ -132,6 +132,21 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     assert(closed.centerY > open.centerY + 30 && closed.count > open.count * 1.3, 'Score closes its lanes: ' + JSON.stringify([open, closed]));
     result.scoreFoldCenterY = [open.centerY, closed.centerY].map(v => round(v, 1));
 
+    // The knobs change the whole picture, not only their voice. With two other voices tuned all the way up, a clap that
+    // was not touched sits higher toward the right of Score and Weave and rises off Orbit's hub; with their decays
+    // long every trace is larger, and with them short, smaller. (Weave's rows leave the top of the screen as they
+    // rise, so the middle of all its claps moves less one way than the other.)
+    result.knobs = await control.evaluate(() => {
+      const out = {};
+      for (const style of [0, 1, 2]) {
+        const clap = o => blob(simulate({width: 960, height: 540, rows: {CP: '..............x.'}, style, playing: false, ...o}).pixels(1000), 960, PALETTES[0].colors[3], 60);
+        const plain = clap({}), up = clap({tune: {BD: 12, SD: 12}}), down = clap({tune: {BD: -12, SD: -12}}), long = clap({decay: {BD: 100, SD: 100}}), short = clap({decay: {BD: 0, SD: 0}});
+        out[STYLES[style]] = {leanUpPx: Math.round(plain.centerY - up.centerY), leanDownPx: Math.round(down.centerY - plain.centerY), long: Math.round(long.count / plain.count * 100) / 100, short: Math.round(short.count / plain.count * 100) / 100};
+      }
+      return out;
+    });
+    for (const [name, knob] of Object.entries(result.knobs)) assert(knob.leanUpPx > 8 && knob.leanDownPx > 8 && knob.leanUpPx + knob.leanDownPx > 40 && knob.long > 1.3 && knob.short < 0.75, name + ': Tune and Decay change the whole picture: ' + JSON.stringify(knob));
+
     // Photosensitivity: 240 BPM with every step of every voice accented, each palette, each screen shape, then other
     // dense patterns. Less than a quarter of the picture may flash more than three times a second, and a quarter of the
     // picture may change at once at most three times a second.
@@ -141,6 +156,14 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
       const measured = await control.evaluate(o => flashing(o), {width: Math.round(width * scale), height: Math.round(height * scale), rows: FULL, bpm: 240, theme});
       result.flashing[name + ' palette ' + theme] = Object.fromEntries(Object.entries(measured).map(([key, value]) => [key, round(value)]));
       assert(measured.fast < 0.25 && measured.bursts <= 3, name + ' palette ' + theme + ': ' + JSON.stringify(measured));
+    }
+    // The knobs at their ends: every voice tuned all the way and every decay long, on every beat and on every step.
+    for (const style of [0, 1, 2]) for (const [label, rows, bpm] of [['every fourth step at 200 BPM', Object.fromEntries(Object.keys(FULL).map(id => [id, 'X...'.repeat(4)])), 200], ['every step', FULL, 240]]) for (const [name, [width, height]] of [['16:9', SIZES['16:9']], ['9:16', SIZES['9:16']]]) {
+      const scale = 480 / Math.max(width, height), all = value => Object.fromEntries(Object.keys(FULL).map(id => [id, value]));
+      const measured = await control.evaluate(o => flashing(o), {width: Math.round(width * scale), height: Math.round(height * scale), rows, bpm, style, tune: all(-12), decay: all(100)});
+      const key = ['Score ', 'Orbit ', 'Weave '][style] + label + ', long and low, ' + name;
+      result.flashing[key] = Object.fromEntries(Object.entries(measured).map(([k, value]) => [k, round(value)]));
+      assert(measured.fast < 0.25 && measured.bursts <= 3, key + ': ' + JSON.stringify(measured));
     }
     for (const style of [1, 2]) for (const [name, [width, height]] of Object.entries(SIZES)) {
       const scale = 480 / Math.max(width, height);
@@ -188,7 +211,7 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     assert.equal((await control.evaluate(() => __hitShapes.state())).pattern, 2); assert.equal((await output.evaluate(() => __hitShapes.state())).pattern, 2, 'the output follows the pattern');
     const differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 60) n++; return n / (a.length / 4); };
     result.patternsDiffer = {ab: round(differ(pictures[0], pictures[1])), ac: round(differ(pictures[0], pictures[2])), bc: round(differ(pictures[1], pictures[2]))};
-    assert(Object.values(result.patternsDiffer).every(share => share > 0.02), 'A, B and C are clearly different pictures: ' + JSON.stringify(result.patternsDiffer));
+    assert(Object.values(result.patternsDiffer).every(share => share > 0.12), 'A, B and C are clearly different pictures: ' + JSON.stringify(result.patternsDiffer));
     await pg.key(3).click(); await pg.key(3).click(); await page.waitForTimeout(300); // D, then A again
     assert.equal((await control.evaluate(() => __hitShapes.state())).pattern, 0);
     // K4 held: next style, same pattern. The colour button: next colours.
@@ -208,6 +231,15 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     now = await control.evaluate(() => __hitShapes.state());
     assert.deepEqual([now.theme, now.style], [0, 'Weave'], 'the style button is the same as holding K4');
     await tap('#styleChip'); await tap('#styleChip');
+    // K3 held: next colours, on the device and on the big screen. A short press only plays the voice.
+    const k3 = async ms => { const box = await pg.key(2).boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(ms); await page.mouse.up(); await page.waitForTimeout(300); };
+    await k3(120);
+    assert.equal((await control.evaluate(() => __hitShapes.state())).theme, 0, 'a short press of K3 keeps the colours');
+    await k3(750);
+    assert.equal((await control.evaluate(() => __hitShapes.state())).theme, 1, 'holding K3 changes the colours'); assert.equal((await output.evaluate(() => __hitShapes.state())).theme, 1, 'the output takes the colours from K3');
+    await k3(750); await k3(750);
+    assert.equal((await control.evaluate(() => __hitShapes.state())).theme, 0);
+    await page.waitForTimeout(1200); // the voice played by those presses rings out
 
     /* ---------- playing ---------- */
     await pg.key(1).click();

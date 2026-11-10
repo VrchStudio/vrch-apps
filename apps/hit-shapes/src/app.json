@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "2626ce58-0b22-4656-8088-4263f0e1ff4b",
   "name": "Hit Shapes",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -55,7 +55,7 @@
           },
           {
             "control": "E3 · Turn",
-            "action": "Tune the selected voice. Higher pitch, higher shape."
+            "action": "Tune the selected voice. Higher pitch, higher shape, and the whole picture leans with the tuning of all voices."
           },
           {
             "control": "E3 · Press",
@@ -63,7 +63,7 @@
           },
           {
             "control": "E4 · Turn",
-            "action": "Decay of the selected voice. A longer sound keeps its shape longer."
+            "action": "Decay of the selected voice. A longer sound keeps its shape longer, and longer decays make every trace larger and longer-lived."
           },
           {
             "control": "E4 · Press",
@@ -80,6 +80,10 @@
           {
             "control": "K3 · Press",
             "action": "Play the selected voice once, playing or stopped."
+          },
+          {
+            "control": "K3 · Hold",
+            "action": "Next colors."
           },
           {
             "control": "K4 · Press",
@@ -122,7 +126,7 @@
       },
       {
         "title": "Styles",
-        "text": "Score: one bar, left to right, each voice on its own lane; over eight bars the lanes close into one line and open again. Orbit: the bar is a dial; traces ride their rings for four bars, and over sixteen bars the dial opens and closes. Weave: each bar is a row and the rows climb the screen, so the last bars stay in view and every change leaves a seam."
+        "text": "Score: one bar, left to right, each voice on its own lane; over eight bars the lanes close into one line and open again. Orbit: the bar is a dial, and every step the kick plays casts a ray across the screen; traces ride their rings for four bars, and over sixteen bars the dial opens and closes. Weave: each bar is a row and the rows climb the screen, so the last bars stay in view and every change leaves a seam."
       },
       {
         "title": "Saved settings",
