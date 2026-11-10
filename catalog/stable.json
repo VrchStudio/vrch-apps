@@ -1621,7 +1621,7 @@
     },
     "95d295da-7cf2-40ec-934a-07818d892b68": {
       "slug": "body-vibes",
-      "latest": "0.6.1",
+      "latest": "0.6.2",
       "versions": {
         "0.5.1": {
           "version": "0.5.1",
@@ -1755,6 +1755,25 @@
             "updateApi": 1
           },
           "notes": "- Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy."
+        },
+        "0.6.2": {
+          "version": "0.6.2",
+          "name": "BODY VIBES",
+          "tag": "body-vibes-v0.6.2",
+          "sourceCommit": "1d67bfa64bcd3859ced5700d14b4970800f06e24",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/body-vibes-v0.6.2",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/body-vibes-v0.6.2/body-vibes-0.6.2.vrchapp",
+          "size": 43694463,
+          "sha256": "dfe19b59c79f5ef02e1e196bdcd614b97c0a17e8432fabaaf4553dd8231acb6f",
+          "packageDigest": "dfe19b59c79f5ef02e1e196bdcd614b97c0a17e8432fabaaf4553dd8231acb6f",
+          "revision": "47eae2dbc4ed324ebdead61df138c056e493fcd3177c9d30486b15c5ef2ec3ed",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Wait for K2 before asking for the camera and sound: opening the App, or a link to it, no longer asks for the camera on its own.\n- Explain a blocked or missing camera, and press K2 to try again without reloading."
         }
       },
       "guide": {
