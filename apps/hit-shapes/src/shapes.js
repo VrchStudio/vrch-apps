@@ -9,7 +9,7 @@
  *   seconds  how long one hit rings at Decay 50, taken from the voice's sound in engine.js. Decay scales it.
  *   draw(g, p)
  *            paints one hit. The stage calls it on every frame from the moment the hit is heard until its trace has
- *            faded a bar later, and once per step for the still picture. g is a CanvasRenderingContext2D whose
+ *            gone a bar later, and once per step for the still picture. g is a CanvasRenderingContext2D whose
  *            fillStyle and strokeStyle are already this hit's flat colour: paint with fill and stroke only. Keep
  *            the function under 40 lines. p holds:
  *
@@ -18,13 +18,14 @@
  *     p.level       how loud the hit still is: 1 at the hit, falling to 0 as the sound dies away. At 0 only the trace
  *                   is left, and the still picture is drawn at 0.
  *     p.t           seconds since the hit (a large number for the still picture)
- *     p.size        1 for a normal hit, 1.25 for an accent; a little more for a moment when the voice is selected
+ *     p.size        1 for a normal hit, 1.25 for an accent; a little more for a moment when the voice is selected,
+ *                   and falling to 0 as an old trace leaves at the end of its bar
  *     p.step        the step, 0-15
  *     p.left, p.right   the left and right edges of the picture in pixels, for shapes that cross it
  *     p.rand(n)     a fixed number from 0 to 1 for this voice, this step and n: the same on every loop and on every
  *                   screen. Use it wherever a shape should look scattered; never use the browser's random numbers.
  *
- * The stage picks the colour (brighter for an accent, fading with the trace) and keeps the picture the same on the
+ * The stage picks the colour (brighter for an accent and while a hit rings) and keeps the picture the same on the
  * device and on the big screen. Two rules keep the picture safe to watch: flat colour only, and no voice larger than
  * the kick. The browser test in tests/ measures the flashing area at 240 BPM with every step filled. */
 const SHAPES = [

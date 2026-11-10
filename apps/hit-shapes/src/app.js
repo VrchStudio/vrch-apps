@@ -8,9 +8,8 @@ const SWING = [['Off', 0], ['Light', 0.08], ['Medium', 0.16], ['Heavy', 0.25]];
 const PATTERN_NAMES = 'ABCD';
 // Sound is heard a while after the engine renders it: the App audio port forwards 20 ms blocks to the host, which
 // queues them, and the audio device adds its own delay. The picture waits this long so a shape appears when its hit
-// is heard. Measured in the Playground on desktop Chrome: 65-88 ms in all, 37-40 ms of it the audio device's own.
-// Sound a little after the picture reads as together sooner than sound before it, so this sits toward the short end.
-const LATENCY_MS = 60;
+// is heard. Measured in the Playground on desktop Chrome: 65-94 ms in all, about 40 ms of it the audio device's own.
+const LATENCY_MS = 75;
 const HOLD_MS = 500; // K4 held this long changes the colours instead of the pattern
 // Preset patterns, one row per voice: '.' off, 'x' on, 'X' accent. D starts empty.
 const PRESETS = [

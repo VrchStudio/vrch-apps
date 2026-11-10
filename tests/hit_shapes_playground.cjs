@@ -38,9 +38,12 @@ function fixture() {
   return {catalog: Buffer.from(JSON.stringify(catalog)), served, packages, manifest, size: bytes.length, files: meta.files};
 }
 
+// HIT_SHAPES_ORIGIN=https://host runs against a deployed Playground and the published App instead of this working tree.
+const LIVE = (process.env.HIT_SHAPES_ORIGIN || '').replace(/\/$/, '');
+
 async function start({gpu = !!process.env.HIT_SHAPES_GPU, viewport = {width: 1440, height: 900}, headless = true} = {}) {
   const fx = fixture();
-  const server = http.createServer((req, res) => {
+  const server = LIVE ? null : http.createServer((req, res) => {
     const route = decodeURIComponent(req.url.split('?')[0]), marked = {'X-Vrch-Playground-Route': '1', 'Content-Type': 'application/octet-stream'};
     if (route === '/playground/events') { req.resume(); res.writeHead(204); return res.end(); }
     if (route.startsWith('/playground/github/') || route.startsWith('/playground/packages/')) {
@@ -57,14 +60,15 @@ async function start({gpu = !!process.env.HIT_SHAPES_GPU, viewport = {width: 144
     if (!file.startsWith(STATIC) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
     res.writeHead(200, {'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store'}); res.end(fs.readFileSync(file));
   });
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const origin = 'http://127.0.0.1:' + server.address().port;
+  if (server) await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const origin = LIVE || 'http://127.0.0.1:' + server.address().port;
   const {chromium} = require(process.env.PLAYWRIGHT || path.join(path.dirname(process.execPath), '../lib/node_modules/playwright'));
   // Software GL by default; HIT_SHAPES_GPU=1 uses the machine's GPU for frame-rate measurements.
-  const browser = await require(path.join(PAGES, 'tests/vrch_playground_test_github.cjs')).launch(chromium, {executablePath: '/usr/bin/google-chrome', headless,
-    args: [...(gpu ? ['--enable-gpu', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=gl-egl'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']), '--autoplay-policy=no-user-gesture-required']});
+  const options = {executablePath: '/usr/bin/google-chrome', headless,
+    args: [...(gpu ? ['--enable-gpu', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=gl-egl'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']), '--autoplay-policy=no-user-gesture-required']};
+  const browser = LIVE ? await chromium.launch(options) : await require(path.join(PAGES, 'tests/vrch_playground_test_github.cjs')).launch(chromium, options);
   const context = await browser.newContext({viewport});
-  await context.route(RAW + '**', route => route.abort('blockedbyclient'));
+  if (!LIVE) await context.route(RAW + '**', route => route.abort('blockedbyclient'));
   const page = await context.newPage(), errors = [], requests = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => { if (!request.url().startsWith(origin) && !/^(data|blob|about):/.test(request.url())) requests.push(request.url()); });
@@ -94,7 +98,7 @@ async function start({gpu = !!process.env.HIT_SHAPES_GPU, viewport = {width: 144
     await page.mouse.up(); await page.waitForTimeout(200);
   };
   return {fx, origin, browser, context, page, errors, requests, open, frames, settled, control, turn, key: index => control('keys', index), encoder: index => control('encoders', index),
-    close: async () => { await browser.close(); server.close(); }};
+    live: !!LIVE, close: async () => { await browser.close(); server?.close(); }};
 }
 
 module.exports = {start, fixture, APPS, PAGES, SLUG, assert};

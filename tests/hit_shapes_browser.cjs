@@ -3,6 +3,7 @@
 //   node tests/hit_shapes_browser.cjs            checks; prints measurements as JSON
 //   HIT_SHAPES_SHOTS=/tmp/dir node tests/...      also saves screenshots (patterns, colours, output shapes)
 //   HIT_SHAPES_GPU=1 node tests/...               use the machine's GPU instead of software GL (frame rates)
+//   HIT_SHAPES_ORIGIN=https://host node tests/... a deployed Playground and the published App, not this working tree
 const fs = require('node:fs'), path = require('node:path');
 const {start, assert, SLUG} = require('./hit_shapes_playground.cjs');
 const SHOTS = process.env.HIT_SHAPES_SHOTS || '';
@@ -114,7 +115,7 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     result.firstFrameMs = {device: round(first[0].at, 1), output: round(first[1].at, 1), fromLink: Math.round(Math.max(first[0].origin + first[0].at, first[1].origin + first[1].at) - opened)};
     assert(first[0].at > 0 && first[0].at < 1000 && first[1].at > 0 && first[1].at < 1000, 'the first picture is drawn within a second: ' + JSON.stringify(result.firstFrameMs));
     assert.equal(first[0].asks + first[1].asks + await page.evaluate(() => window.permissionAsks), 0, 'no permission is requested');
-    assert.deepEqual(pg.requests, [], 'nothing outside the host is requested');
+    if (!pg.live) assert.deepEqual(pg.requests, [], 'nothing outside the host is requested');
     const still = await control.evaluate(() => ({state: __hitShapes.state(), cells: Array.from(state.cells.subarray(0, 128)).join(''), preset: Array.from(presetCells().subarray(0, 128)).join(''), title: document.title}));
     assert.equal(still.state.pattern, 0); assert.equal(still.state.playing, false); assert.equal(still.cells, still.preset, 'it opens on pattern A');
     assert.equal(still.title, pg.fx.manifest.name, 'the name comes from app.json');
@@ -261,7 +262,7 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     assert.deepEqual(reopened, {state: mine.state, cells: mine.cells}, 'reopening keeps patterns, tempo, colours and voice settings');
     // Another browser: nothing saved, only the link.
     const other = await pg.browser.newContext({viewport: {width: 1440, height: 900}});
-    await other.route('https://raw.githubusercontent.com/**', route => route.abort('blockedbyclient'));
+    if (!pg.live) await other.route('https://raw.githubusercontent.com/**', route => route.abort('blockedbyclient'));
     const visit = await other.newPage();
     await visit.goto(pg.origin + '/playground?view=2d&app=' + SLUG + '&s=' + encodeURIComponent(mine.share));
     await visit.keyboard.press('Shift');

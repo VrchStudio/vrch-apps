@@ -4,8 +4,9 @@
  *
  * Time runs left to right: each of the 16 steps has a fixed place (two rows of eight on an upright screen), and Swing
  * moves the off-beat places later by the same share it delays their sound. Every voice has a lane; Tune moves it.
- * A hit is drawn at its step from the moment it is heard: large while it rings, then a trace that fades within a bar.
- * While stopped, the picture is every trace of the current pattern.
+ * A hit is drawn at its step from the moment it is heard: large while it rings, then a trace that stays until the end
+ * of its bar and shrinks away. While stopped, the picture is every trace of the current pattern. While playing, the
+ * beat being played sits on a slightly lifted ground, so the bar's pace shows even where nothing is hit.
  *
  * The picture depends only on the pattern, the settings, the hits and the time, never on chance, so the same loop
  * draws the same frames. Hits arrive stamped with their time on the audio clock; origin places that clock on the
@@ -50,6 +51,11 @@ const createStage = (() => {
       });
     });
   });
+  // The ground of the beat being played: each ground a touch nearer the ruler's neutral. Far too slight to flash.
+  const lifted = PALETTES.map(palette => [palette.bg, palette.panel].map(ground => {
+    const from = rgb(ground), to = rgb(palette.ink);
+    return 'rgb(' + from.map((v, n) => Math.round(v + (to[n] - v) * 0.045)).join(',') + ')';
+  }));
 
   // Rows of steps chosen so a step's cell is as close to square as the screen allows; u keeps every shape's share of
   // the picture the same on any screen, so nothing stretches and a circle stays a circle.
@@ -160,22 +166,25 @@ const createStage = (() => {
       p.u = L.u; p.left = 0; p.right = W; p.step = s;
       voice = v; step = s;
     }
-    // strength: how bright the flat colour is (1 is the plain colour); fade: 1 down to 0 as a trace leaves.
-    function paint(v, strength, fade) {
-      g.globalAlpha = fade;
+    // strength: how bright the flat colour is (1 is the plain colour).
+    function paint(v, strength) {
       g.fillStyle = g.strokeStyle = tables[model.theme][SHAPES[v].color][Math.round((Math.max(0.5, Math.min(1.5, strength)) - 0.5) * 2 * TINTS)];
       SHAPES[v].draw(g, p);
     }
 
-    // The frame of the poster: every other beat on a second ground, the ruler's resting ticks, and the playhead.
+    // The frame of the poster: every other beat on a second ground (the beat being played lifted a little), the
+    // ruler's resting ticks, and the playhead.
     function grid() {
       const palette = PALETTES[model.theme], lane = SHAPES[CH < 0 ? 0 : CH].lane;
+      const edge = beat => Math.round(beat <= 0 ? 0 : beat >= L.cols / 4 ? W : L.pad + beat * 4 * L.cw);
       for (let row = 0; row < L.rows; row++) {
         const top = row * L.bandH, base = top + L.bandH * lane;
         g.fillStyle = palette.panel;
-        for (let beat = (row + 1) % 2; beat < L.cols / 4; beat += 2) {
-          const x0 = Math.round(beat ? L.pad + beat * 4 * L.cw : 0), x1 = Math.round(beat + 1 < L.cols / 4 ? L.pad + (beat + 1) * 4 * L.cw : W);
-          g.fillRect(x0, Math.round(top), x1 - x0, Math.round(top + L.bandH) - Math.round(top));
+        for (let beat = (row + 1) % 2; beat < L.cols / 4; beat += 2) g.fillRect(edge(beat), Math.round(top), edge(beat + 1) - edge(beat), Math.round(top + L.bandH) - Math.round(top));
+        if (model.playing && stage.playStep >= 0 && Math.floor(stage.playStep / L.cols) % L.rows === row) {
+          const beat = Math.floor(stage.playStep % L.cols / 4);
+          g.fillStyle = lifted[model.theme][(beat + row) % 2];
+          g.fillRect(edge(beat), Math.round(top), edge(beat + 1) - edge(beat), Math.round(top + L.bandH) - Math.round(top));
         }
         g.fillStyle = palette.grid;
         for (let c = 0; c < L.cols; c++) {
@@ -203,7 +212,7 @@ const createStage = (() => {
           const breath = Math.sin(t / 700 + s * 0.4); // a slow, slight swell that travels along the bar
           place(v, s);
           p.level = 0; p.t = 1000; p.size = (value === 2 ? ACCENT : 1) * (1 + pop) * (1 + 0.02 * breath);
-          paint(v, value === 2 ? REST[1] : REST[0], 1);
+          paint(v, value === 2 ? REST[1] : REST[0]);
         }
       }
       // Newest first: only a voice's latest hit rings (the one before lets go), and a step struck again replaces its trace.
@@ -227,6 +236,7 @@ const createStage = (() => {
         if (!record.drawnAt) { record.drawnAt = stage.now; record.heardAt = record.time + stage.origin; }
         const age = (t - record.time) / barMs, again = record.cell >= 0 && (seen >> record.cell) & 1;
         if (record.cell >= 0) seen |= 1 << record.cell;
+        // A trace keeps its size and colour until the last fifth of its bar, then shrinks to nothing.
         const trace = model.playing || record.manual ? (again || age >= 1 ? 0 : 1 - smooth(0.8, 1, age)) : level > 0 ? 1 : 0;
         if (level <= 0 && trace <= 0) continue;
         // A trace rests a shade under the plain colour (an accent nearer to it); a hit is at full strength while it rings.
@@ -236,8 +246,8 @@ const createStage = (() => {
       for (let i = batch.length - 4; i >= 0; i -= 4) {
         const record = batch[i];
         place(v, record.pos);
-        p.level = batch[i + 1]; p.t = (t - record.time) / 1000; p.size = (record.accent ? ACCENT : 1) * (1 + pop);
-        paint(v, batch[i + 2], batch[i + 3]);
+        p.level = batch[i + 1]; p.t = (t - record.time) / 1000; p.size = (record.accent ? ACCENT : 1) * (1 + pop) * batch[i + 3];
+        paint(v, batch[i + 2]);
       }
     }
 
@@ -254,7 +264,6 @@ const createStage = (() => {
       // Later voices in shapes.js are drawn over earlier ones, and the selected voice over them all.
       for (let v = 0; v < SHAPES.length; v++) if (v !== model.sel) drawVoice(v, t, !!((model.mutes >> v) & 1));
       if (model.sel >= 0 && model.sel < SHAPES.length) drawVoice(model.sel, t, !!((model.mutes >> model.sel) & 1));
-      g.globalAlpha = 1;
       stage.frames++;
       if (!stage.firstFrameAt) stage.firstFrameAt = performance.now();
     };
