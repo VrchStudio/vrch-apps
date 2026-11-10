@@ -12,7 +12,8 @@
 //      Nothing else is drawn here: no text, no scale, no grid.
 //
 // To remix: the beam's width, halo and brightness are the constants below; the colour curve is in SHOW. Each segment is
-// a small rectangle whose shader works out how long the beam's round spot lingered over every pixel it covers.
+// a small rectangle whose shader works out how long the beam's round spot lingered over every pixel it covers. The halo
+// is the same light, blurred at a quarter of the size: one cheap pass instead of a wide rectangle for every segment.
 (() => {
   'use strict';
   const RATE = 48000;       // points per second of signal
@@ -20,6 +21,9 @@
   const HALO = 0.22;        // share of the light in a soft halo four spots wide
   const BRIGHT = 60;        // overall brightness
   const MAX_SEGMENTS = 4096;
+  const REACH = 4;          // how far from its centre line a segment is drawn, in spot sizes
+  const SMALL = 4;          // the halo is worked out at 1/SMALL of the canvas size
+  const DETAIL = 1.25;      // canvas pixels to one spot size: the beam is soft, so a finer canvas would look the same and cost more
 
   const VERT_BEAM = 'attribute vec2 a_a,a_b,a_corner;uniform vec2 u_unit,u_half;uniform float u_reach;varying vec3 v;' +
     'void main(){vec2 A=a_a*u_unit,B=a_b*u_unit,d=B-A;float len=length(d);vec2 dir=len>1e-4?d/len:vec2(1.,0.);' +
@@ -28,19 +32,26 @@
   const PRECISION = '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n';
   // Light left on a pixel by a round (Gaussian) spot that slides evenly along the segment. The total is the same for
   // every segment, so a short segment (a slow beam) is brighter than a long one.
-  const FRAG_BEAM = PRECISION + 'uniform float u_sigma,u_energy,u_halo;varying vec3 v;' +
+  const FRAG_BEAM = PRECISION + 'uniform float u_sigma,u_energy;varying vec3 v;' +
     'float erf(float x){float s=sign(x),a=abs(x);x=1.+(.278393+(.230389+.078108*(a*a))*a)*a;x*=x;return s-s/(x*x);}' +
     'float beam(float sigma){float k=.70710678/sigma;' +
     'if(v.z<.02)return exp(-(v.x*v.x+v.y*v.y)*k*k)/(6.2831853*sigma*sigma);' +
     'return exp(-v.y*v.y*k*k)*(erf(v.x*k)-erf((v.x-v.z)*k))/(2.*v.z*2.5066283*sigma);}' +
-    'void main(){gl_FragColor=vec4(u_energy*(beam(u_sigma)*(1.-u_halo)+beam(u_sigma*4.)*u_halo),0.,0.,1.);}';
+    'void main(){gl_FragColor=vec4(u_energy*beam(u_sigma),0.,0.,1.);}';
   const VERT_FULL = 'attribute vec2 a_corner;varying vec2 uv;void main(){uv=a_corner*.5+.5;gl_Position=vec4(a_corner,0.,1.);}';
   // Phosphor: what was lit keeps a share of its light each frame.
   const FRAG_FADE = PRECISION + 'uniform sampler2D u_light;uniform float u_keep,u_floor;varying vec2 uv;' +
     'void main(){gl_FragColor=vec4(max(texture2D(u_light,uv).r*u_keep-u_floor,0.),0.,0.,1.);}';
+  // Halo: the light averaged down to a small picture, then blurred across and up it.
+  const FRAG_SMALL = PRECISION + 'uniform sampler2D u_light;uniform vec2 u_texel;varying vec2 uv;' +
+    'void main(){gl_FragColor=vec4((texture2D(u_light,uv+u_texel).r+texture2D(u_light,uv-u_texel).r+' +
+    'texture2D(u_light,uv+vec2(u_texel.x,-u_texel.y)).r+texture2D(u_light,uv+vec2(-u_texel.x,u_texel.y)).r)*.25,0.,0.,1.);}';
+  const FRAG_BLUR = PRECISION + 'uniform sampler2D u_light;uniform vec2 u_step;uniform float u_k;varying vec2 uv;' +
+    'void main(){float sum=0.,total=0.;for(int i=-6;i<=6;i++){float x=float(i),w=exp(-x*x*u_k);sum+=texture2D(u_light,uv+u_step*x).r*w;total+=w;}' +
+    'gl_FragColor=vec4(sum/total,0.,0.,1.);}';
   // SHOW: stored light to colour. Faint light takes the phosphor colour; strong light burns towards white.
-  const FRAG_SHOW = PRECISION + 'uniform sampler2D u_light;uniform vec3 u_colour;uniform float u_gain;varying vec2 uv;' +
-    'void main(){float i=texture2D(u_light,uv).r*u_gain;gl_FragColor=vec4(min(u_colour*(1.-exp(-i))+vec3(1.-exp(-i*.1)),1.),1.);}';
+  const FRAG_SHOW = PRECISION + 'uniform sampler2D u_light,u_soft;uniform vec3 u_colour;uniform float u_gain,u_halo;varying vec2 uv;' +
+    'void main(){float i=mix(texture2D(u_light,uv).r,texture2D(u_soft,uv).r,u_halo)*u_gain;gl_FragColor=vec4(min(u_colour*(1.-exp(-i))+vec3(1.-exp(-i*.1)),1.),1.);}';
 
   function createGL(canvas, options) {
     const attributes = {alpha: false, antialias: false, depth: false, stencil: false, powerPreference: 'high-performance'};
@@ -48,7 +59,7 @@
     if (!gl) gl = canvas.getContext('webgl', attributes);
     if (!gl) return null;
     const view = options.view, maxPixels = options.maxPixels;
-    let beam, fade, show, quads, corners, indices, targets = [], current = 0, float = false, lost = false, last = null;
+    let beam, fade, show, small, blur, quads, corners, indices, targets = [], soft = [], current = 0, float = false, lost = false, last = null;
     const data = new Float32Array(MAX_SEGMENTS * 24);
 
     function program(vertex, fragment) {
@@ -66,7 +77,7 @@
     }
     function target(width, height, wantFloat) {
       const texture = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, texture);
-      for (const [name, value] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, name, value);
+      for (const [name, value] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, name, value);
       if (wantFloat) gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, width, height, 0, gl.RED, gl.HALF_FLOAT, null);
       else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       const frame = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, frame);
@@ -76,19 +87,22 @@
       return complete ? {texture, frame} : (gl.deleteFramebuffer(frame), gl.deleteTexture(texture), null);
     }
     function build() {
-      for (const t of targets) { gl.deleteFramebuffer(t.frame); gl.deleteTexture(t.texture); }
-      targets = []; float = false;
+      for (const t of [...targets, ...soft]) if (t) { gl.deleteFramebuffer(t.frame); gl.deleteTexture(t.texture); }
+      targets = []; soft = []; float = false;
       // Half-float light keeps faint strokes and long afterglow smooth; 8-bit is the fallback.
       if (second && (gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'))) {
         const a = target(canvas.width, canvas.height, true), b = a && target(canvas.width, canvas.height, true);
         if (a && b) { targets = [a, b]; float = true; }
       }
       if (!float) targets = [target(canvas.width, canvas.height, false), target(canvas.width, canvas.height, false)];
-      if (!targets[0] || !targets[1]) throw new Error('framebuffer');
+      const width = Math.max(1, Math.ceil(canvas.width / SMALL)), height = Math.max(1, Math.ceil(canvas.height / SMALL));
+      soft = [target(width, height, float), target(width, height, float)].map(t => t && Object.assign(t, {width, height}));
+      if (!targets[0] || !targets[1] || !soft[0] || !soft[1]) throw new Error('framebuffer');
       current = 0; last = null;
     }
     function setup() {
       beam = program(VERT_BEAM, FRAG_BEAM); fade = program(VERT_FULL, FRAG_FADE); show = program(VERT_FULL, FRAG_SHOW);
+      small = program(VERT_FULL, FRAG_SMALL); blur = program(VERT_FULL, FRAG_BLUR);
       quads = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quads); gl.bufferData(gl.ARRAY_BUFFER, data.byteLength, gl.DYNAMIC_DRAW);
       corners = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, corners); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
       const order = new Uint16Array(MAX_SEGMENTS * 6);
@@ -99,7 +113,7 @@
     }
     function resize() {
       const ratio = Math.min(window.devicePixelRatio || 1, 3), cssWidth = canvas.clientWidth || 1, cssHeight = canvas.clientHeight || 1;
-      const scale = Math.min(ratio, Math.sqrt(maxPixels / (cssWidth * cssHeight)));
+      const scale = Math.min(ratio, Math.sqrt(maxPixels / (cssWidth * cssHeight)), DETAIL / (SPOT * Math.min(cssWidth, cssHeight)));
       const width = Math.max(2, Math.round(cssWidth * scale)), height = Math.max(2, Math.round(cssHeight * scale));
       if (width === canvas.width && height === canvas.height) return;
       canvas.width = width; canvas.height = height;
@@ -113,7 +127,7 @@
     function draw(points, count, look) {
       if (lost) return;
       const width = canvas.width, height = canvas.height, short = Math.min(width, height), unit = short / (2 * view);
-      const sigma = Math.max(0.8, SPOT * short), reach = sigma * 10, glow = Math.max(look.glow, 1 / 240);
+      const sigma = Math.max(0.8, SPOT * short), reach = sigma * REACH, glow = Math.max(look.glow, 1 / 240);
       const from = targets[current], to = targets[1 - current];
       gl.viewport(0, 0, width, height); gl.bindFramebuffer(gl.FRAMEBUFFER, to.frame); gl.disable(gl.BLEND);
       full(fade, from.texture);
@@ -136,16 +150,23 @@
         gl.enableVertexAttribArray(b); gl.vertexAttribPointer(b, 2, gl.FLOAT, false, 24, 8);
         gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 24, 16);
         gl.uniform2f(beam.u.u_unit, unit, unit); gl.uniform2f(beam.u.u_half, width / 2, height / 2);
-        gl.uniform1f(beam.u.u_reach, reach); gl.uniform1f(beam.u.u_sigma, sigma); gl.uniform1f(beam.u.u_halo, HALO);
+        gl.uniform1f(beam.u.u_reach, reach); gl.uniform1f(beam.u.u_sigma, sigma);
         // A resting figure is equally bright whatever the afterglow: the longer the glow, the less each pass adds.
         gl.uniform1f(beam.u.u_energy, BRIGHT * unit * sigma / ((look.rate || RATE) * glow) * (float ? 1 : 0.125));
         gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices); gl.drawElements(gl.TRIANGLES, segments * 6, gl.UNSIGNED_SHORT, 0);
         gl.disable(gl.BLEND); gl.disableVertexAttribArray(a); gl.disableVertexAttribArray(b);
       }
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      // The halo is four spots wide: the light, averaged over SMALL x SMALL pixels and blurred by what is still missing.
+      const spread = Math.sqrt(Math.max(0.25, 15 * sigma * sigma - SMALL * SMALL / 4)) / SMALL, k = 1 / (2 * spread * spread);
+      gl.viewport(0, 0, soft[0].width, soft[0].height);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, soft[0].frame); full(small, to.texture); gl.uniform2f(small.u.u_texel, 1 / width, 1 / height); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, soft[1].frame); full(blur, soft[0].texture); gl.uniform2f(blur.u.u_step, 1 / soft[0].width, 0); gl.uniform1f(blur.u.u_k, k); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, soft[0].frame); full(blur, soft[1].texture); gl.uniform2f(blur.u.u_step, 0, 1 / soft[0].height); gl.uniform1f(blur.u.u_k, k); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.viewport(0, 0, width, height); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       full(show, to.texture);
-      gl.uniform3f(show.u.u_colour, look.colour[0], look.colour[1], look.colour[2]); gl.uniform1f(show.u.u_gain, float ? 1 : 8);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, soft[0].texture); gl.uniform1i(show.u.u_soft, 1); gl.activeTexture(gl.TEXTURE0);
+      gl.uniform3f(show.u.u_colour, look.colour[0], look.colour[1], look.colour[2]); gl.uniform1f(show.u.u_gain, float ? 1 : 8); gl.uniform1f(show.u.u_halo, HALO);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       current = 1 - current;
     }

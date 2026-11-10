@@ -152,9 +152,9 @@
     if (opening) return opening;
     const mine = ++audioEpoch;
     opening = (async () => {
-      const ctx = new AudioContext({sampleRate: SR, latencyHint: 'interactive', sinkId: {type: 'none'}});
-      let output = null;
+      let ctx = null, output = null;
       try {
+        ctx = new AudioContext({sampleRate: SR, latencyHint: 'interactive', sinkId: {type: 'none'}});
         void ctx.resume().catch(() => {});
         output = await sdk.audio.openOutput({channels: 2});
         const destination = await output.createNode(ctx);
@@ -170,7 +170,7 @@
         engine = opened; push();
         return opened;
       } catch (error) {
-        await Promise.allSettled([output?.close(), ctx.close()]);
+        await Promise.allSettled([output?.close(), ctx?.close()]);
         throw error;
       } finally { opening = null; }
     })();
@@ -263,12 +263,18 @@
   }
   function setFrozen(on) { if (frozen !== on) { frozen = on; dirty = true; publish(); } }
   // The newest "count" samples of the louder channel, with any constant offset removed, into mono[]. Returns how many.
+  // The offset is a mean that fades in and out over the stretch (a Hann window): a plain mean of a tone that does not
+  // fit the stretch a whole number of times would move with the tone's phase and make a steady wave shimmer.
   function tail(count) {
     count = Math.min(count, heard, HEARD);
-    let left = 0, right = 0, sumL = 0, sumR = 0;
-    for (let i = 0, f = heard - count; i < count; i++, f++) { const at = (f % HEARD) * 2, l = heardRing[at], r = heardRing[at + 1]; left += l * l; right += r * r; sumL += l; sumR += r; }
+    const step = 2 * Math.PI / (count || 1), turnC = Math.cos(step), turnS = Math.sin(step);
+    let left = 0, right = 0, sumL = 0, sumR = 0, weights = 0, c = Math.cos(step / 2), s = Math.sin(step / 2);
+    for (let i = 0, f = heard - count; i < count; i++, f++) {
+      const at = (f % HEARD) * 2, l = heardRing[at], r = heardRing[at + 1], weight = 1 - c, next = c * turnC - s * turnS;
+      left += l * l; right += r * r; sumL += l * weight; sumR += r * weight; weights += weight; s = s * turnC + c * turnS; c = next;
+    }
     if (listen ? left > right * 2 : right > left * 2) listen = 1 - listen;
-    const mean = (listen ? sumR : sumL) / (count || 1);
+    const mean = (listen ? sumR : sumL) / (weights || 1);
     for (let i = 0, f = heard - count; i < count; i++, f++) mono[i] = heardRing[(f % HEARD) * 2 + listen] - mean;
     return count;
   }
