@@ -22,7 +22,9 @@ body[data-role=output] :is(#player,#visual-settings,.scene-picker-overlay,#quick
 /* The only controls on the device's picture: camera and mute, in the corner, out of the way while a panel is open.
    One rule for both: pink means on (music playing, camera on); off is white and crossed out, the speaker with a cross
    (muted, Silent or Mic / Line in) and the camera with a slash (camera off). A refused or missing camera shows in the warning colour. */
-.player__quick{position:fixed;top:10px;right:10px;z-index:2;display:flex;gap:8px}
+/* The bar owns the whole corner, padding included: a finger lands lower than it aims, and a touch beside, between or just
+   under the buttons goes to the nearest one instead of opening Player. */
+.player__quick{position:fixed;top:0;right:0;z-index:2;display:flex;gap:8px;padding:10px 10px 24px 12px}
 .player__quick-btn{position:relative;display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid rgba(255,255,255,.16);border-radius:50%;background:rgba(0,0,0,.45);color:rgba(255,255,255,.85);font-size:16px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:background-color .2s,color .2s,border-color .2s,opacity .2s}
 .player__quick-btn:hover{background:rgba(0,0,0,.65);color:#fff}
 .player__quick-btn[data-on=true]{border-color:var(--vrch-theme-border);color:var(--vrch-theme-text)}

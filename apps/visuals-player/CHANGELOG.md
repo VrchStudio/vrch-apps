@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.6
+
+- On the device screen, a finger tap on or near the camera and speaker buttons turns them on and off; it no longer opens Player.
+
 ## 0.3.5
 
 - The camera button shows a camera crossed by a slash when the camera is off.

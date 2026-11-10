@@ -533,6 +533,14 @@
     else music.setMuted(!music.muted);
     interact('tap'); remember(); renderMute();
   });
+  // A touch on the bar around the buttons (between them, at the edge, just under them) presses the nearest one.
+  $('quick').addEventListener('click', event => {
+    if (event.target !== event.currentTarget) return;
+    const buttons = [...event.currentTarget.querySelectorAll('button:not([hidden])')];
+    const middle = button => { const box = button.getBoundingClientRect(); return box.left + box.width / 2; };
+    const nearest = buttons.sort((a, b) => Math.abs(middle(a) - event.clientX) - Math.abs(middle(b) - event.clientX))[0];
+    nearest?.click();
+  });
   // A tap on the picture opens Player; the panels close with their own close buttons or the same key.
   $('stage').addEventListener('click', () => { if (!isOutput && !open && active) { interact('tap'); openPlayer(); } });
   $('playerClose').addEventListener('click', () => closeAll());
