@@ -29,7 +29,7 @@ function presetCells() {
   return cells;
 }
 const defaults = () => ({
-  bpm: 120, swing: 0, sel: 0, pattern: 0, mutes: 0, theme: 0, style: 1, cells: presetCells(),
+  bpm: 120, swing: 0, sel: 0, pattern: 0, mutes: 0, theme: 0, style: 1, alt: 0, cells: presetCells(),
   tune: SHAPES.map(() => 0), decay: SHAPES.map(() => 50),
 });
 const whole = (value, min, max, fallback) => {
@@ -42,7 +42,7 @@ function restore(saved) {
   s.bpm = whole(saved.bpm, 40, 240, 120); s.swing = whole(saved.swing, 0, SWING.length - 1, 0);
   s.sel = whole(saved.sel, 0, TRACKS - 1, 0); s.pattern = whole(saved.pattern, 0, PATTERNS - 1, 0);
   s.mutes = whole(saved.mutes, 0, (1 << TRACKS) - 1, 0); s.theme = whole(saved.theme, 0, PALETTES.length - 1, 0);
-  s.style = whole(saved.style, 0, STYLES.length - 1, s.style);
+  s.style = whole(saved.style, 0, STYLES.length - 1, s.style); s.alt = whole(saved.alt, 0, (1 << TRACKS) - 1, 0);
   if (typeof saved.cells === 'string' && saved.cells.length === s.cells.length) {
     for (let i = 0; i < s.cells.length; i++) s.cells[i] = whole(saved.cells[i], 0, 2, 0);
   }
@@ -51,7 +51,7 @@ function restore(saved) {
   return s;
 }
 const snapshot = () => ({
-  bpm: state.bpm, swing: state.swing, sel: state.sel, pattern: state.pattern, mutes: state.mutes, theme: state.theme, style: state.style,
+  bpm: state.bpm, swing: state.swing, sel: state.sel, pattern: state.pattern, mutes: state.mutes, theme: state.theme, style: state.style, alt: state.alt,
   cells: state.cells.join(''), tune: [...state.tune], decay: [...state.decay],
 });
 
@@ -73,7 +73,7 @@ function picture() {
   const from = cellIndex(state.pattern, 0, 0);
   return {
     cells: state.cells.subarray(from, from + TRACKS * STEPS), bpm: state.bpm, swing: SWING[state.swing][1], mutes: state.mutes,
-    tune: state.tune, decay: state.decay, theme: state.theme, style: state.style, sel: state.sel, playing: ui.running,
+    tune: state.tune, decay: state.decay, theme: state.theme, style: state.style, alt: state.alt, sel: state.sel, playing: ui.running,
   };
 }
 const wallClock = () => stage.origin + Date.now() - performance.now();
@@ -176,31 +176,34 @@ function onEngine({data: m}) {
       invalidate(); persist();
     }
   } else if (m.type === 'hit') {
+    // While the pattern plays the engine writes a hit by hand, or a roll's, into the step nearest to it.
+    if (m.cell >= 0 && !state.cells[m.cell]) { state.cells[m.cell] = 1; invalidate(); persist(); }
     send({t: 'hit', voice: m.track, time, ...stage.strike({voice: m.track, time})});
   }
 }
 
-/* ---------- share link: v2.<pattern, swing, colours, style><tempo><the pattern's steps><each voice's tune and decay> ---------- */
-// 63 URL-safe characters. Each voice's 16 steps (off, on, accent) pack into 5 of them, its tune and decay into 2.
-// v1 links, from before there were styles, still open. A link the App cannot read is ignored and the App opens as saved.
+/* ---------- share link: v3.<pattern, swing, colours, style><tempo><the pattern's steps><each voice's tune and decay><shapes> ---------- */
+// 65 URL-safe characters. Each voice's 16 steps (off, on, accent) pack into 5 of them, its tune and decay into 2, and
+// which voices show their other shape into the last 2. v1 and v2 links, from before there were styles and second
+// shapes, still open. A link the App cannot read is ignored and the App opens as saved.
 const SHARE_DIGITS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-const SHARE_STATE = new RegExp('^v([12])\\.([A-Za-z0-9_-]+)$');
+const SHARE_STATE = new RegExp('^v([123])\\.([A-Za-z0-9_-]+)$');
 let shareTimer = 0, sharedState = '';
 function shareState() {
   const digits = (n, count) => { let out = ''; for (let k = 0; k < count; k++) { out += SHARE_DIGITS[n % 64]; n = Math.floor(n / 64); } return out; };
-  let text = 'v2.' + digits(state.pattern + 4 * state.swing + 16 * state.theme + 48 * state.style, 2) + digits(state.bpm - 40, 2);
+  let text = 'v3.' + digits(state.pattern + 4 * state.swing + 16 * state.theme + 48 * state.style, 2) + digits(state.bpm - 40, 2);
   for (let t = 0; t < TRACKS; t++) {
     let n = 0;
     for (let s = STEPS - 1; s >= 0; s--) n = n * 3 + state.cells[cellIndex(state.pattern, t, s)];
     text += digits(n, 5);
   }
   for (let t = 0; t < TRACKS; t++) text += digits(state.tune[t] + 12 + 25 * Math.round(state.decay[t] / 2), 2);
-  return text;
+  return text + digits(state.alt, 2);
 }
 function applyShare(share) {
   const match = typeof share?.state === 'string' ? SHARE_STATE.exec(share.state) : null;
-  const wide = match?.[1] === '2' ? 2 : 1, body = match?.[2] || '';
-  if (body.length !== wide + 2 + TRACKS * 7) return false;
+  const version = Number(match?.[1]) || 1, wide = version >= 2 ? 2 : 1, body = match?.[2] || '';
+  if (body.length !== wide + 2 + TRACKS * 7 + (version >= 3 ? 2 : 0)) return false;
   let at = 0;
   const number = count => { let n = 0; for (let k = count - 1; k >= 0; k--) n = n * 64 + SHARE_DIGITS.indexOf(body[at + k]); at += count; return n; };
   const head = number(wide), bpm = number(2) + 40, rows = [], voices = [];
@@ -217,8 +220,11 @@ function applyShare(share) {
     if (n >= 25 * 51) return false;
     voices.push([n % 25 - 12, Math.floor(n / 25) * 2]);
   }
+  const alt = version >= 3 ? number(2) : 0; // links from before there were second shapes open with the first ones
+  if (alt >= 1 << TRACKS) return false;
+  state.alt = alt;
   state.pattern = head % 4; state.swing = Math.floor(head / 4) % 4; state.theme = Math.floor(head / 16) % 3; state.bpm = bpm;
-  if (wide === 2) state.style = Math.floor(head / 48);
+  if (version >= 2) state.style = Math.floor(head / 48);
   rows.forEach((row, t) => row.forEach((value, s) => { state.cells[cellIndex(state.pattern, t, s)] = value; }));
   voices.forEach(([tune, decay], t) => { state.tune[t] = tune; state.decay[t] = decay; });
   return true;
@@ -297,12 +303,17 @@ function togglePlay() {
 }
 // Play the selected voice once, playing or stopped. The picture draws it when the engine reports it.
 function hit() {
-  const track = state.sel, strike = () => post({type: 'hit', track, id: ++hitSeq});
+  const track = state.sel, strike = () => { post({type: 'hit', track, id: ++hitSeq}); if (rolling) post({type: 'roll', track, on: true}); };
   if (engine) { void engine.ctx.resume().catch(() => {}); strike(); } else openAudio().then(strike, audioError);
 }
+// K3 or a finger held down rolls the voice: after the first hit, one more on every step until it is let go.
+let rolling = false;
+function hold() { rolling = true; hit(); }
+function release() { if (!rolling) return; rolling = false; post({type: 'roll', on: false}); }
+function nextShape() { state.alt ^= 1 << state.sel; invalidate(); persist(); }
 
 /* ---------- controls ---------- */
-let holdTimer = 0, heldLong = false, themeTimer = 0, themeLong = false;
+let holdTimer = 0, heldLong = false, themeTimer = 0, themeLong = false, shapeTimer = 0, shapeLong = false;
 if (!isOutput) VrchApp.controls.onEvent(event => {
   if (!ready) return;
   const c = event.control;
@@ -323,9 +334,14 @@ if (!isOutput) VrchApp.controls.onEvent(event => {
       themeTimer = setTimeout(() => { themeLong = true; nextTheme(); }, HOLD_MS);
     } else if (c === 'E2') toggleMute();
     else if (c === 'E3') setTune(0);
-    else if (c === 'E4') setDecay(50);
+    else if (c === 'E4') {
+      // A press resets the decay when the knob comes up; a hold gives the voice its other shape instead.
+      shapeLong = false;
+      clearTimeout(shapeTimer);
+      shapeTimer = setTimeout(() => { shapeLong = true; nextShape(); }, HOLD_MS);
+    }
     else if (c === 'K2') togglePlay();
-    else if (c === 'K3') hit();
+    else if (c === 'K3') hold();
     else if (c === 'K4') {
       // A press changes the pattern when the key comes up; a hold changes the style instead.
       heldLong = false;
@@ -335,6 +351,8 @@ if (!isOutput) VrchApp.controls.onEvent(event => {
   } else if (event.type === 'up' || event.type === 'cancel') {
     if (!held.delete(c)) return;
     if (c === 'E1') { clearTimeout(themeTimer); if (event.type === 'up' && !themeLong) cycleSwing(); }
+    if (c === 'E4') { clearTimeout(shapeTimer); if (event.type === 'up' && !shapeLong) setDecay(50); }
+    if (c === 'K3') release();
     if (c !== 'K4') return;
     clearTimeout(holdTimer);
     if (event.type === 'up' && !heldLong) nextPattern();
@@ -342,7 +360,7 @@ if (!isOutput) VrchApp.controls.onEvent(event => {
 });
 
 /* ---------- device screen ---------- */
-const view = {voices: [], glyphs: [], steps: [], theme: -1, style: -1};
+const view = {voices: [], glyphs: [], steps: [], theme: -1, style: -1, alt: -1};
 // The style button's sign for each style: a bar of lanes, a dial, a cloth of cells.
 const STYLE_SIGNS = ['M2 4h12M2 8h12M2 12h12', 'M8 2.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11M8 8h.01', 'M2.5 2.5h4v4h-4zM9.5 2.5h4v4h-4zM2.5 9.5h4v4h-4zM9.5 9.5h4v4h-4z'];
 function status(text) { $('status').textContent = text; }
@@ -359,27 +377,30 @@ function build() {
     const b = document.createElement('button'), glyph = document.createElement('canvas'), label = document.createElement('span');
     b.className = 'voice'; b.setAttribute('aria-label', name); label.textContent = id;
     b.append(glyph, label);
-    press(b, () => selectVoice(t)); $('voices').append(b); view.voices.push(b); view.glyphs.push(glyph);
+    press(b, () => { if (t === state.sel) nextShape(); else selectVoice(t); }); // the selected voice again: its other shape
+    $('voices').append(b); view.voices.push(b); view.glyphs.push(glyph);
   });
   for (let s = 0; s < STEPS; s++) {
     const b = document.createElement('button');
     b.className = 'step'; b.setAttribute('aria-label', 'Step ' + (s + 1));
     press(b, () => cycleStep(s)); $('steps').append(b); view.steps.push(b);
   }
-  press($('picture'), hit);
+  press($('picture'), hold);
+  for (const type of ['pointerup', 'pointercancel', 'pointerleave']) $('picture').addEventListener(type, release);
+  addEventListener('blur', release);
   press($('styleChip'), nextStyle);
   press($('colorChip'), nextTheme);
 }
 const toggle = (el, name, on) => { if (el.classList.contains(name) !== on) el.classList.toggle(name, on); };
 function render() {
   const palette = PALETTES[state.theme], root = document.documentElement.style;
-  if (view.theme !== state.theme) {
-    view.theme = state.theme;
+  if (view.theme !== state.theme || view.alt !== state.alt) {
+    view.theme = state.theme; view.alt = state.alt;
     root.setProperty('--bg', palette.bg); root.setProperty('--ink', palette.ink); root.setProperty('--grid', palette.grid);
     [...$('colorChip').children].forEach((swatch, i) => { swatch.style.background = palette.colors[i]; });
     view.glyphs.forEach((glyph, t) => {
       glyph.width = Math.round(glyph.clientWidth * devicePixelRatio) || 64; glyph.height = Math.round(glyph.clientHeight * devicePixelRatio) || 40;
-      stage.glyph(glyph, t);
+      stage.glyph(glyph, t, !!((state.alt >> t) & 1));
     });
   }
   if (view.style !== state.style) {
@@ -450,7 +471,7 @@ function follow({data: m} = {}) {
     const from = cellIndex(0, 0, 0);
     state.pattern = 0; state.bpm = whole(m.bpm, 40, 240, 120); state.mutes = whole(m.mutes, 0, (1 << TRACKS) - 1, 0);
     state.theme = whole(m.theme, 0, PALETTES.length - 1, 0); state.sel = whole(m.sel, 0, TRACKS - 1, 0);
-    state.style = whole(m.style, 0, STYLES.length - 1, 0);
+    state.style = whole(m.style, 0, STYLES.length - 1, 0); state.alt = whole(m.alt, 0, (1 << TRACKS) - 1, 0);
     state.swing = Math.max(0, SWING.findIndex(([, amount]) => amount === m.swing));
     for (let i = 0; i < m.cells.length; i++) state.cells[from + i] = whole(m.cells[i], 0, 2, 0);
     if (Array.isArray(m.tune)) state.tune = state.tune.map((_, i) => whole(m.tune[i], -12, 12, 0));
@@ -470,14 +491,17 @@ window.__hitShapes = {
   state: () => ({
     pattern: isOutput ? shown.pattern : state.pattern, bpm: state.bpm, swing: state.swing, voice: SHAPES[state.sel].id,
     playing: ui.playing, theme: state.theme, style: STYLES[state.style],
-    voices: SHAPES.map(({id}, t) => ({id, tune: state.tune[t], decay: state.decay[t], mute: !!((state.mutes >> t) & 1)})),
+    voices: SHAPES.map(({id}, t) => ({
+      id, tune: state.tune[t], decay: state.decay[t], mute: !!((state.mutes >> t) & 1), other: !!((state.alt >> t) & 1),
+      steps: Array.from({length: STEPS}, (_, s) => '.xX'[state.cells[cellIndex(isOutput ? 0 : state.pattern, t, s)]]).join(''),
+    })),
   }),
   hits: () => stage.hits(),
 };
 
 addEventListener('error', event => status('Error: ' + (event.message || 'unknown')));
 addEventListener('resize', layout);
-addEventListener('pagehide', () => { disposed = true; clearTimeout(saveTimer); clearTimeout(holdTimer); clearTimeout(themeTimer); closeAudio(); }, {once: true});
+addEventListener('pagehide', () => { disposed = true; clearTimeout(saveTimer); clearTimeout(holdTimer); clearTimeout(themeTimer); clearTimeout(shapeTimer); closeAudio(); }, {once: true});
 // The App's name is written once, in app.json.
 fetch('app.json').then(response => response.json()).then(manifest => { document.title = manifest.name; }).catch(() => {});
 if (!isOutput) build();

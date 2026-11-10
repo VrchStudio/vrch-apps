@@ -175,7 +175,7 @@ const createStage = (() => {
         const dx = Math.cos(a), dy = Math.sin(a);
         q.angle = a; q.left = -r;
         q.right = Math.min(dx > 1e-6 ? (L.W - q.x) / dx : dx < -1e-6 ? -q.x / dx : L.far, dy > 1e-6 ? (L.H - q.y) / dy : dy < -1e-6 ? -q.y / dy : L.far) + L.u;
-      } else { q.angle = ROUND[shape.id] ? 0 : a + TAU / 4; q.left = -L.far; q.right = L.far; }
+      } else { q.angle = ROUND[shape.id] && !((m.alt >> v) & 1) ? 0 : a + TAU / 4; q.left = -L.far; q.right = L.far; }
       // A ring that does not turn keeps only its newest trace: the older ones would sit unseen beneath it.
       const bars = this.bars + 2 * e.hold; // longer decays, longer trails: two bars to six
       if (age >= (ring[1] ? bars : 1)) return 0;
@@ -274,6 +274,7 @@ const createStage = (() => {
     const model = {
       cells: new Uint8Array(SHAPES.length * STEPS), bpm: 120, swing: 0, mutes: 0,
       tune: SHAPES.map(() => 0), decay: SHAPES.map(() => 50), theme: 0, style: 0, sel: 0, playing: false,
+      alt: 0, // one bit per voice: set, the voice is drawn with its other shape
     };
     const records = SHAPES.map(() => []); // each voice's hits, oldest first
     const stepLog = [], hitLog = [], items = [];
@@ -302,12 +303,12 @@ const createStage = (() => {
     stage.columns = () => { const at = score.measure(W, H, edge); return {rows: at.rows, pad: at.pad / scale, width: at.cw / scale}; };
     stage.color = (color, theme = model.theme) => PALETTES[theme].colors[color];
     // One voice's shape at rest, centred on a small canvas: the device's voice buttons.
-    stage.glyph = (target, v) => {
+    stage.glyph = (target, v, other = false) => {
       const c = target.getContext('2d'), u = target.height * 0.38;
       c.clearRect(0, 0, target.width, target.height);
       c.fillStyle = c.strokeStyle = stage.color(SHAPES[v].color);
       voice = v; step = 0;
-      SHAPES[v].draw(c, {x: target.width / 2, y: target.height / 2 + (v === CH ? u * 0.28 : 0), u, level: 0, t: 1000, size: 1, step: 0, left: 0, right: target.width, rand: p.rand});
+      (other && SHAPES[v].other || SHAPES[v].draw)(c, {x: target.width / 2, y: target.height / 2 + (v === CH ? u * 0.28 : 0), u, level: 0, t: 1000, size: 1, step: 0, left: 0, right: target.width, rand: p.rand});
     };
 
     stage.set = next => {
@@ -492,16 +493,17 @@ const createStage = (() => {
       }
       for (const it of drawn) {
         voice = it.v; step = it.step;
+        const paint = (model.alt >> it.v) & 1 && SHAPES[it.v].other || SHAPES[it.v].draw;
         p.u = it.u; p.level = it.level; p.t = it.t; p.size = it.size; p.step = it.step;
         g.fillStyle = g.strokeStyle = tables[model.theme][SHAPES[it.v].color][Math.round((Math.max(0.5, Math.min(1.5, it.strength)) - 0.5) * 2 * TINTS)];
         if (it.angle) {
           g.save(); g.translate(it.x, it.y); g.rotate(it.angle);
           p.x = 0; p.y = 0; p.left = it.left; p.right = it.right;
-          SHAPES[it.v].draw(g, p);
+          paint(g, p);
           g.restore();
         } else {
           p.x = it.x; p.y = it.y; p.left = it.x + it.left; p.right = it.x + it.right;
-          SHAPES[it.v].draw(g, p);
+          paint(g, p);
         }
       }
       stage.frames++;

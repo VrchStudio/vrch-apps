@@ -72,10 +72,26 @@ class Engine extends AudioWorkletProcessor {
     this.metal = new Float64Array(METAL.length);
     this.seed = 0x2545f491; this.dcX = 0; this.dcY = 0;
     this.hits = [];
+    // roll: the voice that is being held down (-1: none), for how many frames, and the frames to its next hit while
+    // the pattern is stopped.
+    this.roll = -1; this.rollHeld = 0; this.rollWait = 0;
+    // The step being played, how long it lasts, and how far into it the music is: a hit by hand is written into the
+    // nearer step. skip: a step written ahead of its time is not played a second time when the bar gets there.
+    this.at = 0; this.stepLength = 1; this.into = 0;
+    this.skip = new Int8Array(TRACKS).fill(-1);
     this.port.onmessage = ({data}) => this.message(data);
   }
 
   stepFrames() { return SR * 15 / this.bpm; }
+  // A held voice starts to roll after one step, and never sooner than a short tap lasts.
+  rollStart() { return Math.max(this.stepFrames(), SR * 0.18); }
+  // Write a hit by hand into the playing pattern at a step that is still empty. Returns the cell written, or -1.
+  write(track, step) {
+    const index = (this.pattern * TRACKS + track) * STEPS + step;
+    if (this.cells[index]) return -1;
+    this.cells[index] = 1;
+    return index;
+  }
 
   message(m) {
     switch (m.type) {
@@ -95,7 +111,8 @@ class Engine extends AudioWorkletProcessor {
         if (m.now || !this.running) { this.pattern = m.index; this.queued = -1; }
         else this.queued = m.index === this.pattern ? -1 : m.index;
         break;
-      case 'start': this.running = true; this.step = 0; this.toNext = 0; this.first = true; break;
+      case 'start': this.running = true; this.step = 0; this.toNext = 0; this.first = true; this.skip.fill(-1); break;
+      case 'roll': this.roll = m.on ? m.track : -1; this.rollHeld = 0; this.rollWait = this.rollStart(); break;
       case 'stop': this.running = false; break;
       // Hits are triggered at the start of the next render quantum so the reported frame is exact.
       case 'hit': this.hits.push(m); break;
@@ -147,8 +164,9 @@ class Engine extends AudioWorkletProcessor {
     const base = this.pattern * TRACKS * STEPS + this.step;
     let mask = 0, accents = 0;
     for (const n of ORDER) {
-      const value = this.cells[base + n * STEPS];
-      if (value && !((this.mutes >> n) & 1)) {
+      const value = this.cells[base + n * STEPS], skipped = this.skip[n] === this.step;
+      if (skipped) this.skip[n] = -1;
+      if (value && !((this.mutes >> n) & 1) && !skipped) {
         this.trigger(n, value === 2 ? 1 : VELOCITY);
         mask |= 1 << n;
         if (value === 2) accents |= 1 << n;
@@ -156,7 +174,15 @@ class Engine extends AudioWorkletProcessor {
     }
     this.port.postMessage({type: 'step', step: this.step, pattern: this.pattern, queued: this.queued, mask, accents, frame, first: this.first});
     this.first = false;
-    this.toNext += this.stepFrames() * (this.step % 2 === 0 ? 1 + this.swing : 1 - this.swing);
+    // A voice held down rolls: a hit on every step, written into the pattern. Where the pattern already plays the
+    // voice on this step, that is the roll's hit.
+    if (this.roll >= 0 && this.rollHeld >= this.rollStart()) {
+      const n = this.roll, cell = this.write(n, this.step);
+      if (!((mask >> n) & 1)) { this.trigger(n, VELOCITY); this.port.postMessage({type: 'hit', track: n, frame, cell}); }
+    }
+    this.at = this.step; this.into = 0;
+    this.stepLength = this.stepFrames() * (this.step % 2 === 0 ? 1 + this.swing : 1 - this.swing);
+    this.toNext += this.stepLength;
     this.step = (this.step + 1) % STEPS;
   }
 
@@ -249,14 +275,29 @@ class Engine extends AudioWorkletProcessor {
     if (this.hits.length) {
       for (const m of this.hits) {
         this.trigger(m.track, VELOCITY);
-        this.port.postMessage({type: 'hit', id: m.id, track: m.track, frame: currentFrame});
+        // While the pattern plays, the hit is written into the nearer step: the one being played, or the next one.
+        let cell = -1;
+        if (this.running && !this.first) {
+          const late = this.into >= this.stepLength / 2, step = late ? (this.at + 1) % STEPS : this.at;
+          cell = this.write(m.track, step);
+          if (late) this.skip[m.track] = step;
+        }
+        this.port.postMessage({type: 'hit', id: m.id, track: m.track, frame: currentFrame, cell});
       }
       this.hits.length = 0;
     }
     for (let i = 0; i < out.length; i++) {
       if (this.running) {
         if (this.toNext <= 0) this.fire(currentFrame + i);
-        this.toNext -= 1;
+        this.toNext -= 1; this.into++;
+      }
+      if (this.roll >= 0) {
+        this.rollHeld++;
+        if (!this.running && --this.rollWait <= 0) { // stopped: the roll keeps its own time, one hit per step length
+          this.rollWait = this.stepFrames();
+          this.trigger(this.roll, VELOCITY);
+          this.port.postMessage({type: 'hit', track: this.roll, frame: currentFrame + i, cell: -1});
+        }
       }
       out[i] = this.render();
     }

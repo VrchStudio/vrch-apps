@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "2626ce58-0b22-4656-8088-4263f0e1ff4b",
   "name": "Hit Shapes",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -74,6 +74,10 @@
             "action": "Reset its decay."
           },
           {
+            "control": "E4 · Hold",
+            "action": "The selected voice's other shape."
+          },
+          {
             "control": "K1 · Press",
             "action": "Open Menu for Guide, audio, Reload or Exit."
           },
@@ -83,7 +87,11 @@
           },
           {
             "control": "K3 · Press",
-            "action": "Play the selected voice once, playing or stopped."
+            "action": "Play the selected voice. While the pattern plays, the hit is written into the nearest step."
+          },
+          {
+            "control": "K3 · Hold",
+            "action": "Roll: one more hit on every step until you let go."
           },
           {
             "control": "K4 · Press",
@@ -104,11 +112,11 @@
           },
           {
             "control": "Voice · Tap",
-            "action": "Select it. It lights when it plays."
+            "action": "Select it; tap the selected voice again for its other shape. It lights when it plays."
           },
           {
             "control": "Picture · Tap",
-            "action": "Same as K3."
+            "action": "Same as K3: tap to play the voice, hold to roll."
           },
           {
             "control": "Style button · Tap",

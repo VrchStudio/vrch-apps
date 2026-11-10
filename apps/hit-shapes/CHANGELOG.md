@@ -1,5 +1,11 @@
 # Hit Shapes
 
+## 0.5.0
+
+- Hold K3, or a finger on the picture, to roll the selected voice: one more hit on every step.
+- A hit played while the pattern runs is written into the nearest step.
+- Every voice has a second shape: hold E4, or tap the selected voice again.
+
 ## 0.4.1
 
 - Hold E1 for the next colors. Holding K3 no longer changes them, so changing colors makes no sound.

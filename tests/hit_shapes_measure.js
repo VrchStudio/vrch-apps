@@ -1,10 +1,10 @@
 // Measuring code that hit_shapes_browser.cjs runs inside the App, beside its stage.js and shapes.js.
 // simulate: a second stage on its own canvas, fed a pattern's steps directly and drawn at exact times.
-window.simulate = ({width, height, rows, theme = 0, style = 0, bpm = 120, swing = 0, mutes = 0, tune = {}, decay = {}, loops = 4, playing = true}) => {
+window.simulate = ({width, height, rows, theme = 0, style = 0, bpm = 120, swing = 0, mutes = 0, tune = {}, decay = {}, alt = 0, loops = 4, playing = true}) => {
   const canvas = document.createElement('canvas'), sim = createStage(canvas, {readback: true}), cells = new Uint8Array(SHAPES.length * 16);
   SHAPES.forEach(({id}, v) => [...(rows[id] || '')].forEach((mark, s) => { cells[v * 16 + s] = mark === 'X' ? 2 : mark === 'x' ? 1 : 0; }));
   sim.resize(width, height, 1);
-  sim.set({cells, bpm, swing, mutes, theme, style, sel: -1, playing, tune: SHAPES.map(({id}) => tune[id] || 0), decay: SHAPES.map(({id}) => decay[id] ?? 50)});
+  sim.set({cells, bpm, swing, mutes, theme, style, alt, sel: -1, playing, tune: SHAPES.map(({id}) => tune[id] || 0), decay: SHAPES.map(({id}) => decay[id] ?? 50)});
   const stepMs = 15000 / bpm, steps = [];
   for (let n = 0; playing && n < loops * 16; n++) {
     const s = n % 16;

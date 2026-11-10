@@ -25,6 +25,9 @@
  *     p.rand(n)     a fixed number from 0 to 1 for this voice, this step and n: the same on every loop and on every
  *                   screen. Use it wherever a shape should look scattered; never use the browser's random numbers.
  *
+ *   other(g, p)
+ *            the voice's second shape, which the player can choose instead: same rules, same p.
+ *
  * The stage picks the colour (brighter for an accent and while a hit rings) and keeps the picture the same on the
  * device and on the big screen. Two rules keep the picture safe to watch: flat colour only, and no voice larger than
  * the kick. The browser test in tests/ measures the flashing area at 240 BPM with every step filled. */
@@ -37,6 +40,15 @@ const SHAPES = [
       const r = p.u * p.size * (1.1 + 0.95 * p.level * swell);
       g.beginPath();
       g.arc(p.x, p.y, r, 0, 2 * Math.PI);
+      g.fill();
+    },
+    // The other shape: a dome that rises from its lane and sinks back, the kick as a sun on the horizon.
+    other(g, p) {
+      const swell = Math.min(1, p.t / 0.03);
+      const r = p.u * p.size * (1.4 + 0.9 * p.level * swell);
+      g.beginPath();
+      g.arc(p.x, p.y + r * 0.42, r, Math.PI, 2 * Math.PI);
+      g.closePath();
       g.fill();
     },
   },
@@ -59,6 +71,17 @@ const SHAPES = [
         g.fill();
       }
     },
+    // The other shape: the snare's wires, a zigzag that the hit pulls wide and tall for a moment.
+    other(g, p) {
+      const teeth = 6, wide = p.u * p.size * (0.42 + 0.3 * p.level), tall = p.u * p.size * (0.34 + 0.7 * p.level);
+      g.lineWidth = p.u * p.size * (0.17 + 0.08 * p.level);
+      g.beginPath();
+      for (let n = 0; n <= teeth; n++) {
+        const x = p.x + (n - teeth / 2) * wide, y = p.y + (n % 2 ? -1 : 1) * tall / 2;
+        if (n) g.lineTo(x, y); else g.moveTo(x, y);
+      }
+      g.stroke();
+    },
   },
   {
     id: 'CH', name: 'Closed Hat', color: 1, lane: 0.955, seconds: 0.09,
@@ -66,6 +89,13 @@ const SHAPES = [
     draw(g, p) {
       const w = p.u * 0.2, h = p.u * p.size * (0.56 + 0.9 * p.level);
       g.fillRect(p.x - w / 2, p.y - h, w, h);
+    },
+    // The other shape: a dot on the ruler instead of a tick, hopping up with the hit.
+    other(g, p) {
+      const r = p.u * p.size * (0.17 + 0.12 * p.level);
+      g.beginPath();
+      g.arc(p.x, p.y - r - p.u * 0.7 * p.level, r, 0, 2 * Math.PI);
+      g.fill();
     },
   },
   {
@@ -83,6 +113,14 @@ const SHAPES = [
       g.arc(p.x, p.y, r + p.u * p.size * (0.3 + 0.9 * (1 - p.level)), 0, 2 * Math.PI);
       g.stroke();
     },
+    // The other shape: a ring with a gap, open like the hat. The gap is widest at the hit and narrows as the sound dies.
+    other(g, p) {
+      const r = p.u * p.size * 0.66, gap = Math.PI * (0.22 + 0.5 * p.level);
+      g.lineWidth = p.u * p.size * 0.24;
+      g.beginPath();
+      g.arc(p.x, p.y, r, -Math.PI / 2 + gap, 1.5 * Math.PI - gap);
+      g.stroke();
+    },
   },
   {
     id: 'CP', name: 'Hand Clap', color: 3, lane: 0.33, seconds: 0.35,
@@ -93,6 +131,14 @@ const SHAPES = [
         if (p.t < n * 0.0095) break;
         const x = p.x + (n - 1.5) * gap, y = p.y + (n % 2 ? -1 : 1) * gap * 0.35 + (p.rand(n) - 0.5) * gap * 0.3;
         g.fillRect(x - side / 2, y - side / 2, side, side);
+      }
+    },
+    // The other shape: the same bursts as four upright strokes, each one arriving a moment after the last.
+    other(g, p) {
+      const w = p.u * p.size * 0.16, h = p.u * p.size * (0.95 + 0.35 * p.level), gap = p.u * p.size * 0.36;
+      for (let n = 0; n < 4; n++) {
+        if (p.t < n * 0.0095) break;
+        g.fillRect(p.x + (n - 1.5) * gap - w / 2, p.y - h / 2 + (p.rand(n) - 0.5) * h * 0.3, w, h);
       }
     },
   },
@@ -109,6 +155,15 @@ const SHAPES = [
       g.closePath();
       g.fill();
     },
+    // The other shape: a diamond that drops and bounces the same way.
+    other(g, p) {
+      const bounce = p.u * 1.1 * Math.abs(Math.cos(p.t * 22)) * Math.exp(-p.t * 9);
+      const w = p.u * p.size * (0.72 + 0.24 * p.level), h = w * 1.25, y = p.y - bounce;
+      g.beginPath();
+      g.moveTo(p.x, y - h); g.lineTo(p.x + w, y); g.lineTo(p.x, y + h); g.lineTo(p.x - w, y);
+      g.closePath();
+      g.fill();
+    },
   },
   {
     id: 'RS', name: 'Rim Shot', color: 0, lane: 0.36, seconds: 0.06,
@@ -121,6 +176,15 @@ const SHAPES = [
       g.lineTo(p.x + half, p.y - half);
       g.stroke();
     },
+    // The other shape: a cross instead of a slash, thick for an instant and then two hairlines.
+    other(g, p) {
+      const half = p.u * p.size * 0.55;
+      g.lineWidth = p.u * p.size * (0.1 + 0.22 * p.level);
+      g.beginPath();
+      g.moveTo(p.x - half, p.y); g.lineTo(p.x + half, p.y);
+      g.moveTo(p.x, p.y - half); g.lineTo(p.x, p.y + half);
+      g.stroke();
+    },
   },
   {
     id: 'CB', name: 'Cowbell', color: 3, lane: 0.42, seconds: 0.32,
@@ -131,6 +195,15 @@ const SHAPES = [
       g.fillRect(p.x - w / 2 - shift, p.y - h / 2 - shift * 0.6, w, h);
       g.lineWidth = p.u * p.size * 0.09;
       g.strokeRect(p.x - w / 2 + shift, p.y - h / 2 + shift * 0.6, w, h);
+    },
+    // The other shape: the bell itself, narrow at the top: one solid and one outlined, set apart at the hit and
+    // sliding back over each other.
+    other(g, p) {
+      const w = p.u * p.size * (0.5 + 0.16 * p.level), h = w * 1.3, shift = p.u * p.size * (0.1 + 0.3 * p.level);
+      const bell = x => { g.beginPath(); g.moveTo(x - w * 0.55, p.y - h / 2); g.lineTo(x + w * 0.55, p.y - h / 2); g.lineTo(x + w, p.y + h / 2); g.lineTo(x - w, p.y + h / 2); g.closePath(); };
+      bell(p.x - shift); g.fill();
+      g.lineWidth = p.u * p.size * 0.09;
+      bell(p.x + shift); g.stroke();
     },
   },
 ];

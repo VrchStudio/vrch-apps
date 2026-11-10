@@ -59,8 +59,9 @@ class HitShapes(unittest.TestCase):
         order = re.search(r'const ((?:\w\w = \d, )+\w\w = \d);', self.text['engine.js']).group(1)
         self.assertEqual(ids, [name for name, _ in sorted((pair.split(' = ') for pair in order.split(', ')), key=lambda pair: int(pair[1]))])
         for identifier, body in entries:
-            draw = body[body.index('    draw(g, p) {'):]
-            self.assertLessEqual(len(draw.splitlines()), 40, identifier)
+            for name in ('draw', 'other'):
+                start = body.index('    %s(g, p) {' % name)
+                self.assertLessEqual(len(body[start:body.index('\n    },', start)].splitlines()) + 1, 40, identifier + ' ' + name)
 
 
 if __name__ == '__main__':

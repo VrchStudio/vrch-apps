@@ -157,6 +157,29 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
       result.flashing[name + ' palette ' + theme] = Object.fromEntries(Object.entries(measured).map(([key, value]) => [key, round(value)]));
       assert(measured.fast < 0.25 && measured.bursts <= 3, name + ' palette ' + theme + ': ' + JSON.stringify(measured));
     }
+    // Every voice has a second shape: choosing it changes that voice's picture in every style, and with all eight chosen
+    // the picture is as safe to watch.
+    result.otherShapes = await control.evaluate(() => {
+      const out = {};
+      SHAPES.forEach(({id}, v) => {
+        out[id] = [0, 1, 2].map(style => {
+          const shot = alt => simulate({width: 480, height: 270, rows: {[id]: 'x...X...x...x...'}, style, alt, playing: false}).pixels(1000).slice();
+          const first = shot(0), other = shot(1 << v);
+          let n = 0;
+          for (let i = 0; i < first.length; i += 4) if (Math.abs(first[i] - other[i]) + Math.abs(first[i + 1] - other[i + 1]) + Math.abs(first[i + 2] - other[i + 2]) > 60) n++;
+          return n;
+        });
+      });
+      return out;
+    });
+    for (const [id, changed] of Object.entries(result.otherShapes)) assert(changed.every(n => n >= 40), id + ' has a second shape in every style: ' + changed);
+    for (const style of [0, 1, 2]) for (const [label, rows, bpm] of [['every step', FULL, 240], ['every fourth step', Object.fromEntries(Object.keys(FULL).map(id => [id, 'X...'.repeat(4)])), 180]]) for (const [name, [width, height]] of [['16:9', SIZES['16:9']], ['9:16', SIZES['9:16']]]) {
+      const scale = 480 / Math.max(width, height);
+      const measured = await control.evaluate(o => flashing(o), {width: Math.round(width * scale), height: Math.round(height * scale), rows, bpm, style, alt: 255});
+      const key = ['Score ', 'Orbit ', 'Weave '][style] + 'second shapes, ' + label + ', ' + bpm + ' BPM, ' + name;
+      result.flashing[key] = Object.fromEntries(Object.entries(measured).map(([k, value]) => [k, round(value)]));
+      assert(measured.fast < 0.25 && measured.bursts <= 3, key + ': ' + JSON.stringify(measured));
+    }
     // The kick's shove at full strength: roomy patterns of large shapes at tempos where every kick shoves all the way
     // or nearly, with long decays, on a wide and an upright screen.
     const ROOMY = {
@@ -259,9 +282,24 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     assert(now[0] === 0 && now[1] !== swing, 'a short press of E1 changes the swing and keeps the colours: ' + JSON.stringify(now));
     await e1(100); await e1(100); await e1(100);
     assert.deepEqual(await looks(), [0, swing], 'four presses bring the swing round again');
-    // K3 held is only a hit: the colours stay.
-    const box3 = await pg.key(2).boundingBox(); await page.mouse.move(box3.x + box3.width / 2, box3.y + box3.height / 2); await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up();
+    // K3 held rolls the voice, a hit on every step, and the colours stay; a short press is one hit.
+    const byHand = () => control.evaluate(() => __hitShapes.hits().filter(hit => hit.manual).length), handBefore = await byHand();
+    const box3 = await pg.key(2).boundingBox(); await page.mouse.move(box3.x + box3.width / 2, box3.y + box3.height / 2); await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up(); await page.waitForTimeout(300);
     assert.equal((await looks())[0], 0, 'holding K3 keeps the colours');
+    result.rolledWhileStopped = (await byHand()) - handBefore;
+    assert(result.rolledWhileStopped >= 4 && result.rolledWhileStopped <= 7, 'K3 held for 0.75 s at 120 BPM rolls: ' + result.rolledWhileStopped);
+    await page.waitForTimeout(400);
+    assert.equal((await byHand()) - handBefore, result.rolledWhileStopped, 'the roll ends when K3 is let go');
+    await pg.key(2).click(); await page.waitForTimeout(300);
+    assert.equal((await byHand()) - handBefore, result.rolledWhileStopped + 1, 'a short press is one hit');
+    // E4 held: the selected voice's other shape, on the device and on the big screen, and its decay stays. Tapping the
+    // selected voice again brings the first shape back.
+    const shapeOf = async frame => { const at = await frame.evaluate(() => __hitShapes.state()), voice = at.voices.find(v => v.id === 'BD'); return [voice.other, voice.decay]; };
+    const e4 = await pg.encoder(3).boundingBox(); await page.mouse.move(e4.x + e4.width / 2, e4.y + e4.height / 2); await page.mouse.down(); await page.waitForTimeout(1300); await page.mouse.up(); await page.waitForTimeout(300);
+    assert.deepEqual(await shapeOf(control), [true, 50], 'holding E4 gives the voice its other shape and keeps its decay'); assert.deepEqual(await shapeOf(output), [true, 50], 'the output takes the shape');
+    await shot('other-shape'); await shot('device-other-shape', '#stageDevice');
+    await tap('#voices .voice:nth-child(1)');
+    assert.deepEqual(await shapeOf(control), [false, 50], 'tapping the selected voice again changes its shape back');
     assert.equal(result.silentBeforeStart < 0.001, true);
     await page.waitForTimeout(1300); // the voice played by K3 rings out
 
@@ -321,12 +359,25 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     await tap('#steps .step:nth-child(3)'); assert.equal(await cell(), 1); await tap('#steps .step:nth-child(3)'); assert.equal(await cell(), 2);
     await control.waitForFunction(() => __hitShapes.hits().some(hit => hit.voice === 'LT' && hit.step === 2 && hit.accent && hit.drawnAt), null, {timeout: 5000});
     await tap('#steps .step:nth-child(3)'); assert.equal(await cell(), 0);
+    // A hit played while the pattern runs is written into the nearest step. K3 held rolls, a hit on every step, and
+    // those are written too.
+    const row = frame => frame.evaluate(() => __hitShapes.state().voices[5].steps);
+    assert.equal(await row(control), '.'.repeat(16));
+    await pg.key(2).click(); await page.waitForTimeout(500);
+    let written = await row(control);
+    assert.equal(written.replace(/\./g, '').length, 1, 'one hit, one step: ' + written);
+    assert.equal(await row(output), written, 'the big screen has the same pattern');
+    const k3 = await pg.key(2).boundingBox(); await page.mouse.move(k3.x + k3.width / 2, k3.y + k3.height / 2); await page.mouse.down(); await page.waitForTimeout(900); await page.mouse.up(); await page.waitForTimeout(400);
+    written = await row(control);
+    result.stepsWrittenByRoll = written.replace(/\./g, '').length;
+    assert(result.stepsWrittenByRoll >= 5 && result.stepsWrittenByRoll <= 10, 'a held K3 rolls on every step and writes them: ' + written);
+    await control.evaluate(() => { for (let s = 0; s < 16; s++) { const i = cellIndex(state.pattern, state.sel, s); if (state.cells[i]) { state.cells[i] = 0; post({type: 'cell', index: i, value: 0}); } } invalidate(); persist(); });
     await pg.key(1).click(); await page.waitForTimeout(700);
     assert.equal((await control.evaluate(() => __hitShapes.state())).playing, false);
     // K3 and a tap on the picture play the selected voice while stopped, and draw it.
     const manual = () => control.evaluate(() => __hitShapes.hits().filter(hit => hit.manual && hit.drawnAt).length);
     const before = await manual();
-    await pg.key(2).click(); await tap('#picture');
+    await pg.key(2).click(); await tap('#picture'); await control.evaluate(() => document.querySelector('#picture').dispatchEvent(new PointerEvent('pointerup', {bubbles: true})));
     await control.waitForFunction(n => __hitShapes.hits().filter(hit => hit.manual && hit.drawnAt).length >= n + 2, before, {timeout: 5000});
     await output.waitForFunction(() => __hitShapes.hits().some(hit => hit.manual && hit.drawnAt), null, {timeout: 5000});
     // Latency: single rim shots by hand (the shortest voice, so each starts from silence), each one's first sample
@@ -369,7 +420,7 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     /* ---------- saved, and shared ---------- */
     await pg.turn(0, -30); await hold(); await pg.turn(2, 40); await page.waitForTimeout(900);
     const mine = await control.evaluate(() => ({state: __hitShapes.state(), cells: Array.from(state.cells).join(''), share: shareState()}));
-    assert(/^v2\.[A-Za-z0-9_-]+$/.test(mine.share) && mine.share.length <= 120, 'the share state is short: ' + mine.share.length);
+    assert(/^v3\.[A-Za-z0-9_-]+$/.test(mine.share) && mine.share.length <= 120, 'the share state is short: ' + mine.share.length);
     result.shareLength = mine.share.length;
     await page.reload(); await page.keyboard.press('Shift');
     ({control, output} = await pg.frames());
