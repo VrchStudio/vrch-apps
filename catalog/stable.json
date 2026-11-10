@@ -4184,7 +4184,7 @@
     },
     "2626ce58-0b22-4656-8088-4263f0e1ff4b": {
       "slug": "hit-shapes",
-      "latest": "0.5.0",
+      "latest": "0.6.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4318,6 +4318,25 @@
             "updateApi": 1
           },
           "notes": "- Hold K3, or a finger on the picture, to roll the selected voice: one more hit on every step.\n- A hit played while the pattern runs is written into the nearest step.\n- Every voice has a second shape: hold E4, or tap the selected voice again."
+        },
+        "0.6.0": {
+          "version": "0.6.0",
+          "name": "Hit Shapes",
+          "tag": "hit-shapes-v0.6.0",
+          "sourceCommit": "6f5be879239033f39fd8412ff82ff88566e6e638",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/hit-shapes-v0.6.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/hit-shapes-v0.6.0/hit-shapes-0.6.0.vrchapp",
+          "size": 97894,
+          "sha256": "58b5390e0203999d86945d47e4d64eff2b982b167d34631777f4919a9d6e6981",
+          "packageDigest": "58b5390e0203999d86945d47e4d64eff2b982b167d34631777f4919a9d6e6981",
+          "revision": "801ce83b37d3c8d98c368d1abd512e396f92bb93e17fb53149dad2bee249b988",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Record is now a switch that starts off: K3 only plays until you hold E3 or tap the Record button.\n- Undo the last recorded hit or roll: hold E2 or tap the Undo button."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSI+CiAgPGNpcmNsZSBjeD0iMjQiIGN5PSIzOCIgcj0iMTciIGZpbGw9IiNhYWE5YTUiLz4KICA8cGF0aCBkPSJNNCAyNmg1NnY3SDR6IiBmaWxsPSIjZThlOGUzIi8+CiAgPGNpcmNsZSBjeD0iNDciIGN5PSIxNSIgcj0iNy41IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxwYXRoIGQ9Ik00OSA0M2w4IDEzSDQxeiIgZmlsbD0iI2U4ZThlMyIvPgogIDxwYXRoIGQ9Ik03IDYwdi01bTcgNXYtOG03IDh2LTVtNyA1di01IiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMi41Ii8+Cjwvc3ZnPgo=",
@@ -4365,12 +4384,20 @@
                 "action": "Mute or unmute the selected voice. A muted voice leaves the picture."
               },
               {
+                "control": "E2 · Hold",
+                "action": "Undo the last recorded hit or roll."
+              },
+              {
                 "control": "E3 · Turn",
                 "action": "Tune the selected voice. Higher pitch, higher shape, and the whole picture leans with the tuning of all voices."
               },
               {
                 "control": "E3 · Press",
                 "action": "Reset its tune."
+              },
+              {
+                "control": "E3 · Hold",
+                "action": "Record on or off. It starts off: K3 only plays."
               },
               {
                 "control": "E4 · Turn",
@@ -4394,7 +4421,7 @@
               },
               {
                 "control": "K3 · Press",
-                "action": "Play the selected voice. While the pattern plays, the hit is written into the nearest step."
+                "action": "Play the selected voice. With Record on, a hit played while the pattern runs is written into the nearest step."
               },
               {
                 "control": "K3 · Hold",
@@ -4424,6 +4451,14 @@
               {
                 "control": "Picture · Tap",
                 "action": "Same as K3: tap to play the voice, hold to roll."
+              },
+              {
+                "control": "Record button · Tap",
+                "action": "Record on or off, same as holding E3."
+              },
+              {
+                "control": "Undo button · Tap",
+                "action": "Undo the last recorded hit or roll. It shows once something is recorded."
               },
               {
                 "control": "Style button · Tap",
