@@ -18,7 +18,11 @@ const assert=require('node:assert/strict'),path=require('node:path'),{spawn}=req
    window.peak=0;window.meters=[];const N=AudioWorkletNode;window.AudioWorkletNode=class extends N{constructor(c,n,o){super(c,n,o);if(o?.processorOptions?.mode==='playback'){const m=c.createAnalyser();this.connect(m);meters.push(m);}}};function sample(){for(const m of meters){const a=new Float32Array(m.fftSize);m.getFloatTimeDomainData(a);for(const v of a)peak=Math.max(peak,Math.abs(v));}requestAnimationFrame(sample);}requestAnimationFrame(sample);
   });
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(config.url);
-  async function launch(){await page.getByRole('button',{name:'Launch',exact:true}).click();await page.waitForSelector('#mount iframe');const frame=page.frames().find(f=>f.url().includes('/r/'));await frame.waitForFunction(()=>!!globalThis.BodyVibesDiagnostics);const start=page.getByRole('dialog').getByRole('button',{name:'Start',exact:true});if(await start.count())await start.click();return frame;}
+  async function launch(){await page.getByRole('button',{name:'Launch',exact:true}).click();await page.waitForSelector('#mount iframe');const frame=page.frames().find(f=>f.url().includes('/r/'));await frame.waitForFunction(()=>!!globalThis.BodyVibesDiagnostics);const start=page.getByRole('dialog').getByRole('button',{name:'Start',exact:true});if(await start.count())await start.click();
+   // Opening must not ask for the camera: the App waits for K2 (CC 65) before it opens camera and sound.
+   await frame.waitForFunction(()=>BodyVibesDiagnostics.snapshot().phase==='ready',null,{timeout:30000});await page.waitForTimeout(2000);
+   assert.equal(await frame.evaluate(()=>BodyVibesDiagnostics.snapshot().phase),'ready');assert.match(await frame.evaluate(()=>document.body.innerText),/Press K2 to begin/);
+   await page.evaluate(()=>{emit(65,127);emit(65,0);});return frame;}
   let frame=await launch();
   if(process.env.EXPECT_BASELINE_FAILURE){await frame.waitForFunction(()=>BodyVibesDiagnostics.snapshot().phase==='error',null,{timeout:60000});assert.ok(await frame.evaluate(()=>sinkSwitches>0));console.log('PASS original BODY VIBES reproduces SDK sink-switch refusal');return;}
   await frame.waitForFunction(()=>BodyVibesDiagnostics.snapshot().phase==='live'&&BodyVibesDiagnostics.snapshot().metrics.frames>2,null,{timeout:60000});assert.equal(await frame.evaluate(()=>sinkSwitches),0);

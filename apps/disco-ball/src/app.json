@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "5b1752ad-ea1d-45cb-9ba1-9ad1dd89783f",
   "name": "Disco Ball",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "entry": "index.html",
   "roles": [
     "output"

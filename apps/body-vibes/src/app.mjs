@@ -38,8 +38,19 @@ function result(data){
   if(age>config.gestures.staleMs){points=[];apply(instrument.lose(),now);return;}
   points=data.tracks?.[0]?.landmarks||[];apply(instrument.update(points,now,source.width/source.height),now,data.capturedAtMs);
 }
-async function release(){player?.port.postMessage({type:'stop'});tracker?.close();await Promise.allSettled([camera?.close(),output?.close(),ac?.close()]);}
-function fail(error){if(closed||phase==='error')return;if(error?.code!=='camera_closed')console.error('BODY VIBES',error);phase='error';audio={bass:0,synth:0,vocal:0};void release();prompt('Let’s reconnect.','Check camera and sound in Menu, then Reload.');$('tracking').textContent='STOPPED';for(const key of ['bass','synth','vocal']){$(key).classList.remove('active');$(key+'-value').textContent='OFF';$(key+'-meter').style.width='0';}}
+async function release(){
+  const parts={player,tracker,camera,output,ac};player=tracker=camera=output=ac=sink=null;
+  parts.player?.port.postMessage({type:'stop'});parts.tracker?.close();
+  await Promise.allSettled([parts.camera?.close(),parts.output?.close(),parts.ac?.close()]);
+}
+// Opening links must not ask for the camera before the visitor acts: the App waits in 'ready' until K2.
+function failureText(error){
+  if(error?.code==='permission_required')return ['Camera blocked.','Allow the camera, then press K2 to try again.'];
+  if(error?.code==='interaction_required')return ['Sound is waiting.','Press K2 to start.'];
+  if(error?.code==='camera_unavailable'||error?.code==='camera_closed')return ['No camera picture.','Connect a camera, then press K2 to try again.'];
+  return ['Let’s try again.','Check camera and sound in Menu, then press K2.'];
+}
+function fail(error){if(closed||phase==='error'||phase==='preview')return;if(error?.code!=='camera_closed'&&error?.code!=='permission_required')console.error('BODY VIBES',error);phase='error';audio={bass:0,synth:0,vocal:0};void release();prompt(...failureText(error));renderSensitivity();$('tracking').textContent='STOPPED';for(const key of ['bass','synth','vocal']){$(key).classList.remove('active');$(key+'-value').textContent='OFF';$(key+'-meter').style.width='0';}}
 async function start(){
   try{
     await sdk.ready();resize();layoutCamera();const response=await fetch(new URL('instrument.json',import.meta.url));if(!response.ok)throw Error('Instrument unavailable');config=await response.json();instrument=new BodyInstrument(config.gestures);
@@ -47,10 +58,19 @@ async function start(){
     for(const key of ['bass','synth','vocal'])document.documentElement.style.setProperty('--'+key,config.colors[key]);
     // A browser Preview that hands this App its own camera plays like the device; without one it stays a preview.
     if(sdk.context.mode==='preview'&&!await sdk.camera.devices().then(()=>true,()=>false)){phase='preview';prompt('Your body is the instrument.','Launch on the device to play with your arms.');return;}
+    phase='ready';prompt('Your body is the instrument.','Press K2 to begin.');renderSensitivity();
+  }catch(error){fail(error);}
+}
+async function begin(){
+  if(closed||!config||!['ready','error'].includes(phase))return;
+  phase='starting';lastFrame=0;lastResult=0;points=[];audio={bass:0,synth:0,vocal:0,frequency:0};instrument.lose?.();renderSensitivity();
+  $('tracking').textContent='HALF BODY';
+  try{
     tracker=createTracker(result,fail);const trackingReady=tracker.ready;trackingReady.catch(()=>{});
     prompt('Make some room.','Allow camera and sound when asked.');
-    camera=await sdk.camera.open({width:640,height:480,frameRate:24});if(closed||phase==='error'){await release();return;}camera.onError(fail);
+    // Sound first, while the K2 press still counts as the visitor's action; the camera can take seconds to open.
     output=await sdk.audio.openOutput({channels:2});if(closed||phase==='error'){await release();return;}output.onError(fail);
+    camera=await sdk.camera.open({width:640,height:480,frameRate:24});if(closed||phase==='error'){await release();return;}camera.onError(fail);
     ac=new AudioContext({sampleRate:48000,latencyHint:'interactive',sinkId:{type:'none'}});await ac.audioWorklet.addModule(new URL('player-worklet.js',import.meta.url));
     if(closed||phase==='error'){await release();return;}
     player=new AudioWorkletNode(ac,'body-stems',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2],processorOptions:{sound:config.sound,startSeconds:config.track.startSeconds}});
@@ -65,7 +85,7 @@ async function start(){
       player.port.postMessage({type:'track',index,channels,sampleRate:decoded.sampleRate},channels.map(c=>c.buffer));
     }
     await loaded;await trackingReady;
-    if(closed||phase==='error'){await release();return;}phase='live';
+    if(closed||phase==='error'){await release();return;}phase='live';renderSensitivity();
     camera.onFrame(frame=>{
       if(closed||phase!=='live'||document.hidden)return;
       const now=performance.now();if(now-lastFrame<45)return;lastFrame=now;
@@ -82,7 +102,7 @@ function normalizeSensitivity(value){
 function renderSensitivity(){
   clearTimeout(sensitivityMonitorTimer);
   sensitivityMonitorTimer=setTimeout(()=>{
-    if(!closed)void sdk.monitor.set({E1:{label:sensitivitySaveIssue?'Not saved':config.controls.toneSensitivity.label,value:sensitivity+'%'},K2:{label:'Calibrate'}}).catch(()=>{});
+    if(!closed&&config)void sdk.monitor.set({E1:{label:sensitivitySaveIssue?'Not saved':config.controls.toneSensitivity.label,value:sensitivity+'%'},K2:{label:phase==='live'?'Calibrate':phase==='ready'||phase==='error'?'Start':''}}).catch(()=>{});
   },32);
 }
 async function loadSensitivity(){
@@ -126,7 +146,7 @@ if(!isOutput)sdk.controls.onEvent(event=>{
   if(event.type==='rotate'&&event.control==='E1'){adjustSensitivity(event.delta);return;}
   if(event.control!=='K2')return;
   if(event.type==='up'||event.type==='cancel')calibrationKeyDown=false;
-  else if(event.type==='down'&&!calibrationKeyDown){calibrationKeyDown=true;startCalibration();}
+  else if(event.type==='down'&&!calibrationKeyDown){calibrationKeyDown=true;if(phase==='ready'||phase==='error')void begin();else startCalibration();}
 });
 addEventListener('blur',()=>{calibrationKeyDown=false;});
 function renderIndicators(v){

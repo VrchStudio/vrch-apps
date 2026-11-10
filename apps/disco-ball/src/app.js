@@ -593,6 +593,7 @@ else VrchApp.ready().then(async () => {
   // Keep the laptop link alive: reconnect, and heartbeat the full state.
   connectSync();
   syncTimer = setInterval(() => { connectSync(); if (!isLaptop) sendSync({t: 'state', ...state, playing: ui.playing, angle}); }, 2000);
-  // Warm the engine up front so the first tap or Start has no setup delay.
-  openAudio().catch(audioError);
+  // Warm the engine up front so the first tap or Start has no setup delay. Before the visitor acts a browser may
+  // refuse sound; that is not an error: Start opens it again and reports a real failure.
+  openAudio().catch(() => {});
 }).catch(() => status('App could not start. Reopen it.', true));

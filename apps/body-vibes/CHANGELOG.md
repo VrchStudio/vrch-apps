@@ -1,5 +1,10 @@
 # BODY VIBES
 
+## 0.6.2
+
+- Wait for K2 before asking for the camera and sound: opening the App, or a link to it, no longer asks for the camera on its own.
+- Explain a blocked or missing camera, and press K2 to try again without reloading.
+
 ## 0.6.1
 
 - Show the camera picture sharp on a large output or second screen: it now arrives at the camera's own size instead of a small, blurry copy.

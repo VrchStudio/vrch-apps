@@ -1,5 +1,11 @@
 # Visuals Player
 
+## 0.3.4
+
+- Show every knob name whole and different on each page, also with a 2x or 4x mark.
+- Share links now open with the same visual, knob values and track.
+- In a browser, the camera and Mic / Line in open only when you turn them on.
+
 ## 0.3.3
 
 - Show the camera at once the first time you turn it on in a visual that uses pictures; it no longer stays black until the camera is turned off and on again.

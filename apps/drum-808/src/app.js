@@ -172,7 +172,51 @@ function onEngine({data: m}) {
 
 /* ---------- actions (all synchronous, in memory) ---------- */
 let saveTimer = 0, saveChain = Promise.resolve();
+/* ---------- share link: s=v1.<pattern>.<bpm>.<swing>.<the pattern's steps> ---------- */
+// Each voice's 16 steps (off, on, accent) pack into 5 URL-safe characters. Other hosts ignore the report; a link the
+// App cannot read starts it as saved.
+const SHARE_DIGITS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+const SHARE_STATE = new RegExp('^v1\\.([0-' + (PATTERNS - 1) + '])\\.(\\d{2,3})\\.([0-' + (SWING.length - 1) + '])\\.([A-Za-z0-9_-]{' + TRACKS * 5 + '})$');
+let shareTimer = 0, sharedState = '';
+function shareState() {
+  let steps = '';
+  for (let t = 0; t < TRACKS; t++) {
+    let n = 0;
+    for (let s = STEPS - 1; s >= 0; s--) n = n * 3 + state.cells[cellIndex(state.pattern, t, s)];
+    for (let k = 0; k < 5; k++) { steps += SHARE_DIGITS[n % 64]; n = Math.floor(n / 64); }
+  }
+  return 'v1.' + state.pattern + '.' + state.bpm + '.' + state.swing + '.' + steps;
+}
+function shareSoon() {
+  if (!VrchApp.share) return;
+  clearTimeout(shareTimer);
+  shareTimer = setTimeout(() => {
+    const value = shareState();
+    if (value === sharedState) return;
+    sharedState = value;
+    try { VrchApp.share.report({state: value}); } catch (_) {}
+  }, 400);
+}
+function applyShare(share) {
+  const match = typeof share?.state === 'string' ? SHARE_STATE.exec(share.state) : null;
+  if (!match) return false;
+  const bpm = Number(match[2]), rows = [];
+  if (bpm < 40 || bpm > 240) return false;
+  for (let t = 0; t < TRACKS; t++) {
+    let n = 0;
+    for (let k = 4; k >= 0; k--) n = n * 64 + SHARE_DIGITS.indexOf(match[4][t * 5 + k]);
+    if (n >= 3 ** STEPS) return false;
+    const row = [];
+    for (let s = 0; s < STEPS; s++) { row.push(n % 3); n = Math.floor(n / 3); }
+    rows.push(row);
+  }
+  state.pattern = Number(match[1]); state.bpm = bpm; state.swing = Number(match[3]);
+  rows.forEach((row, t) => row.forEach((value, s) => { state.cells[cellIndex(state.pattern, t, s)] = value; }));
+  return true;
+}
+
 function persist() {
+  shareSoon();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     const value = snapshot();
@@ -394,9 +438,13 @@ build(); layout(); render();
 VrchApp.ready().then(async () => {
   try { const saved = await VrchApp.data.get('state'); state = restore(saved?.value); status('Stopped'); }
   catch (_) { status('Saved settings unavailable', true); }
+  // A share link opens with its pattern, tempo and swing.
+  applyShare(VrchApp.context?.share);
+  shareSoon();
   ready = true; layout(); invalidate();
   requestAnimationFrame(frame);
   diagTimer = setInterval(saveDiag, 3000);
-  // Warm the engine up front so the first hit or Start has no setup delay.
-  openAudio().catch(audioError);
+  // Warm the engine up front so the first hit or Start has no setup delay. Before the visitor acts a browser may
+  // refuse sound; that is not an error: Start opens it again and reports a real failure.
+  openAudio().catch(() => {});
 }).catch(() => status('App could not start. Reopen it.', true));

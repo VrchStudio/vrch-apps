@@ -32,10 +32,12 @@ for(const name of ['sensitivity','fill','body'])$(name).oninput=e=>change(name,N
 function setGrip(value){grip=value;shaker.grip=value;share();post({type:'grip',value});$('grip').setAttribute('aria-pressed',String(value));hint();monitorDirty=true;}
 $('grip').onpointerdown=e=>{e.preventDefault();if(e.isTrusted)$('grip').setPointerCapture(e.pointerId);setGrip(true);};for(const type of ['pointerup','pointercancel','lostpointercapture'])$('grip').addEventListener(type,()=>setGrip(false));
 $('grip').onkeydown=e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();setGrip(true);}};$('grip').onkeyup=()=>setGrip(false);addEventListener('blur',()=>{keys.clear();setGrip(false);});
-async function tap(){if(isOutput)return;const opening=start();if(context?.state==='suspended')void context.resume().catch(()=>{});await opening;if(disposed)return;post({type:'tap'});clearTimeout(hintTimer);$('hint').textContent='Let it shake.';$('hintDetail').textContent='';hintTimer=setTimeout(()=>{hintTimer=0;if(!disposed)hint();},800);}
+// Sound that cannot start before the visitor's first tap is not an error: the tap starts it.
+let acted=false;
+async function tap(){if(isOutput)return;acted=true;const opening=start();if(context?.state==='suspended')void context.resume().catch(()=>{});await opening;if(disposed)return;post({type:'tap'});clearTimeout(hintTimer);$('hint').textContent='Let it shake.';$('hintDetail').textContent='';hintTimer=setTimeout(()=>{hintTimer=0;if(!disposed)hint();},800);}
 $('view').onpointerdown=tap;
 $('view').onkeydown=event=>{if(event.key===' '||event.key==='Enter'){event.preventDefault();void tap();}};
-async function sound(){if(!node||context.state!=='running'){await start();await context?.resume().catch(()=>{});}else{muted=!muted;shaker.muted=muted;post({type:'mute',value:muted});}audioState();}
+async function sound(){acted=true;if(!node||context.state!=='running'){await start();await context?.resume().catch(()=>{});}else{muted=!muted;shaker.muted=muted;post({type:'mute',value:muted});}audioState();}
 $('sound').onclick=sound;
 function audioState(){share();const running=!!node&&context?.state==='running';$('sound').textContent=running?(muted?'Unmute':'Mute'):'Enable';$('sound').setAttribute('aria-label',running?(muted?'Unmute sound':'Mute sound'):'Enable sound');$('sound').setAttribute('aria-pressed',String(muted));monitorDirty=true;notice();}
 async function start(){
@@ -51,7 +53,7 @@ async function start(){
    node.port.onmessage=({data})=>{snapshot=data;shaker.snapshot=data;visual.update(data);shareSnapshot(data);lastStats=performance.now();};node.connect(destination);configure();if(lastMotion)post({type:'motion',...lastMotion});audioError='';
    void c.resume().catch(()=>{});audioState();
    if(preview)state('preview','Preview');hint();
-  }catch(error){shaker.errors.push(error.code||error.message);await opened?.close().catch(()=>{});await c?.close().catch(()=>{});context=node=output=null;audioError=error.code==='preview_io_disabled'?'Enable Listen to preview for sound':'Sound unavailable · tap to retry';if(preview)state('audio-off','Sound unavailable');audioState();}
+  }catch(error){shaker.errors.push(error.code||error.message);await opened?.close().catch(()=>{});await c?.close().catch(()=>{});context=node=output=null;audioError=error.code==='preview_io_disabled'?'Enable Listen to preview for sound':acted?'Sound unavailable · tap to retry':'';if(preview&&acted)state('audio-off','Sound unavailable');audioState();}
   finally{initializing=null;}
  })();return initializing;
 }

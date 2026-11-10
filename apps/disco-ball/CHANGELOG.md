@@ -1,5 +1,9 @@
 # Disco Ball
 
+## 1.8.1
+
+- Show Stopped instead of an audio error when the App opens before you press anything.
+
 ## 1.8.0
 
 - Show the spinning ball on a large output or second screen, lighting in time with the device.

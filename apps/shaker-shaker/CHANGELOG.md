@@ -1,5 +1,9 @@
 # Shaker Shaker
 
+## 0.2.1
+
+- Show no sound error when the App opens before you tap; the first tap starts the sound.
+
 ## 0.2.0
 
 - Show the chamber and its grains on a large output or second screen, moving with every shake and tap.

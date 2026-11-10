@@ -155,12 +155,42 @@
     else edit({params: {[parameter.key]: value}});
     syncSettings();
   }
+  // The knob strip shares each cell between name and value: names stay within 7 letters and values within 4 digits,
+  // so a name shows whole beside a value with its 2x/4x mark.
   function knobValue(parameter) {
     if (!parameter) return '';
-    const value = Number(parameter.value);
-    return parameter.type === 'float' || !Number.isInteger(value) ? value.toFixed(2) : String(value);
+    const value = Number(parameter.value), span = Math.abs(Number(parameter.max) - Number(parameter.min)) || 1;
+    if (parameter.type !== 'float' && Number.isInteger(value)) return String(value);
+    return value.toFixed(span >= 20 ? 0 : span >= 5 ? 1 : 2);
   }
-  function monitorLabel(text) { return String(text || '').slice(0, 16); }
+  const SHORT_NAMES = {
+    'Layer Spacing': 'Spacing', 'Wave Width': 'Width', 'Crest Warmth': 'Warmth', 'Crest Light': 'Light', 'Filaments': 'Strands',
+    'Crest Accent': 'Accent', 'Ribbon Spread': 'Spread', 'Silk Light': 'Sheen', 'Horizontal Pull': 'X Pull', 'Vertical Pull': 'Y Pull',
+    'Hand Influence': 'Hands', 'Ink Spread': 'Spread', 'Ink Veins': 'Veins', 'Capillary Detail': 'Detail', 'Ink Impulse': 'Impulse',
+    'Hand Pull': 'Pull', 'Tube Width': 'Tube', 'Exposure': 'Light', 'Music Drive': 'Drive', 'Inner Reach': 'Reach',
+    'Peak Height': 'Peaks', 'Roughness': 'Rough', 'Body Lift': 'Lift', 'Perspective': 'Tilt', 'Smoothness': 'Smooth',
+    'Beat Lines': 'Beats', 'Line Weight': 'Weight', 'Star Size': 'Size', 'Plasma Twist': 'Twist', 'Surface Detail': 'Detail',
+    'Flame Reach': 'Reach', 'Left Hand X': 'Hand X', 'Fan Width': 'Width', 'Scan Speed': 'Scan', 'Streak Length': 'Streaks',
+    'Velocity': 'Speed', 'Star Density': 'Stars', 'Body Steering': 'Steer', 'Rotation': 'Rotate', 'Color Split': 'Split',
+    'Signal Etch': 'Etch', 'Cut Impact': 'Impact', 'Framing': 'Frame', 'Cut Angle': 'Angle', 'Groove Density': 'Groove',
+    'Drop Size': 'Drops', 'Softness': 'Soft', 'Lightning': 'Flash', 'Hand Wipe': 'Wipe', 'Echo Distance': 'Echo',
+    'Ink Pressure': 'Ink', 'Registration': 'Shift', 'Screen Detail': 'Detail', 'Beat Push': 'Push', 'Screen Density': 'Density',
+    'Shape Type': 'Shape', 'Tile Count': 'Tiles', 'Crystal Depth': 'Depth', 'Facet Turn': 'Facets', 'Edge Light': 'Edges',
+    'Crystal Pulse': 'Pulse', 'Beat Tiles': 'Beats', 'Flip Time': 'Flip', 'Tile Float': 'Float', 'Float Speed': 'Drift',
+    'Reflections': 'Reflect', 'Note Response': 'Notes', 'Presence': 'Figure', 'Code Rain': 'Rain', 'Displace': 'Warp',
+    'Code Detail': 'Detail', 'Highlights': 'Glints', 'Fragments': 'Pieces', 'Fracture Pattern': 'Pattern', 'Separation': 'Gap',
+    'Time Slip': 'Slip', 'Spectrum': 'Prism', 'Slice Shift': 'Slices', 'Color Blocks': 'Blocks', 'RGB Split': 'RGB',
+    'Beat Cut': 'Cut', 'Contrast': 'Punch', 'Scan Texture': 'Scan',
+  };
+  // Names for one page of knobs: whole (7 letters at most) and distinct within the page.
+  function knobNames(parameters) {
+    const names = parameters.map(parameter => {
+      const label = String(parameter?.label || parameter?.key || '');
+      const words = label.split(/\s+/).filter(Boolean);
+      return SHORT_NAMES[label] || (label.length <= 7 ? label : words.find(word => word.length <= 7 && word.length >= 3 && !/^(of|and)$/i.test(word)) || label.slice(0, 7));
+    });
+    return names.map((name, index) => names.indexOf(name) === index ? name : name.slice(0, 6) + (index + 1));
+  }
 
   function updateMonitor() {
     if (!monitorDirty || monitorBusy || isOutput) return;
@@ -172,10 +202,10 @@
       if (open === 'visuals') values.E2 = {label: 'Collection', value: ''};
       Object.assign(values, {K2: {label: '', value: ''}, K3: {label: open === 'visuals' ? 'Close' : 'Visuals', value: ''}, K4: {label: open === 'player' ? 'Close' : 'Player', value: ''}});
     } else {
-      const snapshot = encoders();
+      const snapshot = encoders(), targets = KNOBS.map((knob, index) => controls.encoderTarget(snapshot, page, index)), names = knobNames(targets);
       KNOBS.forEach((knob, index) => {
-        const parameter = controls.encoderTarget(snapshot, page, index), speed = speeds[knob];
-        values[knob] = parameter ? {label: monitorLabel(parameter.label), value: knobValue(parameter) + (speed > 1 ? ' ' + speed + 'x' : '')} : {label: '—', value: ''};
+        const parameter = targets[index], speed = speeds[knob];
+        values[knob] = parameter ? {label: names[index], value: knobValue(parameter) + (speed > 1 ? ' ' + speed + 'x' : '')} : {label: '—', value: ''};
       });
       Object.assign(values, {K2: {label: 'Page', value: (page + 1) + '/3'}, K3: {label: open === 'settings' ? 'Close' : 'Visuals', value: ''}, K4: {label: 'Player', value: ''}});
     }
@@ -507,11 +537,52 @@
   $('playerClose').addEventListener('click', () => closeAll());
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && open === 'player') { event.preventDefault(); closeAll(); } });
 
+  // ---- Share link -------------------------------------------------------------------------------------------------
+  // look = the visual (its id without the library prefix); state = v1.<sound>[_E1_E2_E3_E4]: sound is m<track> or in
+  // (Mic / Line in), followed by the visual's first-page knob values. Other hosts ignore the report.
+  const LOOK = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/, SHARE_STATE = /^v1\.(?:m(\d{1,2})|(in))((?:_-?\d{1,5}(?:\.\d{1,4})?){0,4})$/;
+  const lookOf = sceneId => String(sceneId || '').replace(/^user\.vp-/, '').replace(/^vrch\./, '');
+  let shareTimer = 0, sharedLink = '';
+  function shareSoon() {
+    if (isOutput || !VrchApp.share) return;
+    clearTimeout(shareTimer);
+    shareTimer = setTimeout(shareNow, 400);
+  }
+  function shareNow() {
+    if (!active || !music) return;
+    const look = lookOf(active.definition.scene_id);
+    if (!LOOK.test(look)) return;
+    const values = encoders().parameters.slice(0, 4).map(parameter => String(Number(Number(parameter.value).toFixed(3))));
+    const state = 'v1.' + (music.source === 'input' ? 'in' : 'm' + music.index) + values.map(value => '_' + value).join('');
+    if (look + ' ' + state === sharedLink) return;
+    sharedLink = look + ' ' + state;
+    try { VrchApp.share.report({look, state}); } catch (_) {}
+  }
+  // What a share link asks for; anything unreadable is ignored and the App starts as usual.
+  function readShare() {
+    const share = VrchApp.context?.share;
+    if (isOutput || !share || typeof share !== 'object') return null;
+    const item = typeof share.look === 'string' && LOOK.test(share.look) ? catalog.list().find(entry => lookOf(entry.definition.scene_id) === share.look) || null : null;
+    const match = typeof share.state === 'string' ? SHARE_STATE.exec(share.state) : null;
+    return {item, track: match?.[1] != null ? Number(match[1]) : null, input: !!match?.[2], values: match && item ? match[3].split('_').slice(1).map(Number) : []};
+  }
+  function applyShare(shared) {
+    if (!shared?.item || !shared.values.length) return;
+    const definition = shared.item.definition, base = catalog.makeInstance(catalog.itemKey(shared.item));
+    const params = {...(instances[definition.scene_id]?.params || {})};
+    controls.encoderParameters(definition, base).parameters.slice(0, 4).forEach((parameter, index) => {
+      const value = shared.values[index];
+      if (Number.isFinite(value)) params[parameter.key] = Math.max(parameter.min, Math.min(parameter.max, value));
+    });
+    instances[definition.scene_id] = {params, modulation_master: instances[definition.scene_id]?.modulation_master || base.modulation_master};
+  }
+
   // ---- Persistence ------------------------------------------------------------------------------------------------
   function remember() {
     if (isOutput || !catalog) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(save, SAVE_MS);
+    shareSoon();
   }
   async function save() {
     const value = {schema_version: 1, scene: active?.definition.scene_id || null, source: music?.source || 'music', track: music?.index || 0, muted: !!music?.muted, auto,
@@ -659,7 +730,7 @@
       if (pictureIndex >= pictures.length) pictureIndex = 0;
       pictureImage(pictureIndex); pictureImage(pictureIndex + 1);
       music = new VisualsMusic({sdk: VrchApp, tracks, external: isOutput,
-        onChange: () => { renderPlayer(); renderMute(); publish(); }, onSection: sectionChanged});
+        onChange: () => { renderPlayer(); renderMute(); publish(); shareSoon(); }, onSection: sectionChanged});
       if (!isOutput && restored.muted === true) music.muted = true;
       if (Number.isInteger(restored.track) && tracks[restored.track]) music.setTrack(restored.track, 0, performance.now(), false);
       mirror.setAudioProvider(() => music.features(performance.now()));
@@ -679,7 +750,11 @@
     playlistKeys = [...spread(drawn), ...spread(imaged).map(entry => ({...entry, at: entry.at + 1e-6}))].sort((a, b) => a.at - b.at).map(entry => catalog.itemKey(entry.item));
     if (!isOutput) makePicker();
     if (window.VrchVisualSettings) VrchVisualSettings.connect(settingsHost());
-    const first = restored.scene && catalog.getBySceneId(restored.scene);
+    // A share link opens its visual, knob values and track; Mic / Line in waits for the visitor (see below).
+    const fromLink = readShare();
+    if (fromLink) applyShare(fromLink);
+    if (Number.isInteger(fromLink?.track) && music.tracks[fromLink.track]) music.setTrack(fromLink.track, 0, performance.now(), false);
+    const first = fromLink?.item && playable(catalog.itemKey(fromLink.item)) ? fromLink.item : restored.scene && catalog.getBySceneId(restored.scene);
     const firstKey = first && playable(catalog.itemKey(first)) ? catalog.itemKey(first) : playlistKeys.find(playable);
     if (!isOutput) {
       if (needsPicture(catalog.get(firstKey).definition)) await pictures[pictureIndex]?.loading;
@@ -687,8 +762,10 @@
     }
     if (followed) follow(followed);
     renderMute(); renderCamera();
-    if (typeof restored.source === 'string' && restored.source !== 'music') void music.setSource(restored.source);
-    VrchApp.ready().then(() => { monitorDirty = true; publish(); if (restored.camera) void startCamera(); }, () => {});
+    // In a browser the camera and Mic / Line in open only when the visitor turns them on; the device restores them.
+    const device = VrchApp.context?.mode === 'device';
+    if (typeof restored.source === 'string' && restored.source !== 'music' && (device || restored.source !== 'input') && !fromLink?.item) void music.setSource(restored.source);
+    VrchApp.ready().then(() => { monitorDirty = true; publish(); shareSoon(); if (restored.camera && device) void startCamera(); }, () => {});
     requestAnimationFrame(() => requestAnimationFrame(() => { stats.firstFrameAt = performance.now(); }));
     if (!isOutput) requestAnimationFrame(meter);
   }

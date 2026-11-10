@@ -51,6 +51,8 @@ function build(app) {
       await page.waitForTimeout(1500); if (await start.isVisible()) await start.click();
       // PalmNotes asks for sound on K2; an imported App confirms it in the host's Start audio dialog.
       if (app === 'palmnotes-duo' && capture) {await page.waitForTimeout(1500); await page.click('[data-input="K2"]'); await start.waitFor({state: 'visible', timeout: 10000}); await start.click();}
+      // BODY VIBES waits for K2 before it asks for the camera.
+      if (app === 'body-vibes' && capture) {await frame.waitForFunction(() => BodyVibesDiagnostics.snapshot().phase === 'ready', null, {timeout: 30000}); assert.equal(await page.evaluate(() => videoTracks.length), 0); await page.click('[data-input="K2"]'); if (await start.isVisible().catch(() => false)) await start.click();}
       // 1440x1100 shows the 2D screen 1:1, where Playwright's clicks inside the App frame land where they aim.
       if (app === 'hardware-check') await frame.click('#cameraTab');
       const live = () => page.waitForFunction(() => videoTracks.some(t => t.readyState === 'live'), null, {timeout: 45000});
@@ -69,7 +71,7 @@ function build(app) {
         await page.waitForTimeout(4000);
         assert.equal(await page.evaluate(() => videoTracks.length), 0, app + ' opens no camera');
         const text = await frame.evaluate(() => document.body.innerText);
-        if (app === 'body-vibes') assert.match(text, /Launch on the device to play with your arms/);
+        if (app === 'body-vibes') assert.match(text, /Press K2 to begin/);
         if (app === 'palmnotes-duo') assert.equal(await frame.evaluate(() => document.body.classList.contains('is-preview')), true);
         if (app === 'hardware-check') assert.match(text, /Launch on the device to test its camera/);
       }
