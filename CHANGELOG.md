@@ -5,6 +5,7 @@
 ### Added
 
 - Add Botanica Core, a petalcore synthesizer around a holographic glass flower that also plays on a large output or second screen.
+- Add Hit Shapes, a drum machine where every hit has a shape and the rhythm becomes a picture on a large output or second screen.
 - Group Botanica Core, Disco Ball, Magic Circle and Body Vibes under Audiovisual in the Playground, second after Visuals.
 - Let the vrch.io Playground list, group and load official Apps directly from GitHub.
 - Add Visuals Player: curated visuals that move with original songs, your microphone or line in, featured first in the catalog.
