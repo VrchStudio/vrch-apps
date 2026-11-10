@@ -605,7 +605,7 @@
     },
     "cefa2063-8345-40c0-92b5-8f23ac73872c": {
       "slug": "drum-808",
-      "latest": "1.0.2",
+      "latest": "1.0.3",
       "versions": {
         "1.0.0": {
           "version": "1.0.0",
@@ -663,6 +663,25 @@
             "updateApi": 1
           },
           "notes": "- Fix audio startup on devices and avoid misleading Menu permission prompts."
+        },
+        "1.0.3": {
+          "version": "1.0.3",
+          "name": "Drum 808",
+          "tag": "drum-808-v1.0.3",
+          "sourceCommit": "bf4e1a29040fb5efbf4bf99ece83554f9ada36ea",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/drum-808-v1.0.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/drum-808-v1.0.3/drum-808-1.0.3.vrchapp",
+          "size": 43534,
+          "sha256": "c7d60437f831aa5cd4608addfbd7b75e1c2f4b8b2efae225537b62c33e7dbdb5",
+          "packageDigest": "c7d60437f831aa5cd4608addfbd7b75e1c2f4b8b2efae225537b62c33e7dbdb5",
+          "revision": "e695486b809655b2167d8d97c5d33b9344227209a6ff946be4225d6bc349b33e",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Show Stopped instead of an audio error when the App opens before you press anything.\n- Share links now open with the same pattern, tempo and swing."
         }
       },
       "guide": {
