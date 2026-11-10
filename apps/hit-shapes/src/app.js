@@ -10,7 +10,7 @@ const PATTERN_NAMES = 'ABCD';
 // queues them, and the audio device adds its own delay. The picture waits this long so a shape appears when its hit
 // is heard. Measured in the Playground on desktop Chrome: 65-94 ms in all, about 40 ms of it the audio device's own.
 const LATENCY_MS = 75;
-const HOLD_MS = 500; // K4 held this long changes the colours instead of the pattern
+const HOLD_MS = 500; // K4 held this long changes the style instead of the pattern
 // Preset patterns, one row per voice: '.' off, 'x' on, 'X' accent. D starts empty.
 const PRESETS = [
   {BD: 'X...x...x...x...', CP: '....X.......X...', OH: '..x...x...x...x.', CH: 'xx.xxx.xxx.xxx.x'},
@@ -29,7 +29,7 @@ function presetCells() {
   return cells;
 }
 const defaults = () => ({
-  bpm: 120, swing: 0, sel: 0, pattern: 0, mutes: 0, theme: 0, cells: presetCells(),
+  bpm: 120, swing: 0, sel: 0, pattern: 0, mutes: 0, theme: 0, style: 1, cells: presetCells(),
   tune: SHAPES.map(() => 0), decay: SHAPES.map(() => 50),
 });
 const whole = (value, min, max, fallback) => {
@@ -42,6 +42,7 @@ function restore(saved) {
   s.bpm = whole(saved.bpm, 40, 240, 120); s.swing = whole(saved.swing, 0, SWING.length - 1, 0);
   s.sel = whole(saved.sel, 0, TRACKS - 1, 0); s.pattern = whole(saved.pattern, 0, PATTERNS - 1, 0);
   s.mutes = whole(saved.mutes, 0, (1 << TRACKS) - 1, 0); s.theme = whole(saved.theme, 0, PALETTES.length - 1, 0);
+  s.style = whole(saved.style, 0, STYLES.length - 1, s.style);
   if (typeof saved.cells === 'string' && saved.cells.length === s.cells.length) {
     for (let i = 0; i < s.cells.length; i++) s.cells[i] = whole(saved.cells[i], 0, 2, 0);
   }
@@ -50,7 +51,7 @@ function restore(saved) {
   return s;
 }
 const snapshot = () => ({
-  bpm: state.bpm, swing: state.swing, sel: state.sel, pattern: state.pattern, mutes: state.mutes, theme: state.theme,
+  bpm: state.bpm, swing: state.swing, sel: state.sel, pattern: state.pattern, mutes: state.mutes, theme: state.theme, style: state.style,
   cells: state.cells.join(''), tune: [...state.tune], decay: [...state.decay],
 });
 
@@ -72,7 +73,7 @@ function picture() {
   const from = cellIndex(state.pattern, 0, 0);
   return {
     cells: state.cells.subarray(from, from + TRACKS * STEPS), bpm: state.bpm, swing: SWING[state.swing][1], mutes: state.mutes,
-    tune: state.tune, decay: state.decay, theme: state.theme, sel: state.sel, playing: ui.running,
+    tune: state.tune, decay: state.decay, theme: state.theme, style: state.style, sel: state.sel, playing: ui.running,
   };
 }
 const wallClock = () => stage.origin + Date.now() - performance.now();
@@ -167,27 +168,27 @@ function onEngine({data: m}) {
   if (m.type === 'step') {
     if (!ui.playing) return;
     if (m.first) { ui.running = true; stage.set({playing: true}); publish(); }
-    stage.step({...m, time});
-    send({t: 'step', step: m.step, mask: m.mask, accents: m.accents, time, first: m.first});
+    // The bar count goes along, so a big screen that joins mid-song is at the same place in the picture's long turns.
+    send({t: 'step', step: m.step, mask: m.mask, accents: m.accents, time, first: m.first, bar: stage.step({...m, time})});
     if (m.pattern !== state.pattern) {
       state.pattern = m.pattern;
       if (ui.queued === m.pattern) ui.queued = -1;
       invalidate(); persist();
     }
   } else if (m.type === 'hit') {
-    send({t: 'hit', voice: m.track, time, pos: stage.strike({voice: m.track, time})});
+    send({t: 'hit', voice: m.track, time, ...stage.strike({voice: m.track, time})});
   }
 }
 
-/* ---------- share link: v1.<pattern, swing, colours><tempo><the pattern's steps><each voice's tune and decay> ---------- */
-// 62 URL-safe characters. Each voice's 16 steps (off, on, accent) pack into 5 of them, its tune and decay into 2.
-// A link the App cannot read is ignored and the App opens as saved.
+/* ---------- share link: v2.<pattern, swing, colours, style><tempo><the pattern's steps><each voice's tune and decay> ---------- */
+// 63 URL-safe characters. Each voice's 16 steps (off, on, accent) pack into 5 of them, its tune and decay into 2.
+// v1 links, from before there were styles, still open. A link the App cannot read is ignored and the App opens as saved.
 const SHARE_DIGITS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-const SHARE_STATE = new RegExp('^v1\\.([A-Za-z0-9_-]{' + (3 + TRACKS * 7) + '})$');
+const SHARE_STATE = new RegExp('^v([12])\\.([A-Za-z0-9_-]+)$');
 let shareTimer = 0, sharedState = '';
 function shareState() {
   const digits = (n, count) => { let out = ''; for (let k = 0; k < count; k++) { out += SHARE_DIGITS[n % 64]; n = Math.floor(n / 64); } return out; };
-  let text = 'v1.' + digits(state.pattern + 4 * state.swing + 16 * state.theme, 1) + digits(state.bpm - 40, 2);
+  let text = 'v2.' + digits(state.pattern + 4 * state.swing + 16 * state.theme + 48 * state.style, 2) + digits(state.bpm - 40, 2);
   for (let t = 0; t < TRACKS; t++) {
     let n = 0;
     for (let s = STEPS - 1; s >= 0; s--) n = n * 3 + state.cells[cellIndex(state.pattern, t, s)];
@@ -198,11 +199,12 @@ function shareState() {
 }
 function applyShare(share) {
   const match = typeof share?.state === 'string' ? SHARE_STATE.exec(share.state) : null;
-  if (!match) return false;
+  const wide = match?.[1] === '2' ? 2 : 1, body = match?.[2] || '';
+  if (body.length !== wide + 2 + TRACKS * 7) return false;
   let at = 0;
-  const number = count => { let n = 0; for (let k = count - 1; k >= 0; k--) n = n * 64 + SHARE_DIGITS.indexOf(match[1][at + k]); at += count; return n; };
-  const head = number(1), bpm = number(2) + 40, rows = [], voices = [];
-  if (head >= 4 * SWING.length * PALETTES.length || bpm > 240) return false;
+  const number = count => { let n = 0; for (let k = count - 1; k >= 0; k--) n = n * 64 + SHARE_DIGITS.indexOf(body[at + k]); at += count; return n; };
+  const head = number(wide), bpm = number(2) + 40, rows = [], voices = [];
+  if (head >= 4 * SWING.length * PALETTES.length * STYLES.length || bpm > 240) return false;
   for (let t = 0; t < TRACKS; t++) {
     let n = number(5);
     if (n >= 3 ** STEPS) return false;
@@ -215,7 +217,8 @@ function applyShare(share) {
     if (n >= 25 * 51) return false;
     voices.push([n % 25 - 12, Math.floor(n / 25) * 2]);
   }
-  state.pattern = head % 4; state.swing = Math.floor(head / 4) % 4; state.theme = Math.floor(head / 16); state.bpm = bpm;
+  state.pattern = head % 4; state.swing = Math.floor(head / 4) % 4; state.theme = Math.floor(head / 16) % 3; state.bpm = bpm;
+  if (wide === 2) state.style = Math.floor(head / 48);
   rows.forEach((row, t) => row.forEach((value, s) => { state.cells[cellIndex(state.pattern, t, s)] = value; }));
   voices.forEach(([tune, decay], t) => { state.tune[t] = tune; state.decay[t] = decay; });
   return true;
@@ -267,6 +270,7 @@ function cycleStep(step) {
   post({type: 'cell', index: i, value}); invalidate(); persist();
 }
 function nextTheme() { state.theme = wrap(state.theme + 1, PALETTES.length); invalidate(); persist(); }
+function nextStyle() { state.style = wrap(state.style + 1, STYLES.length); invalidate(); persist(); }
 function choosePattern(index) {
   if (ui.playing && engine) {
     ui.queued = index === state.pattern ? -1 : index;
@@ -319,10 +323,10 @@ if (!isOutput) VrchApp.controls.onEvent(event => {
     else if (c === 'K2') togglePlay();
     else if (c === 'K3') hit();
     else if (c === 'K4') {
-      // A press changes the pattern when the key comes up; a hold changes the colours instead.
+      // A press changes the pattern when the key comes up; a hold changes the style instead.
       heldLong = false;
       clearTimeout(holdTimer);
-      holdTimer = setTimeout(() => { heldLong = true; nextTheme(); }, HOLD_MS);
+      holdTimer = setTimeout(() => { heldLong = true; nextStyle(); }, HOLD_MS);
     }
   } else if (event.type === 'up' || event.type === 'cancel') {
     if (!held.delete(c) || c !== 'K4') return;
@@ -332,7 +336,9 @@ if (!isOutput) VrchApp.controls.onEvent(event => {
 });
 
 /* ---------- device screen ---------- */
-const view = {voices: [], glyphs: [], steps: [], theme: -1};
+const view = {voices: [], glyphs: [], steps: [], theme: -1, style: -1};
+// The style button's sign for each style: a bar of lanes, a dial, a cloth of cells.
+const STYLE_SIGNS = ['M2 4h12M2 8h12M2 12h12', 'M8 2.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11M8 8h.01', 'M2.5 2.5h4v4h-4zM9.5 2.5h4v4h-4zM2.5 9.5h4v4h-4zM9.5 9.5h4v4h-4z'];
 function status(text) { $('status').textContent = text; }
 function press(el, action) {
   el.addEventListener('pointerdown', event => {
@@ -355,6 +361,8 @@ function build() {
     press(b, () => cycleStep(s)); $('steps').append(b); view.steps.push(b);
   }
   press($('picture'), hit);
+  press($('styleChip'), nextStyle);
+  press($('colorChip'), nextTheme);
 }
 const toggle = (el, name, on) => { if (el.classList.contains(name) !== on) el.classList.toggle(name, on); };
 function render() {
@@ -362,10 +370,16 @@ function render() {
   if (view.theme !== state.theme) {
     view.theme = state.theme;
     root.setProperty('--bg', palette.bg); root.setProperty('--ink', palette.ink); root.setProperty('--grid', palette.grid);
+    [...$('colorChip').children].forEach((swatch, i) => { swatch.style.background = palette.colors[i]; });
     view.glyphs.forEach((glyph, t) => {
       glyph.width = Math.round(glyph.clientWidth * devicePixelRatio) || 64; glyph.height = Math.round(glyph.clientHeight * devicePixelRatio) || 40;
       stage.glyph(glyph, t);
     });
+  }
+  if (view.style !== state.style) {
+    view.style = state.style;
+    $('styleChip').innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="' + STYLE_SIGNS[state.style] + '"/></svg>';
+    $('styleChip').setAttribute('aria-label', 'Style: ' + STYLES[state.style]);
   }
   view.voices.forEach((b, t) => { toggle(b, 'selected', t === state.sel); toggle(b, 'muted', !!((state.mutes >> t) & 1)); });
   const color = stage.color(SHAPES[state.sel].color);
@@ -384,7 +398,7 @@ function updateMonitor() {
     E1: item('BPM', state.bpm + (state.swing ? ' · ' + SWING[state.swing][0] + ' swing' : '')),
     E2: item('Voice', id + ((state.mutes >> state.sel) & 1 ? ' · Muted' : '')),
     E3: item('Tune', tune > 0 ? '+' + tune : tune), E4: item('Decay', state.decay[state.sel]),
-    K2: item(ui.playing ? 'Stop' : 'Start', ''), K3: item('Hit', id), K4: item('Pattern', pattern),
+    K2: item(ui.playing ? 'Stop' : 'Start', ''), K3: item('Hit', id), K4: item(STYLES[state.style], pattern),
   }).catch(() => {}).finally(() => { monitorBusy = false; });
 }
 function layout() {
@@ -430,6 +444,7 @@ function follow({data: m} = {}) {
     const from = cellIndex(0, 0, 0);
     state.pattern = 0; state.bpm = whole(m.bpm, 40, 240, 120); state.mutes = whole(m.mutes, 0, (1 << TRACKS) - 1, 0);
     state.theme = whole(m.theme, 0, PALETTES.length - 1, 0); state.sel = whole(m.sel, 0, TRACKS - 1, 0);
+    state.style = whole(m.style, 0, STYLES.length - 1, 0);
     state.swing = Math.max(0, SWING.findIndex(([, amount]) => amount === m.swing));
     for (let i = 0; i < m.cells.length; i++) state.cells[from + i] = whole(m.cells[i], 0, 2, 0);
     if (Array.isArray(m.tune)) state.tune = state.tune.map((_, i) => whole(m.tune[i], -12, 12, 0));
@@ -448,7 +463,7 @@ window.__hitShapes = {
   get frames() { return stage.frames; },
   state: () => ({
     pattern: isOutput ? shown.pattern : state.pattern, bpm: state.bpm, swing: state.swing, voice: SHAPES[state.sel].id,
-    playing: ui.playing, theme: state.theme,
+    playing: ui.playing, theme: state.theme, style: STYLES[state.style],
     voices: SHAPES.map(({id}, t) => ({id, tune: state.tune[t], decay: state.decay[t], mute: !!((state.mutes >> t) & 1)})),
   }),
   hits: () => stage.hits(),

@@ -1,5 +1,11 @@
 # Hit Shapes
 
+## 0.2.0
+
+- Three styles of picture to change between at any time: Score, Orbit and Weave. Hold K4 or tap the style button.
+- The picture now moves on from bar to bar: in Orbit traces ride their rings and the dial opens and closes over sixteen bars; in Weave each bar becomes a row that climbs the screen.
+- Colors moved to a button on the picture.
+
 ## 0.1.1
 
 - Keep every shape in its pure color: a trace now shrinks away at the end of its bar instead of dimming.

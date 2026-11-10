@@ -1,14 +1,24 @@
 'use strict';
-/* The stage: turns the pattern and its hits into the picture. The device screen and the big output both run
- * this file, so they show the same thing.
+/* The stage: turns the pattern and its hits into the picture. The device screen and the big output both run this file,
+ * so they show the same thing.
  *
- * Time runs left to right: each of the 16 steps has a fixed place (two rows of eight on an upright screen), and Swing
- * moves the off-beat places later by the same share it delays their sound. Every voice has a lane; Tune moves it.
- * A hit is drawn at its step from the moment it is heard: large while it rings, then a trace that stays until the end
- * of its bar and shrinks away. While stopped, the picture is every trace of the current pattern. While playing, the
- * beat being played sits on a slightly lifted ground, so the bar's pace shows even where nothing is hit.
+ * Every hit is drawn with its voice's shape from shapes.js, from the moment it is heard: large while it rings, then a
+ * trace. Where the hit sits, and what becomes of its trace, is the style's business. There are three, and the player
+ * can change between them at any time, even mid-bar:
  *
- * The picture depends only on the pattern, the settings, the hits and the time, never on chance, so the same loop
+ *   Score   one bar, time left to right (two rows on an upright screen), every voice on its own lane. A trace stays
+ *           until the end of its bar.
+ *   Orbit   the bar is a dial, step 1 at twelve o'clock, every voice on its own ring. A trace rides its ring for four
+ *           bars, neighbouring rings turning opposite ways, and over sixteen bars the dial opens (the traces fan
+ *           out along their rings) and closes again.
+ *   Weave   each bar is a row, and as each row is finished the cloth moves up one, like cloth off a loom, so the last
+ *           several bars stay in view: a change of pattern, a mute or a turn of Tune is a visible seam, and every other four-bar phrase
+ *           is woven on the opposite grounds.
+ *
+ * In every style Swing moves the off-beat places later by the share it delays their sound, and Tune moves a voice
+ * along its own axis. While stopped, the picture is the current pattern laid out in the style.
+ *
+ * The picture depends only on the pattern, the settings, the hits and the time, never on chance, so the same playing
  * draws the same frames. Hits arrive stamped with their time on the audio clock; origin places that clock on the
  * screen's (performance.now() at audio time 0, latency included). */
 
@@ -19,6 +29,7 @@ const PALETTES = [
   {id: 'paper', bg: '#f0e9d9', panel: '#e5dcc8', grid: '#bfb6a1', ink: '#17171a', colors: ['#e5342a', '#17171a', '#1f52d6', '#f2b416']},
   {id: 'pool', bg: '#2438c9', panel: '#1d2fb0', grid: '#5669e6', ink: '#f7f0de', colors: ['#ff6a3d', '#f7f0de', '#0c123c', '#ffd43a']},
 ];
+const STYLES = ['Score', 'Orbit', 'Weave'];
 
 const createStage = (() => {
   const STEPS = 16, TINTS = 16;
@@ -29,7 +40,8 @@ const createStage = (() => {
   // A voice struck again sooner than this swells less, in proportion: shapes that repeat more than three times a
   // second stay small, so no large part of the picture ever flashes quickly.
   const CALM_MS = 334;
-  const TUNE_STEP = 0.0075; // one semitone moves a voice by this share of the row height
+  const KEEP_BARS = 9; // hits older than this are forgotten
+  const TAU = 2 * Math.PI;
   const smooth = (a, b, x) => { const k = Math.max(0, Math.min(1, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
   const voiceOf = id => SHAPES.findIndex(shape => shape.id === id);
 
@@ -57,39 +69,197 @@ const createStage = (() => {
     return 'rgb(' + from.map((v, n) => Math.round(v + (to[n] - v) * 0.045)).join(',') + ')';
   }));
 
-  // Rows of steps chosen so a step's cell is as close to square as the screen allows; u keeps every shape's share of
-  // the picture the same on any screen, so nothing stretches and a circle stays a circle.
-  function measure(W, H, inset = 0) {
-    const rows = W / H < 1.066 ? 2 : 1, cols = STEPS / rows, bandH = H / rows;
-    const u = Math.min(Math.sqrt(W * H / 144), bandH / 7, W / cols * 1.3);
-    const pad = Math.max(u * 0.35, W * 0.02, inset);
-    return {rows, cols, bandH, u, pad, cw: (W - 2 * pad) / cols};
-  }
+  // Where a hit falls within its bar, in steps: Swing delays the off-beats, and a hit by hand sits between steps.
+  const place = (pos, swing) => { const s = Math.floor(pos), odd = s & 1; return s + (odd ? swing : 0) + (pos - s) * (odd ? 1 - swing : 1 + swing); };
+  // The steps' margin and width, shared by Score and Weave so the device's pads line up under both.
+  const columns = (W, cols, u, inset) => { const pad = Math.max(u * 0.35, W * 0.02, inset); return {pad, cw: (W - 2 * pad) / cols}; };
+
+  /* ---------- the styles ----------
+   * measure(W, H, inset)  the layout for a canvas size
+   * spot(q, L, m, e, v, pos, age, back, tune)
+   *                       where one hit is drawn: fills q.x, q.y, q.u, q.angle (the canvas is turned by it), q.left and
+   *                       q.right, and returns how large it is drawn, 1 down to 0 (0: not at all). pos is its step
+   *                       (below 0: a hit by hand while stopped), age how many bars ago it was heard, back how many
+   *                       bars ago its bar began, tune its voice's Tune. m is the model, e this frame's clock.
+   * ground(g, L, m, e, palette, lift)   everything behind the hits
+   * still(L)              the ages at which the pattern is laid out while stopped
+   * depth                 true when older bars lie behind newer ones; otherwise voices lie over each other in order
+   * single                true when a step struck again replaces its trace
+   * swell                 how much of a ringing hit's swell is shown (1 unless given): Orbit's dial is small */
+  const score = {
+    depth: false, single: true,
+    // Rows of steps chosen so a step's cell is as close to square as the screen allows; u keeps every shape's share
+    // of the picture the same on any screen, so nothing stretches and a circle stays a circle.
+    measure(W, H, inset) {
+      const rows = W / H < 1.066 ? 2 : 1, cols = STEPS / rows, bandH = H / rows;
+      const u = Math.min(Math.sqrt(W * H / 144), bandH / 7, W / cols * 1.3);
+      return {W, H, rows, cols, bandH, u, ...columns(W, cols, u, inset)};
+    },
+    spot(q, L, m, e, v, pos, age, back, tune) {
+      const s = Math.max(0, Math.floor(pos)), row = pos < 0 ? 0 : Math.floor(s / L.cols) % L.rows;
+      q.x = pos < 0 ? L.W / 2 : L.pad + (place(pos, m.swing) - row * L.cols + 0.5) * L.cw;
+      q.y = (row + SHAPES[v].lane - tune * 0.0075) * L.bandH;
+      q.u = L.u; q.angle = 0; q.left = -q.x; q.right = L.W - q.x;
+      return age >= 1 ? 0 : 1 - smooth(0.8, 1, age); // a trace keeps its size until the last fifth of its bar
+    },
+    still: () => [0],
+    ground(g, L, m, e, palette, lift) {
+      const lane = SHAPES[Math.max(0, voiceOf('CH'))].lane;
+      const edge = beat => Math.round(beat <= 0 ? 0 : beat >= L.cols / 4 ? L.W : L.pad + beat * 4 * L.cw);
+      for (let row = 0; row < L.rows; row++) {
+        const top = Math.round(row * L.bandH), height = Math.round((row + 1) * L.bandH) - top, base = (row + lane) * L.bandH;
+        g.fillStyle = palette.panel;
+        for (let beat = (row + 1) % 2; beat < L.cols / 4; beat += 2) g.fillRect(edge(beat), top, edge(beat + 1) - edge(beat), height);
+        if (e.step >= 0 && Math.floor(e.step / L.cols) % L.rows === row) {
+          const beat = Math.floor(e.step % L.cols / 4);
+          g.fillStyle = lift[(beat + row) % 2];
+          g.fillRect(edge(beat), top, edge(beat + 1) - edge(beat), height);
+        }
+        g.fillStyle = palette.grid;
+        for (let c = 0; c < L.cols; c++) {
+          const s = row * L.cols + c, h = L.u * (s % 4 ? 0.2 : 0.34);
+          g.fillRect(L.pad + (place(s, m.swing) - row * L.cols + 0.5) * L.cw - L.u * 0.04, base - h, L.u * 0.08, h);
+        }
+        if (e.step >= 0 && Math.floor(e.step / L.cols) % L.rows === row) {
+          g.fillStyle = palette.ink;
+          g.fillRect(L.pad + (place(e.step, m.swing) - row * L.cols + 0.5) * L.cw - L.u * 0.09, base + L.u * 0.1, L.u * 0.18, L.u * 0.18);
+        }
+      }
+    },
+  };
+
+  // Each voice's ring, as a share of the dial's radius (low voices near the hub, the hats on the rim), and how far the
+  // ring carries a trace round in a bar when the dial is fully open, in steps. Neighbouring rings turn opposite ways.
+  const RINGS = {BD: [0.45, 1], LT: [0.57, -1], SD: [0.68, 0.5], CB: [0.75, -0.5], CP: [0.83, 0.5], RS: [0.89, -0.5], OH: [0.96, 0.5], CH: [1, 0]};
+  const ROUND = {BD: true, OH: true}; // shapes that look the same whichever way they are turned are not turned
+  const orbit = {
+    depth: true, single: false, bars: 4, swell: 0.55,
+    measure(W, H) {
+      const R = Math.min(W, H) * 0.41;
+      return {W, H, cx: W / 2, cy: H / 2, R, u: R / 5.2, far: Math.hypot(W, H)};
+    },
+    spot(q, L, m, e, v, pos, age, back, tune) {
+      const shape = SHAPES[v], ring = RINGS[shape.id] || [1 - shape.lane * 0.5, 0.25];
+      // A hit lands where the hand is; its trace then rides its ring, a little smaller with each bar that passes.
+      const a = -TAU / 4 + TAU * (place(Math.max(0, pos), m.swing) + ring[1] * e.open * age) / STEPS;
+      const r = (ring[0] + tune * 0.008) * L.R;
+      q.x = L.cx + r * Math.cos(a); q.y = L.cy + r * Math.sin(a); q.u = L.u;
+      // A shape's own "up" points away from the hub. The snare's bar lies along the radius instead, hub to rim and beyond.
+      if (shape.id === 'SD') {
+        const dx = Math.cos(a), dy = Math.sin(a);
+        q.angle = a; q.left = -r;
+        q.right = Math.min(dx > 1e-6 ? (L.W - q.x) / dx : dx < -1e-6 ? -q.x / dx : L.far, dy > 1e-6 ? (L.H - q.y) / dy : dy < -1e-6 ? -q.y / dy : L.far) + L.u;
+      } else { q.angle = ROUND[shape.id] ? 0 : a + TAU / 4; q.left = -L.far; q.right = L.far; }
+      // A ring that does not turn keeps only its newest trace: the older ones would sit unseen beneath it.
+      if (age >= (ring[1] ? this.bars : 1)) return 0;
+      return ring[1] ? (1 - 0.62 * Math.min(1, age / (this.bars - 1))) * (1 - smooth(this.bars - 0.75, this.bars, age)) : 1 - smooth(0.8, 1, age);
+    },
+    still: () => [0],
+    ground(g, L, m, e, palette, lift) {
+      // The four beats are the four quarters of the screen, clockwise from the top right.
+      const cx = Math.round(L.cx), cy = Math.round(L.cy);
+      for (let beat = 0; beat < 4; beat++) {
+        const now = e.step >= 0 && Math.floor(e.step / 4) === beat;
+        if (!(beat & 1) && !now) continue;
+        g.fillStyle = now ? lift[beat & 1] : palette.panel;
+        g.fillRect(beat < 2 ? cx : 0, beat === 0 || beat === 3 ? 0 : cy, beat < 2 ? L.W - cx : cx, beat === 0 || beat === 3 ? cy : L.H - cy);
+      }
+      g.fillStyle = palette.grid;
+      for (let s = 0; s < STEPS; s++) {
+        const a = -TAU / 4 + TAU * place(s, m.swing) / STEPS, h = L.u * (s % 4 ? 0.2 : 0.34);
+        g.save(); g.translate(L.cx + L.R * Math.cos(a), L.cy + L.R * Math.sin(a)); g.rotate(a + TAU / 4);
+        g.fillRect(-L.u * 0.04, -h, L.u * 0.08, h);
+        g.restore();
+      }
+      g.fillStyle = palette.ink;
+      g.beginPath(); g.arc(L.cx, L.cy, L.u * 0.14, 0, TAU); g.fill();
+      if (e.step < 0) return;
+      // The hand sweeps the bar without stopping at the steps.
+      const a = -TAU / 4 + TAU * place(e.bars % 1 * STEPS, m.swing) / STEPS;
+      g.save(); g.translate(L.cx, L.cy); g.rotate(a);
+      g.fillRect(L.u * 0.14, -L.u * 0.03, L.R * 0.28, L.u * 0.06);
+      g.restore();
+    },
+  };
+
+  // Where each voice sits within its step's cell, in row heights from the row's middle: the cell reads as one sign.
+  const SIGNS = {BD: 0.04, SD: -0.04, CH: 0.44, OH: -0.2, CP: -0.3, LT: 0.1, RS: -0.12, CB: 0.2};
+  const weave = {
+    depth: true, single: false,
+    measure(W, H, inset) {
+      const cols = W / H < 1.066 ? 8 : STEPS, side = columns(W, cols, Math.sqrt(W * H / 144), inset), rh = side.cw * 1.12;
+      const rows = STEPS / cols; // rows per bar
+      return {W, H, cols, rows, rh, barH: rh * rows, u: side.cw * 0.42, write: H - rh * 0.6, bars: Math.min(KEEP_BARS - 1, Math.ceil(H / (rh * rows)) + 1), ...side};
+    },
+    spot(q, L, m, e, v, pos, age, back, tune) {
+      const shape = SHAPES[v], s = Math.max(0, Math.floor(pos)), row = pos < 0 ? 0 : Math.floor(s / L.cols) % L.rows;
+      q.x = pos < 0 ? L.W / 2 : L.pad + (place(pos, m.swing) - row * L.cols + 0.5) * L.cw;
+      // The row being written sits at the bottom. When it is full the cloth moves up one row at once: a steady crawl
+      // would sweep every shape past every point of the screen, which at fast tempos is a flicker.
+      q.y = L.write - (back - this.part(L, e) - row / L.rows) * L.barH + ((SIGNS[shape.id] ?? shape.lane - 0.5) - tune * 0.014) * L.rh;
+      q.u = L.u; q.angle = 0; q.left = -q.x; q.right = L.W - q.x;
+      return q.y < -L.rh || back >= L.bars ? 0 : 1;
+    },
+    still: L => Array.from({length: L.bars}, (_, k) => k),
+    // How much of a bar has gone by since the cloth last moved.
+    part: (L, e) => e.step < 0 ? 0 : e.bars * L.rows % 1 / L.rows,
+    ground(g, L, m, e, palette, lift) {
+      const edge = beat => Math.round(beat <= 0 ? 0 : beat >= L.cols / 4 ? L.W : L.pad + beat * 4 * L.cw);
+      g.fillStyle = palette.panel;
+      for (let beat = 1; beat < L.cols / 4; beat += 2) g.fillRect(edge(beat), 0, edge(beat + 1) - edge(beat), L.H);
+      // Every other phrase of four bars is woven the other way round, so the cloth shows where the phrases turn.
+      for (let phrase = Math.floor(e.bars / 4); e.step >= 0 && phrase >= 0 && e.bars - phrase * 4 - 3 < L.bars; phrase--) {
+        if (!(phrase & 1)) continue;
+        const top = Math.round(L.write - (e.bars - this.part(L, e) - phrase * 4) * L.barH - L.rh / 2), height = Math.round(4 * L.barH);
+        for (let beat = 0; beat < L.cols / 4; beat++) {
+          g.fillStyle = beat & 1 ? palette.bg : palette.panel;
+          g.fillRect(edge(beat), top, edge(beat + 1) - edge(beat), height);
+        }
+      }
+      const base = L.write + L.rh * 0.44;
+      g.fillStyle = palette.grid;
+      const row = e.step < 0 ? 0 : Math.floor(e.step / L.cols) % L.rows;
+      for (let c = 0; c < L.cols; c++) {
+        const s = row * L.cols + c, h = L.u * (s % 4 ? 0.2 : 0.34);
+        g.fillRect(L.pad + (place(s, m.swing) - row * L.cols + 0.5) * L.cw - L.u * 0.04, base - h, L.u * 0.08, h);
+      }
+      if (e.step < 0) return;
+      g.fillStyle = palette.ink;
+      g.fillRect(L.pad + (place(e.step, m.swing) - row * L.cols + 0.5) * L.cw - L.u * 0.09, base + L.u * 0.1, L.u * 0.18, L.u * 0.18);
+    },
+  };
+  const styles = [score, orbit, weave];
 
   // readback: the canvas will be read pixel by pixel (tests), so the browser keeps one rasterizer for it throughout.
   return function createStage(canvas, {maxPixels = Infinity, readback = false} = {}) {
     const g = canvas.getContext('2d', {alpha: false, willReadFrequently: readback});
     const model = {
       cells: new Uint8Array(SHAPES.length * STEPS), bpm: 120, swing: 0, mutes: 0,
-      tune: SHAPES.map(() => 0), decay: SHAPES.map(() => 50), theme: 0, sel: 0, playing: false,
+      tune: SHAPES.map(() => 0), decay: SHAPES.map(() => 50), theme: 0, style: 0, sel: 0, playing: false,
     };
     const records = SHAPES.map(() => []); // each voice's hits, oldest first
-    const stepLog = [], hitLog = [], batch = [];
+    const stepLog = [], hitLog = [], items = [];
     const CH = voiceOf('CH'), OH = voiceOf('OH');
-    let W = 1, H = 1, L = measure(1, 1), scale = 1, lastT = 0, selAt = -1e9, voice = 0, step = 0;
+    let W = 1, H = 1, edge = 0, scale = 1, lastT = 0, selAt = -1e9, voice = 0, step = 0, bar = 0, count = 0;
+    let style = score, L = score.measure(1, 1, 0);
     const p = {x: 0, y: 0, u: 1, level: 0, t: 0, size: 1, step: 0, left: 0, right: 1, rand: n => hash(voice, step, n)};
+    const q = {x: 0, y: 0, u: 1, angle: 0, left: 0, right: 0};
+    // This frame's place in the music. step: the step being played (-1 while stopped). bars: bars since Start, with the
+    // part of the bar played so far. open: how far Orbit's rings carry their traces, 0 to 1.
+    const clock = {step: -1, bars: 0, open: 0.5};
     // heard[v]: milliseconds since voice v was last heard, as of the last frame (Infinity when silent).
     const stage = {origin: 0, frames: 0, firstFrameAt: 0, playStep: -1, model, heard: SHAPES.map(() => Infinity)};
+    const lay = () => { style = styles[model.style] || score; L = style.measure(W, H, edge); };
 
     // inset: CSS pixels at the left edge that take no touch on the device; the steps keep clear of it on both sides.
     stage.resize = (width, height, ratio = 1, inset = 0) => {
       scale = Math.min(ratio, Math.sqrt(maxPixels / Math.max(1, width * height)));
       W = Math.max(1, Math.round(width * scale)); H = Math.max(1, Math.round(height * scale));
-      canvas.width = W; canvas.height = H;
-      L = measure(W, H, inset * scale);
+      canvas.width = W; canvas.height = H; edge = inset * scale;
+      lay();
     };
-    // Where the 16 steps sit, in CSS pixels, so the device's step pads can line up under them.
-    stage.columns = () => ({rows: L.rows, pad: L.pad / scale, width: L.cw / scale});
+    // Where Score's and Weave's 16 steps sit, in CSS pixels, so the device's step pads can line up under them.
+    stage.columns = () => { const at = score.measure(W, H, edge); return {rows: at.rows, pad: at.pad / scale, width: at.cw / scale}; };
     stage.color = (color, theme = model.theme) => PALETTES[theme].colors[color];
     // One voice's shape at rest, centred on a small canvas: the device's voice buttons.
     stage.glyph = (target, v) => {
@@ -105,13 +275,14 @@ const createStage = (() => {
       for (const key of Object.keys(next)) {
         if (key === 'cells') model.cells.set(next.cells); else model[key] = next[key];
       }
+      if (next.style !== undefined) lay();
     };
-    stage.reset = () => { records.forEach(list => { list.length = 0; }); stepLog.length = 0; stage.playStep = -1; };
+    stage.reset = () => { records.forEach(list => { list.length = 0; }); stepLog.length = 0; stage.playStep = -1; bar = 0; };
 
     function add(v, record) {
-      const list = records[v], keep = record.time - 2 * 240000 / model.bpm - 2000;
-      while (list.length && list[0].time < keep) list.shift();
-      record.punch = 1;
+      const list = records[v];
+      while (list.length && list[0].bar < record.bar - KEEP_BARS && list[0].time < record.time - 2000) list.shift();
+      record.punch = 1; record.tune = model.tune[v]; record.drawnAt = 0; record.heardAt = 0;
       for (let i = list.length - 1; i >= 0 && !record.silent; i--) {
         if (list[i].silent) continue;
         record.punch = Math.max(0.2, Math.min(1, (record.time - list[i].time) / CALM_MS));
@@ -124,100 +295,88 @@ const createStage = (() => {
     }
     // The sequencer reached a step. first marks the first step after Start: the pattern's traces are laid down as if
     // the bar before had been played, so the picture carries on from the still one instead of emptying.
-    stage.step = ({step: s, mask, accents, time, first}) => {
+    // Returns the bar it belongs to, counted from Start; a follower passes the leader's count in as at.
+    stage.step = ({step: s, mask, accents, time, first, bar: at}) => {
       if (first) {
         stage.reset();
         const stepMs = 15000 / model.bpm;
         for (let v = 0; v < SHAPES.length; v++) for (let k = 0; k < STEPS; k++) {
           const value = model.cells[v * STEPS + k];
-          if (value) add(v, {time: time - (STEPS - k) * stepMs, pos: k, cell: k, accent: value === 2, silent: true, manual: false, drawnAt: 0, heardAt: 0});
+          if (value) add(v, {time: time - (STEPS - k) * stepMs, bar: -1, pos: k, cell: k, accent: value === 2, silent: true, manual: false});
         }
-      }
-      stepLog.push({time, step: s});
+      } else if (s === 0) bar++;
+      if (Number.isInteger(at) && at >= 0) bar = at;
+      stepLog.push({time, step: s, bar});
       if (stepLog.length > 48) stepLog.shift();
       for (let v = 0; v < SHAPES.length; v++) {
-        if ((mask >> v) & 1) add(v, {time, pos: s, cell: s, accent: !!((accents >> v) & 1), silent: false, manual: false, drawnAt: 0, heardAt: 0});
+        if ((mask >> v) & 1) add(v, {time, bar, pos: s, cell: s, accent: !!((accents >> v) & 1), silent: false, manual: false});
       }
+      return bar;
     };
     // A hit by hand. While playing it lands where the bar is at that moment; while stopped, in the middle (pos -1).
-    stage.strike = ({voice: v, time, pos}) => {
+    stage.strike = ({voice: v, time, pos, bar: at}) => {
       if (pos === undefined) {
-        pos = -1;
+        pos = -1; at = bar;
         for (let i = stepLog.length - 1; model.playing && i >= 0; i--) {
-          const at = stepLog[i];
-          if (at.time > time) continue;
-          const length = 15000 / model.bpm * (at.step & 1 ? 1 - model.swing : 1 + model.swing);
-          pos = at.step + Math.min(0.999, (time - at.time) / length);
+          const from = stepLog[i];
+          if (from.time > time) continue;
+          const length = 15000 / model.bpm * (from.step & 1 ? 1 - model.swing : 1 + model.swing);
+          pos = from.step + Math.min(0.999, (time - from.time) / length); at = from.bar;
           break;
         }
       }
-      add(v, {time, pos, cell: -1, accent: false, silent: false, manual: true, drawnAt: 0, heardAt: 0});
-      return pos;
+      add(v, {time, bar: at ?? bar, pos, cell: -1, accent: false, silent: false, manual: true});
+      return {pos, bar: at ?? bar};
     };
     stage.hits = () => hitLog.map(({voice: v, record}) => ({
       voice: SHAPES[v].id, step: record.pos < 0 ? -1 : Math.floor(record.pos), accent: record.accent, manual: record.manual,
       audioTime: record.heardAt || record.time + stage.origin, drawnAt: record.drawnAt || null,
     }));
 
-    function place(v, pos) {
-      const row = pos < 0 ? 0 : Math.floor(pos / L.cols) % L.rows, s = Math.max(0, Math.floor(pos)), odd = s & 1;
-      p.x = pos < 0 ? W / 2 : L.pad + (s % L.cols + 0.5 + (odd ? model.swing : 0) + (pos - s) * (odd ? 1 - model.swing : 1 + model.swing)) * L.cw;
-      p.y = (row + SHAPES[v].lane - model.tune[v] * TUNE_STEP) * L.bandH;
-      p.u = L.u; p.left = 0; p.right = W; p.step = s;
-      voice = v; step = s;
-    }
-    // strength: how bright the flat colour is (1 is the plain colour).
-    function paint(v, strength) {
-      g.fillStyle = g.strokeStyle = tables[model.theme][SHAPES[v].color][Math.round((Math.max(0.5, Math.min(1.5, strength)) - 0.5) * 2 * TINTS)];
-      SHAPES[v].draw(g, p);
+    // Where the music is at audio time t: the step being played and the bars since Start.
+    function tell(t) {
+      clock.step = -1;
+      for (let i = stepLog.length - 1; model.playing && i >= 0; i--) {
+        const from = stepLog[i];
+        if (from.time > t) continue;
+        const next = stepLog[i + 1], length = next ? next.time - from.time : 15000 / model.bpm * (from.step & 1 ? 1 - model.swing : 1 + model.swing);
+        clock.step = from.step; clock.bars = from.bar + (from.step + Math.min(1, (t - from.time) / length)) / STEPS;
+        break;
+      }
+      // Orbit opens over eight bars and closes over the next eight.
+      clock.open = clock.step < 0 ? 0.5 : (1 - Math.cos(TAU * clock.bars / 16)) / 2;
+      stage.playStep = clock.step;
     }
 
-    // The frame of the poster: every other beat on a second ground (the beat being played lifted a little), the
-    // ruler's resting ticks, and the playhead.
-    function grid() {
-      const palette = PALETTES[model.theme], lane = SHAPES[CH < 0 ? 0 : CH].lane;
-      const edge = beat => Math.round(beat <= 0 ? 0 : beat >= L.cols / 4 ? W : L.pad + beat * 4 * L.cw);
-      for (let row = 0; row < L.rows; row++) {
-        const top = row * L.bandH, base = top + L.bandH * lane;
-        g.fillStyle = palette.panel;
-        for (let beat = (row + 1) % 2; beat < L.cols / 4; beat += 2) g.fillRect(edge(beat), Math.round(top), edge(beat + 1) - edge(beat), Math.round(top + L.bandH) - Math.round(top));
-        if (model.playing && stage.playStep >= 0 && Math.floor(stage.playStep / L.cols) % L.rows === row) {
-          const beat = Math.floor(stage.playStep % L.cols / 4);
-          g.fillStyle = lifted[model.theme][(beat + row) % 2];
-          g.fillRect(edge(beat), Math.round(top), edge(beat + 1) - edge(beat), Math.round(top + L.bandH) - Math.round(top));
-        }
-        g.fillStyle = palette.grid;
-        for (let c = 0; c < L.cols; c++) {
-          const s = row * L.cols + c, x = L.pad + (c + 0.5 + (s & 1 ? model.swing : 0)) * L.cw, h = L.u * (s % 4 ? 0.2 : 0.34);
-          g.fillRect(x - L.u * 0.04, base - h, L.u * 0.08, h);
-        }
-      }
-      if (!model.playing || stage.playStep < 0) return;
-      place(CH < 0 ? 0 : CH, stage.playStep);
-      const side = L.u * 0.18, base = (Math.floor(stage.playStep / L.cols) + lane) * L.bandH;
-      g.fillStyle = palette.ink;
-      g.fillRect(p.x - side / 2, base + L.u * 0.1, side, side);
+    // One thing to draw this frame. Kept and reused from frame to frame.
+    function item(v, record, pos, age, back, tune, level, strength, grow, layer, order) {
+      const size = style.spot(q, L, model, clock, v, pos, age, back, tune);
+      const shown = level > 0 ? Math.max(size, Math.min(1, level * 8)) : size;
+      if (shown < 0.02) return;
+      const it = items[count] || (items[count] = {});
+      count++;
+      it.v = v; it.x = q.x; it.y = q.y; it.u = q.u; it.angle = q.angle; it.left = q.left; it.right = q.right;
+      it.step = Math.max(0, Math.floor(pos)); it.level = level * (style.swell || 1); it.strength = strength; it.size = grow * shown;
+      it.t = record ? (lastT - record.time) / 1000 : 1000; it.layer = layer; it.order = order;
     }
 
     // A muted voice leaves the picture: only a hit by hand, which still sounds, is drawn.
-    function drawVoice(v, t, muted) {
-      const shape = SHAPES[v], list = records[v], selected = v === model.sel;
+    function gather(v, t, muted) {
+      const shape = SHAPES[v], list = records[v], selected = v === model.sel, over = selected ? SHAPES.length : v;
       const pop = selected ? 0.25 * Math.exp(-Math.max(0, t - selAt) / 160) : 0;
       const length = shape.seconds * Math.pow(2, (model.decay[v] - 50) / 25) * 1000, barMs = 240000 / model.bpm;
       stage.heard[v] = Infinity;
       if (!model.playing && !muted) {
-        for (let s = 0; s < STEPS; s++) {
+        for (const back of style.still(L)) for (let s = 0; s < STEPS; s++) {
           const value = model.cells[v * STEPS + s];
           if (!value) continue;
-          const breath = Math.sin(t / 700 + s * 0.4); // a slow, slight swell that travels along the bar
-          place(v, s);
-          p.level = 0; p.t = 1000; p.size = (value === 2 ? ACCENT : 1) * (1 + pop) * (1 + 0.02 * breath);
-          paint(v, value === 2 ? REST[1] : REST[0]);
+          const breath = Math.sin(t / 700 + s * 0.4 + back); // a slow, slight swell that travels along the bar
+          item(v, null, s, back, back, model.tune[v], 0, REST[value - 1], (value === 2 ? ACCENT : 1) * (1 + pop) * (1 + 0.02 * breath), -back, over * 64 + s);
         }
       }
-      // Newest first: only a voice's latest hit rings (the one before lets go), and a step struck again replaces its trace.
+      // Newest first: only a voice's latest hit rings (the one before lets go), and in Score a step struck again
+      // replaces its trace.
       let newer = 0, cutAt = Infinity, seen = 0;
-      batch.length = 0;
       for (let i = list.length - 1; i >= 0; i--) {
         const record = list[i];
         if (record.time > t) continue;
@@ -234,39 +393,53 @@ const createStage = (() => {
         if (!record.silent && newer === 1) stage.heard[v] = t - record.time;
         if (muted && !record.manual) continue;
         if (!record.drawnAt) { record.drawnAt = stage.now; record.heardAt = record.time + stage.origin; }
-        const age = (t - record.time) / barMs, again = record.cell >= 0 && (seen >> record.cell) & 1;
+        const again = style.single && record.cell >= 0 && (seen >> record.cell) & 1;
         if (record.cell >= 0) seen |= 1 << record.cell;
-        // A trace keeps its size and colour until the last fifth of its bar, then shrinks to nothing.
-        const trace = model.playing || record.manual ? (again || age >= 1 ? 0 : 1 - smooth(0.8, 1, age)) : level > 0 ? 1 : 0;
-        if (level <= 0 && trace <= 0) continue;
-        // A trace rests a shade under the plain colour (an accent nearer to it); a hit is at full strength while it rings.
+        // While playing a hit ages with the music; a hit by hand while stopped ages with the clock; and when the
+        // music has stopped, a hit still ringing finishes over the still picture.
+        let age, back;
+        if (clock.step >= 0) { back = clock.bars - record.bar; age = back - Math.max(0, record.pos) / STEPS; }
+        else if (record.manual) { age = (t - record.time) / barMs; back = 0; if (age >= 1) continue; }
+        else { if (level <= 0) continue; age = 0; back = 0; }
+        if (again && level <= 0) continue;
         const k = record.accent ? 1 : 0, strength = REST[k] + (HIT[k] - REST[k]) * Math.pow(level, 0.6);
-        if (trace >= 0.02 || level > 0) batch.push(record, level, strength, level > 0 ? Math.max(trace, Math.min(1, level * 8)) : trace);
-      }
-      for (let i = batch.length - 4; i >= 0; i -= 4) {
-        const record = batch[i];
-        place(v, record.pos);
-        p.level = batch[i + 1]; p.t = (t - record.time) / 1000; p.size = (record.accent ? ACCENT : 1) * (1 + pop) * batch[i + 3];
-        paint(v, batch[i + 2]);
+        item(v, record, record.pos, Math.max(0, age), back, clock.step >= 0 ? record.tune : model.tune[v], level, strength, (record.accent ? ACCENT : 1) * (1 + pop),
+          style.depth ? record.bar : 0, over * 64 + (style.depth ? Math.max(0, record.pos) : STEPS + i));
       }
     }
 
     // Draw the picture as it is at screen time now (a performance.now() value).
     stage.render = now => {
-      const t = now - stage.origin + LOOK_MS;
+      const t = now - stage.origin + LOOK_MS, palette = PALETTES[model.theme];
       lastT = t; stage.now = now;
-      stage.playStep = -1;
-      for (let i = stepLog.length - 1; i >= 0; i--) if (stepLog[i].time <= t) { stage.playStep = stepLog[i].step; break; }
-      g.fillStyle = PALETTES[model.theme].bg;
+      tell(t);
+      g.fillStyle = palette.bg;
       g.fillRect(0, 0, W, H);
       g.lineCap = 'butt'; g.lineJoin = 'miter';
-      grid();
-      // Later voices in shapes.js are drawn over earlier ones, and the selected voice over them all.
-      for (let v = 0; v < SHAPES.length; v++) if (v !== model.sel) drawVoice(v, t, !!((model.mutes >> v) & 1));
-      if (model.sel >= 0 && model.sel < SHAPES.length) drawVoice(model.sel, t, !!((model.mutes >> model.sel) & 1));
+      style.ground(g, L, model, clock, palette, lifted[model.theme]);
+      count = 0;
+      for (let v = 0; v < SHAPES.length; v++) gather(v, t, !!((model.mutes >> v) & 1));
+      // Older bars lie behind newer ones; within a bar later voices in shapes.js lie over earlier ones, and the
+      // selected voice over them all.
+      const drawn = items.slice(0, count).sort((a, b) => a.layer - b.layer || a.order - b.order);
+      for (const it of drawn) {
+        voice = it.v; step = it.step;
+        p.u = it.u; p.level = it.level; p.t = it.t; p.size = it.size; p.step = it.step;
+        g.fillStyle = g.strokeStyle = tables[model.theme][SHAPES[it.v].color][Math.round((Math.max(0.5, Math.min(1.5, it.strength)) - 0.5) * 2 * TINTS)];
+        if (it.angle) {
+          g.save(); g.translate(it.x, it.y); g.rotate(it.angle);
+          p.x = 0; p.y = 0; p.left = it.left; p.right = it.right;
+          SHAPES[it.v].draw(g, p);
+          g.restore();
+        } else {
+          p.x = it.x; p.y = it.y; p.left = it.x + it.left; p.right = it.x + it.right;
+          SHAPES[it.v].draw(g, p);
+        }
+      }
       stage.frames++;
       if (!stage.firstFrameAt) stage.firstFrameAt = performance.now();
     };
     return stage;
   };
 })();
+
