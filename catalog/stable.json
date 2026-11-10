@@ -4184,7 +4184,7 @@
     },
     "2626ce58-0b22-4656-8088-4263f0e1ff4b": {
       "slug": "hit-shapes",
-      "latest": "0.4.0",
+      "latest": "0.4.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4280,6 +4280,25 @@
             "updateApi": 1
           },
           "notes": "- Tune and Decay now change the whole picture: it leans as the voices are tuned up or down, and longer decays make every trace larger and longer-lived.\n- Hold K3 for the next colors.\n- Orbit shows each pattern as its own picture: every step the kick plays casts a ray across the screen, and the trails are already there before Start."
+        },
+        "0.4.1": {
+          "version": "0.4.1",
+          "name": "Hit Shapes",
+          "tag": "hit-shapes-v0.4.1",
+          "sourceCommit": "1809640583a64c2a3773f87528d6032052a04841",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/hit-shapes-v0.4.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/hit-shapes-v0.4.1/hit-shapes-0.4.1.vrchapp",
+          "size": 85887,
+          "sha256": "d822d189db5fa3a780470d3d4288dbc9d5bf8c8b73799c10b1eb755fd0f60e67",
+          "packageDigest": "d822d189db5fa3a780470d3d4288dbc9d5bf8c8b73799c10b1eb755fd0f60e67",
+          "revision": "2734045f7be377af5ba11b8a90886bb7867041abd7108545c6b976e9811f3aa4",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Hold E1 for the next colors. Holding K3 no longer changes them, so changing colors makes no sound.\n- A kick shoves the shapes around it about three times as far, flinging them out and letting them drift back."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSI+CiAgPGNpcmNsZSBjeD0iMjQiIGN5PSIzOCIgcj0iMTciIGZpbGw9IiNhYWE5YTUiLz4KICA8cGF0aCBkPSJNNCAyNmg1NnY3SDR6IiBmaWxsPSIjZThlOGUzIi8+CiAgPGNpcmNsZSBjeD0iNDciIGN5PSIxNSIgcj0iNy41IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxwYXRoIGQ9Ik00OSA0M2w4IDEzSDQxeiIgZmlsbD0iI2U4ZThlMyIvPgogIDxwYXRoIGQ9Ik03IDYwdi01bTcgNXYtOG03IDh2LTVtNyA1di01IiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMi41Ii8+Cjwvc3ZnPgo=",
@@ -4313,6 +4332,10 @@
               {
                 "control": "E1 · Press",
                 "action": "Swing: Off, Light, Medium, Heavy. Off-beat shapes move later with their sound."
+              },
+              {
+                "control": "E1 · Hold",
+                "action": "Next colors."
               },
               {
                 "control": "E2 · Turn",
@@ -4349,10 +4372,6 @@
               {
                 "control": "K3 · Press",
                 "action": "Play the selected voice once, playing or stopped."
-              },
-              {
-                "control": "K3 · Hold",
-                "action": "Next colors."
               },
               {
                 "control": "K4 · Press",
