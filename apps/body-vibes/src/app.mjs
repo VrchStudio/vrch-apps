@@ -58,15 +58,33 @@ async function start(){
     for(const key of ['bass','synth','vocal'])document.documentElement.style.setProperty('--'+key,config.colors[key]);
     // A browser Preview that hands this App its own camera plays like the device; without one it stays a preview.
     if(sdk.context.mode==='preview'&&!await sdk.camera.devices().then(()=>true,()=>false)){phase='preview';prompt('Your body is the instrument.','Launch on the device to play with your arms.');return;}
-    phase='ready';prompt('Your body is the instrument.','Press K2 to begin.');renderSensitivity();
+    phase='ready';prompt('Your body is the instrument.','Press K2 to begin.');renderSensitivity();prepare();
   }catch(error){fail(error);}
+}
+// Music and tracking load while the App waits for K2: they need no permission, and loading them with the sound
+// already open can keep a small device so busy that its audio port closes.
+let stems=null;
+function prepare(){
+  if(closed)return;
+  if(!tracker){tracker=createTracker(result,fail);tracker.ready.catch(()=>{});}
+  if(!stems){stems=loadStems().catch(error=>{stems=null;throw error;});stems.catch(()=>{});}
+}
+async function loadStems(){
+  const decoder=new OfflineAudioContext(2,1,48000),list=[];
+  for(const source of config.track.sources){
+    const asset=await fetch(new URL(source.path,import.meta.url));if(!asset.ok)throw Error('Stem unavailable');
+    const decoded=await decoder.decodeAudioData(await asset.arrayBuffer());
+    if(decoded.numberOfChannels!==2)throw Error('Stereo stem required');
+    list.push({channels:[decoded.getChannelData(0).slice(),decoded.getChannelData(1).slice()],sampleRate:decoded.sampleRate});
+  }
+  return list;
 }
 async function begin(){
   if(closed||!config||!['ready','error'].includes(phase))return;
   phase='starting';lastFrame=0;lastResult=0;points=[];audio={bass:0,synth:0,vocal:0,frequency:0};instrument.lose?.();renderSensitivity();
   $('tracking').textContent='HALF BODY';
   try{
-    tracker=createTracker(result,fail);const trackingReady=tracker.ready;trackingReady.catch(()=>{});
+    prepare();const trackingReady=tracker.ready,music=stems;
     prompt('Make some room.','Allow camera and sound when asked.');
     // Sound first, while the K2 press still counts as the visitor's action; the camera can take seconds to open.
     output=await sdk.audio.openOutput({channels:2});if(closed||phase==='error'){await release();return;}output.onError(fail);
@@ -77,13 +95,10 @@ async function begin(){
     let loadedResolve,loadedReject;const loaded=new Promise((resolve,reject)=>{loadedResolve=resolve;loadedReject=reject;});loaded.catch(()=>{});
     player.port.onmessage=({data})=>{if(data.error){const error=Error(data.error);loadedReject(error);fail(error);}else if(data.ready){loadedResolve();}else audio=data;};
     sink=await output.createNode(ac);player.connect(sink);await ac.resume();prompt('Loading music.','Preparing the three parts of your song…');
-    for(let index=0;index<config.track.sources.length;index++){
-      const asset=await fetch(new URL(config.track.sources[index].path,import.meta.url));if(!asset.ok)throw Error('Stem unavailable');
-      const decoded=await ac.decodeAudioData(await asset.arrayBuffer());if(closed||phase==='error'){await release();return;}
-      if(decoded.numberOfChannels!==2)throw Error('Stereo stem required');
-      const channels=[decoded.getChannelData(0).slice(),decoded.getChannelData(1).slice()];
-      player.port.postMessage({type:'track',index,channels,sampleRate:decoded.sampleRate},channels.map(c=>c.buffer));
-    }
+    const tracks=await music;if(closed||phase==='error'){await release();return;}
+    // The decoded parts move to the player; a later start decodes them again.
+    if(stems===music)stems=null;
+    tracks.forEach(({channels,sampleRate},index)=>player.port.postMessage({type:'track',index,channels,sampleRate},channels.map(c=>c.buffer)));
     await loaded;await trackingReady;
     if(closed||phase==='error'){await release();return;}phase='live';renderSensitivity();
     camera.onFrame(frame=>{

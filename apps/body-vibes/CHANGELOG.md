@@ -1,5 +1,9 @@
 # BODY VIBES
 
+## 0.6.3
+
+- Keep the sound on when you press K2 on the device: the music and body tracking now load while the App waits for K2, so playing starts sooner.
+
 ## 0.6.2
 
 - Wait for K2 before asking for the camera and sound: opening the App, or a link to it, no longer asks for the camera on its own.
