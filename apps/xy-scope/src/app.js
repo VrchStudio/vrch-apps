@@ -3,6 +3,7 @@
 (() => {
   'use strict';
   const sdk = window.VrchApp, Signal = window.XYSignal;
+  const Scope = window.XYScope;
   let context = {};
   try { context = sdk.context; } catch (_) { /* defaults */ }
   // Output role: a picture-only instance (a large or second screen) draws the same beam. It makes no sound, reads no
@@ -22,15 +23,19 @@
   const epoch = t => performance.timeOrigin + t;
 
   /* ---------- settings ---------- */
-  const RATIOS = [[1, 1, 'Unison'], [5, 4, 'Maj 3rd'], [4, 3, 'Fourth'], [3, 2, 'Fifth'], [5, 3, 'Maj 6th'], [7, 4, 'Harm 7th'], [2, 1, 'Octave'], [5, 2, 'Oct + 3rd'], [3, 1, 'Oct + 5th'], [4, 1, '2 Octaves']];
+  const RATIOS = [[1, 1, 'Unison'], [5, 4, 'Third'], [4, 3, 'Fourth'], [3, 2, 'Fifth'], [5, 3, 'Sixth'], [7, 4, 'Seventh'], [2, 1, 'Octave'], [5, 2, 'Tenth'], [3, 1, 'Twelfth'], [4, 1, '2 Octaves']];
   const COLOURS = [['Green', [0.2, 1, 0.45]], ['Amber', [1, 0.6, 0.12]], ['Ice', [0.35, 0.75, 1]], ['Pink', [1, 0.08, 0.58]]];
   const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const VIEWS = ['Wave', 'XY', 'Spectrum'];
   // pitch: MIDI note of X (A1..A4). ratio: index into RATIOS; free: any ratio ("value") instead. glow and shape in percent.
-  const DEFAULTS = {pitch: 45, ratio: 3, free: false, value: 1.5, drift: 0.1, shape: 0, spin: 0, decay: 1.5, glow: 35, colour: 0, page: 0};
-  const LIMITS = {pitch: [33, 69, 1], ratio: [0, RATIOS.length - 1, 1], value: [1, 4, 0.001], drift: [-2, 2, 0.01], shape: [0, 100, 1], spin: [-1, 1, 0.01], decay: [0.2, 6, 0.001], glow: [0, 100, 1], colour: [0, COLOURS.length - 1, 1], page: [0, 1, 1]};
+  // Input mode: view (index into VIEWS), the Wave time window in ms, display gain in dB, or auto to fit the signal.
+  const DEFAULTS = {pitch: 45, ratio: 3, free: false, value: 1.5, drift: 0.1, shape: 0, spin: 0, decay: 1.5, glow: 35, colour: 0, page: 0, view: 0, window: 20, gain: 0, auto: true};
+  const LIMITS = {pitch: [33, 69, 1], ratio: [0, RATIOS.length - 1, 1], value: [1, 4, 0.001], drift: [-2, 2, 0.01], shape: [0, 100, 1], spin: [-1, 1, 0.01], decay: [0.2, 6, 0.001], glow: [0, 100, 1], colour: [0, COLOURS.length - 1, 1], page: [0, 1, 1],
+    view: [0, VIEWS.length - 1, 1], window: [5, 100, 0.1], gain: [-12, 66, 1.5]};
   const tidy = (key, v) => { const [lo, hi, grain] = LIMITS[key]; return clamp(Number((Math.round(v / grain) * grain).toFixed(3)), lo, hi); };
   const state = {...DEFAULTS};
-  let holding = false, striking = false;
+  // mode: 'synth' makes the signal; 'input' shows the device's audio input instead. Every start is in synth mode.
+  let holding = false, striking = false, mode = 'synth', frozen = false;
 
   function settings() {
     const [num, den] = RATIOS[state.ratio];
@@ -40,7 +45,8 @@
   const glowSeconds = percent => 0.02 * 100 ** (percent / 100);   // 20 ms .. 2 s
   const signed = (v, digits) => (v > 0 ? '+' : '') + (Math.abs(v) < 0.5 / 10 ** digits ? 0 : v).toFixed(digits);
   const fast = d => d * Math.max(1, Math.abs(d));                 // a quick turn covers more ground
-  let colourTurn = 0;
+  const around = (key, steps, count) => set(key, ((state[key] + steps) % count + count) % count);
+  let colourTurn = 0, viewTurn = 0, shownGain = 1;
   const CONTROLS = {
     pitch: {label: 'Pitch', text: () => NOTES[state.pitch % 12] + (Math.floor(state.pitch / 12) - 1), turn: d => set('pitch', state.pitch + d), press: () => set('pitch', DEFAULTS.pitch)},
     ratio: {label: 'Ratio', text: () => state.free ? state.value.toFixed(3) : RATIOS[state.ratio][0] + ':' + RATIOS[state.ratio][1] + ' ' + RATIOS[state.ratio][2],
@@ -51,9 +57,17 @@
     decay: {label: 'Decay', text: () => state.decay.toFixed(state.decay < 1 ? 2 : 1) + ' s', turn: d => set('decay', state.decay * 1.06 ** d), press: () => set('decay', DEFAULTS.decay)},
     glow: {label: 'Glow', text: () => state.glow + '%', turn: d => set('glow', state.glow + 2 * d), press: () => set('glow', DEFAULTS.glow)},
     colour: {label: 'Colour', text: () => COLOURS[state.colour][0], press: () => {},
-      turn: d => { colourTurn += d; const steps = Math.trunc(colourTurn / 2); if (steps) { colourTurn -= steps * 2; set('colour', ((state.colour + steps) % COLOURS.length + COLOURS.length) % COLOURS.length); } }},
+      turn: d => { colourTurn += d; const steps = Math.trunc(colourTurn / 2); if (steps) { colourTurn -= steps * 2; around('colour', steps, COLOURS.length); } }},
+    window: {label: 'Window', text: () => state.view ? '-' : state.window.toFixed(state.window < 10 ? 1 : 0) + ' ms', turn: d => set('window', state.window * 1.12 ** d), press: () => set('window', DEFAULTS.window)},
+    // Turning leaves auto from the gain being shown; pressing returns to auto.
+    gain: {label: 'Gain', text: () => state.auto ? 'Auto' : signed(state.gain, 1) + ' dB', press: () => { state.auto = true; changed(); },
+      turn: d => { state.gain = tidy('gain', (state.auto ? 20 * Math.log10(shownGain) : state.gain) + 1.5 * d); state.auto = false; changed(); }},
+    view: {label: 'View', text: () => VIEWS[state.view], press: () => {},
+      turn: d => { viewTurn += d; const steps = Math.trunc(viewTurn / 2); if (steps) { viewTurn -= steps * 2; around('view', steps, VIEWS.length); } }},
   };
   const PAGES = [{name: 'Tone', keys: ['pitch', 'ratio', 'drift', 'shape']}, {name: 'Motion', keys: ['spin', 'decay', 'glow', 'colour']}];
+  const INPUT_PAGE = {name: 'Input', keys: ['window', 'gain', 'view', 'glow']};
+  const page = () => mode === 'input' ? INPUT_PAGE : PAGES[state.page];
 
   function set(key, value) {
     value = tidy(key, value);
@@ -95,13 +109,15 @@
   // What was drawn, kept for half a second in speaker units, for the checks in window.__xy.
   const history = new Float32Array(HISTORY * 2);
   let historyAt = 0, historyFill = 0, lastCount = 0;
-  function show(count, dt, colour, glow) {
-    for (let i = 0; i < count; i++) {
+  // stroke: {fresh, rate} for a picture that is not the running signal (see trace.js); those are not kept.
+  function show(count, dt, colour, glow, stroke) {
+    for (let i = 0; i < count && !stroke; i++) {
       history[2 * historyAt] = points[2 * i] * LEVEL; history[2 * historyAt + 1] = points[2 * i + 1] * LEVEL;
       historyAt = (historyAt + 1) % HISTORY;
     }
-    historyFill = Math.min(HISTORY, historyFill + count); lastCount = count;
-    trace.draw(points, count, {colour: COLOURS[colour][1], glow: glowSeconds(glow), dt});
+    if (!stroke) historyFill = Math.min(HISTORY, historyFill + count);
+    lastCount = count;
+    trace.draw(points, count, {colour: COLOURS[colour][1], glow: glowSeconds(glow), dt, fresh: !!stroke?.fresh, rate: stroke?.rate});
     if (count && firstFrameAt === null) firstFrameAt = performance.now();
   }
 
@@ -188,11 +204,127 @@
     if (m.s) snapshot = {frame: m.frame, s: m.s};
   }
 
+  /* ---------- input mode: the pocket oscilloscope ---------- */
+  // The audio input opens only when the visitor switches to input mode and closes on leaving it. Nothing heard here
+  // is sent to the speakers: listening is left to the device's own audio routing.
+  const HEARD = 32768, COLUMNS = 256, SWEEP = 2048;
+  const heardRing = new Float32Array(HEARD * 2), mono = new Float32Array(HEARD), levels = new Float32Array(COLUMNS), sweep = new Float32Array(SWEEP * 2);
+  let input = null, inputEpoch = 0, inputWaits = false, heard = 0, heardDrawn = 0, listen = 0, loudest = 0, analyser = null;
+  let sweepCount = 0, sweepPairs = false, tuned = '', tunedHz = 0, steady = 0, tunerTurn = 0, peakHz = 0, wander = 0;
+  async function openInput() {
+    const mine = ++inputEpoch;
+    inputWaits = false;
+    try {
+      const opened = await sdk.audio.openInput({channels: 2, echoCancellation: false});   // echo cancelling would change the wave
+      if (mine !== inputEpoch || mode !== 'input') { void Promise.resolve(opened.close()).catch(() => {}); return; }
+      input = opened; heard = 0; heardDrawn = 0;
+      opened.onData(samples => {
+        if (input !== opened || frozen) return;
+        for (let i = 0, frames = samples.length / 2; i < frames; i++) { const at = ((heard + i) % HEARD) * 2; heardRing[at] = samples[2 * i]; heardRing[at + 1] = samples[2 * i + 1]; }
+        heard += samples.length / 2;
+      });
+      opened.onError(() => { if (input === opened) { input = null; inputWaits = true; notice('Audio input stopped. Hold K4 for synth.', true); } });
+      notice('');
+    } catch (error) {
+      if (mine !== inputEpoch || mode !== 'input') return;
+      const code = error?.code || error?.name, refused = ['permission_required', 'permission_denied', 'capability_denied', 'io_not_authorized', 'NotAllowedError'].includes(code);
+      // A missing device is waited for; a refusal is not asked again until the visitor switches to input once more.
+      inputWaits = !refused;
+      notice((refused ? 'Audio input is not allowed.' : 'No audio input.') + ' Hold K4 for synth.', true);
+    }
+  }
+  function closeInput() {
+    const old = input;
+    input = null; ++inputEpoch; inputWaits = false;
+    if (old) void Promise.resolve(old.close()).catch(() => {});
+  }
+  function setMode(next) {
+    if (next === mode) return;
+    mode = next; frozen = false; sweepCount = 0; tuned = ''; steady = 0; loudest = 0;
+    if (mode === 'input') { holding = false; striking = false; push(); void openInput(); }
+    else { closeInput(); notice(''); }
+    dirty = true; publish();
+  }
+  function setFrozen(on) { if (frozen !== on) { frozen = on; dirty = true; publish(); } }
+  // The newest "count" samples of the louder channel, with any constant offset removed, into mono[]. Returns how many.
+  function tail(count) {
+    count = Math.min(count, heard, HEARD);
+    let left = 0, right = 0, sumL = 0, sumR = 0;
+    for (let i = 0, f = heard - count; i < count; i++, f++) { const at = (f % HEARD) * 2, l = heardRing[at], r = heardRing[at + 1]; left += l * l; right += r * r; sumL += l; sumR += r; }
+    if (listen ? left > right * 2 : right > left * 2) listen = 1 - listen;
+    const mean = (listen ? sumR : sumL) / (count || 1);
+    for (let i = 0, f = heard - count; i < count; i++, f++) mono[i] = heardRing[(f % HEARD) * 2 + listen] - mean;
+    return count;
+  }
+  const fit = v => clamp(v, -1.42, 1.42);
+  // One frame of the input picture into points[]. Wave and Spectrum are a fresh stroke across the screen each frame;
+  // XY runs on through every new sample, left across and right up.
+  function inputPicture(dt) {
+    if (!frozen && heard) {
+      // Display gain: auto fits the recent peak to nine tenths of full size and lets go slowly.
+      let peak = 0;
+      for (let f = Math.max(0, heard - 2400); f < heard; f++) { const at = (f % HEARD) * 2; peak = Math.max(peak, Math.abs(heardRing[at]), Math.abs(heardRing[at + 1])); }
+      loudest = Math.max(peak, loudest * Math.exp(-dt / 0.8));
+      shownGain = state.auto ? clamp(0.9 / Math.max(loudest, 1e-5), 0.9, 400) : 10 ** (state.gain / 20);
+      if (++tunerTurn % 4 === 0) tune();
+      if (state.view === 1) {
+        let count = 0;
+        for (let f = Math.max(heardDrawn, heard - MAX_POINTS, 0); f < heard; f++, count++) { const at = (f % HEARD) * 2; points[2 * count] = fit(heardRing[at] * shownGain); points[2 * count + 1] = fit(heardRing[at + 1] * shownGain); }
+        heardDrawn = heard;
+        if (count) { sweepCount = Math.min(count, SWEEP); sweepPairs = true; sweep.set(points.subarray((count - sweepCount) * 2, count * 2)); send('x', points, count * 2); }
+        return {count, stroke: {fresh: false}};
+      }
+      heardDrawn = heard;
+      if (state.view === 0) {
+        const length = Math.round(state.window * PER_MS), count = tail(length + 2400);
+        if (count > length + 2) {
+          let start = Scope.trigger(mono, count, length);
+          if (start < 0) start = count - length - 1;
+          const n = Math.min(length, SWEEP), stride = length / n;
+          let moved = 0;
+          for (let k = 0; k < n; k++) {
+            const at = start + k * stride, i = Math.min(Math.floor(at), count - 2), mix = at - i, value = fit((mono[i] * (1 - mix) + mono[i + 1] * mix) * shownGain);
+            moved += Math.abs(value - sweep[k]); sweep[k] = value;
+          }
+          wander = sweepCount === n && !sweepPairs ? moved / n : 1; sweepCount = n; sweepPairs = false; send('w', sweep, n);
+        }
+      } else {
+        analyser ||= Scope.spectrum();
+        if (tail(analyser.size) === analyser.size) {
+          peakHz = analyser.read(mono, levels, COLUMNS);
+          // -84 dB at the bottom of the screen, 0 dB at the top; a set gain lifts the whole curve.
+          for (let c = 0; c < COLUMNS; c++) sweep[c] = clamp((levels[c] + (state.auto ? 0 : state.gain) + 84) / 84 * 2.4 - 1.2, -1.25, 1.3);
+          sweepCount = COLUMNS; sweepPairs = false; send('s', sweep, COLUMNS);
+        }
+      }
+    }
+    return {count: lay(), stroke: {fresh: true}};
+  }
+  // The kept sweep into points[]: heights spread across this screen's width, or the kept XY points as they are.
+  function lay() {
+    if (sweepPairs) { points.set(sweep.subarray(0, sweepCount * 2)); return sweepCount; }
+    const span = trace.extent()[0] * 0.94;
+    for (let k = 0; k < sweepCount; k++) { points[2 * k] = sweepCount > 1 ? span * (2 * k / (sweepCount - 1) - 1) : 0; points[2 * k + 1] = sweep[k]; }
+    return sweepCount;
+  }
+  // Tuner: a note name and how far off it is, once a clear pitch has held for a few readings.
+  function tune() {
+    const count = tail(3400);
+    let power = 0;
+    for (let i = 0; i < count; i++) power += mono[i] * mono[i];
+    const found = count && power / count > 4e-6 ? Scope.pitch(mono, count) : {hz: 0, clear: 0};
+    if (found.clear > 0.85 && tunedHz && Math.abs(1200 * Math.log2(found.hz / tunedHz)) < 40) { steady++; tunedHz += (found.hz - tunedHz) * 0.4; }
+    else { steady = found.clear > 0.85 ? 1 : 0; tunedHz = found.clear > 0.85 ? found.hz : 0; }
+    const named = steady >= 3 ? Scope.note(tunedHz) : null, text = named ? named.name + ' ' + signed(Math.round(named.cents), 0) + ' ct' : '';
+    if (text !== tuned) { tuned = text; $('tuner').textContent = text; }
+  }
+
   function frame(now) {
     requestAnimationFrame(frame);
     if (now <= lastNow) return;   // a host may run animation callbacks twice in one frame
     const dt = clamp((now - lastNow) / 1000, 0, 0.1); lastNow = now;
     if (dirty) { dirty = false; render(); }
+    if (mode === 'input') { const picture = inputPicture(dt); show(picture.count, dt, state.colour, state.glow, picture.count ? {...picture.stroke, rate: picture.stroke.fresh ? picture.count / dt : SR} : picture.stroke); return; }
     let count = 0;
     if (engine && engine.began >= 0 && base !== null) {
       const heard = Math.floor((now - base - DISPLAY_DELAY_MS) * PER_MS);   // the frame leaving the speaker now
@@ -217,32 +349,72 @@
   // on the shared wall clock. The output runs the same signal.js from there, so both screens show one figure.
   function publish() {
     if (isOutput || !relay) return;
+    if (mode === 'input') {
+      try { relay.publish({v: 1, mode: 'input', colour: state.colour, glow: state.glow, frozen, at: epoch(performance.now())}); } catch (_) { /* no output */ }
+      return;
+    }
     const audio = source === 'audio';
     if (audio && !snapshot) return;
     const now = epoch(performance.now());
-    const message = {v: 1, p: settings(), preview: !audio, colour: state.colour, glow: state.glow, at: now + (audio ? DISPLAY_DELAY_MS : 0),
+    const message = {v: 1, mode: 'synth', p: settings(), preview: !audio, colour: state.colour, glow: state.glow, at: now + (audio ? DISPLAY_DELAY_MS : 0),
       s: audio ? snapshot.s : bare(sig), sAt: audio ? epoch(snapshot.frame / PER_MS + base + DISPLAY_DELAY_MS) : epoch(lastNow)};
     try { relay.publish(message); } catch (_) { /* no output */ }
   }
-  const queue = [];
+  // Input pictures go to the output as they are drawn: heights, or XY pairs, packed 15 bits to a character.
+  const CODES = new Uint16Array(1024), PACKED = 4800;
+  function send(kind, values, count) {
+    if (isOutput || !relay) return;
+    let text = '';
+    for (let from = Math.max(0, count - PACKED); from < count; from += 1024) {
+      const n = Math.min(1024, count - from);
+      for (let i = 0; i < n; i++) CODES[i] = 32 + Math.round((clamp(values[from + i], -1.5, 1.5) + 1.5) / 3 * 32767);
+      text += String.fromCharCode.apply(null, CODES.subarray(0, n));
+    }
+    try { relay.send({v: 1, k: kind, d: text}); } catch (_) { /* no output */ }
+  }
+  const unpack = (text, i) => (text.charCodeAt(i) - 32) / 32767 * 3 - 1.5;
+  const queue = [], inbox = [];
   let following = null, arriving = null;
   function follow({kind, data} = {}) {
-    if (kind !== 'state' || !data || data.v !== 1 || !data.p || !data.s) return;
-    queue.push(data); if (queue.length > 64) queue.shift();
+    if (!data || data.v !== 1) return;
+    if (kind === 'state' && (data.mode === 'input' || data.p && data.s)) { queue.push(data); if (queue.length > 64) queue.shift(); }
+    else if (kind === 'event' && typeof data.d === 'string' && data.d.length <= PACKED) {
+      if (data.k === 'x') { if (inbox.length < 8) inbox.push(data.d); }
+      else if (data.k === 'w' || data.k === 's') {
+        sweepCount = Math.min(data.d.length, SWEEP); sweepPairs = false;
+        for (let i = 0; i < sweepCount; i++) sweep[i] = unpack(data.d, i);
+      }
+    }
   }
   function outputFrame(now) {
     requestAnimationFrame(outputFrame);
     if (now <= lastNow) return;
     const dt = clamp((now - lastNow) / 1000, 0, 0.1), wall = epoch(now); lastNow = now;
-    while (queue.length && queue[0].at <= wall) { following = queue.shift(); arriving = following; }
+    while (queue.length && queue[0].at <= wall) {
+      const next = queue.shift();
+      if (next.mode !== following?.mode) { sweepCount = 0; inbox.length = 0; }
+      following = next; arriving = next.mode === 'input' ? null : next;
+    }
     if (!following) { show(0, dt, 0, 0); return; }
+    const colour = clamp(following.colour | 0, 0, COLOURS.length - 1), glow = clamp(Number(following.glow) || 0, 0, 100);
+    if (following.mode === 'input') {
+      // XY points run on as they arrive; a Wave or Spectrum sweep (or a frozen picture) is drawn afresh every frame.
+      let count = 0, fresh = true;
+      if (inbox.length) {
+        fresh = false;
+        for (const text of inbox.splice(0)) for (let i = 0; i + 1 < text.length && count < MAX_POINTS; i += 2, count++) { points[2 * count] = unpack(text, i); points[2 * count + 1] = unpack(text, i + 1); }
+        sweepCount = Math.min(count, SWEEP); sweepPairs = true; sweep.set(points.subarray((count - sweepCount) * 2, count * 2));
+      } else if (!sweepPairs || following.frozen) count = lay();
+      show(count, dt, colour, glow, {fresh, rate: fresh && count ? count / dt : SR});
+      return;
+    }
     const p = following.preview ? preview(following.p) : following.p;
     if (arriving && arriving.sAt <= wall) {
       sig = revive(arriving.s);
       advance(sig, p, clamp(Math.round((wall - arriving.sAt) * PER_MS), 0, SR * 5));
       arriving = null; owed = 0;
     }
-    show(own(dt, p), dt, clamp(following.colour | 0, 0, COLOURS.length - 1), clamp(Number(following.glow) || 0, 0, 100));
+    show(own(dt, p), dt, colour, glow);
   }
 
   /* ---------- saved settings and the share link ---------- */
@@ -251,6 +423,7 @@
     if (!value || value.v !== 1) return;
     for (const key in LIMITS) if (Number.isFinite(value[key])) state[key] = tidy(key, value[key]);
     state.free = value.free === true;
+    state.auto = value.auto !== false;
   }
   function saveSoon() {
     clearTimeout(saveTimer);
@@ -291,39 +464,44 @@
 
   /* ---------- controls ---------- */
   const downAt = {};
+  let modeTimer = 0;
   function setHold(on) { if (holding !== on) { holding = on; gate(); } }
   function setStrike(on) { if (striking !== on) { striking = on; gate(); } }
+  // K2: hold the tone, or in input mode freeze the picture.
+  const second = () => mode === 'input' ? setFrozen(!frozen) : setHold(!holding);
   function onControl(event) {
     const control = event.control, encoder = ['E1', 'E2', 'E3', 'E4'].indexOf(control);
     if (event.type === 'rotate') {
       const d = Math.trunc(Number(event.delta) || 0);
-      if (d && encoder >= 0) CONTROLS[PAGES[state.page].keys[encoder]].turn(d);
+      if (d && encoder >= 0) CONTROLS[page().keys[encoder]].turn(d);
     } else if (event.type === 'down') {
       if (control in downAt) return;
       downAt[control] = performance.now();
-      if (encoder >= 0) CONTROLS[PAGES[state.page].keys[encoder]].press();
-      else if (control === 'K2') setHold(!holding);
-      else if (control === 'K3') setStrike(true);
+      if (encoder >= 0) CONTROLS[page().keys[encoder]].press();
+      else if (control === 'K2') second();
+      else if (control === 'K3' && mode === 'synth') setStrike(true);
+      // K4 held: the other mode. A short press turns the page (on release).
+      else if (control === 'K4') modeTimer = setTimeout(() => { modeTimer = 0; setMode(mode === 'input' ? 'synth' : 'input'); }, 600);
     } else if (event.type === 'up' || event.type === 'cancel') {
-      const held = performance.now() - (downAt[control] ?? 0);
       delete downAt[control];
       if (control === 'K3') setStrike(false);
-      else if (control === 'K4' && event.type === 'up' && held < 600) set('page', 1 - state.page);
+      else if (control === 'K4' && modeTimer) { clearTimeout(modeTimer); modeTimer = 0; if (event.type === 'up' && mode === 'synth') set('page', 1 - state.page); }
     }
   }
   function build() {
     $('pages').innerHTML = PAGES.map((page, i) => '<button class="tab" type="button" data-page="' + i + '">' + page.name + '</button>').join('');
     $('cells').innerHTML = [0, 1, 2, 3].map(i => '<div class="cell" data-i="' + i + '"><span class="lab"></span><span class="val"></span></div>').join('');
     for (const tab of document.querySelectorAll('.tab')) tab.addEventListener('click', () => set('page', Number(tab.dataset.page)));
-    $('hold').addEventListener('click', () => setHold(!holding));
+    $('hold').addEventListener('click', second);
+    $('mode').addEventListener('click', () => setMode(mode === 'input' ? 'synth' : 'input'));
     // Pressing the picture strikes, like K3.
     let striker = null;
-    $('stage').addEventListener('pointerdown', event => { if (striker === null) { striker = event.pointerId; setStrike(true); } });
+    $('stage').addEventListener('pointerdown', event => { if (striker === null && mode === 'synth') { striker = event.pointerId; setStrike(true); } });
     // A value: drag to turn it, tap to press it.
     let drag = null;
     for (const cell of document.querySelectorAll('.cell')) cell.addEventListener('pointerdown', event => {
       if (drag) return;
-      drag = {id: event.pointerId, cell, key: PAGES[state.page].keys[Number(cell.dataset.i)], x: event.clientX, y: event.clientY, moved: false, turned: 0};
+      drag = {id: event.pointerId, cell, key: page().keys[Number(cell.dataset.i)], x: event.clientX, y: event.clientY, moved: false, turned: 0};
       cell.classList.add('touch');
     });
     addEventListener('pointermove', event => {
@@ -344,19 +522,24 @@
   }
   let monitorTimer = 0;
   function render() {
-    const page = PAGES[state.page];
+    const shown = page(), listening = mode === 'input';
+    document.documentElement.dataset.mode = mode;
     for (const tab of document.querySelectorAll('.tab')) tab.classList.toggle('on', Number(tab.dataset.page) === state.page);
     document.querySelectorAll('.cell').forEach((cell, i) => {
-      const control = CONTROLS[page.keys[i]];
+      const control = CONTROLS[shown.keys[i]];
       cell.querySelector('.lab').textContent = control.label; cell.querySelector('.val').textContent = control.text();
     });
-    $('hold').classList.toggle('on', holding);
+    $('mode').textContent = listening ? 'Input' : 'Synth';
+    $('hold').textContent = listening ? 'Freeze' : 'Hold'; $('hold').classList.toggle('on', listening ? frozen : holding);
+    if (!listening && tuned) { tuned = ''; $('tuner').textContent = ''; }
     document.documentElement.style.setProperty('--beam', 'rgb(' + COLOURS[state.colour][1].map(v => Math.round(40 + v * 215)).join(',') + ')');
     clearTimeout(monitorTimer);
     monitorTimer = setTimeout(() => {
       const values = {};
-      page.keys.forEach((key, i) => { values['E' + (i + 1)] = {label: CONTROLS[key].label, value: CONTROLS[key].text()}; });
-      values.K2 = {label: 'Hold', pressed: holding}; values.K3 = {label: 'Strike', pressed: striking}; values.K4 = {label: 'Page', value: page.name};
+      shown.keys.forEach((key, i) => { values['E' + (i + 1)] = {label: CONTROLS[key].label, value: CONTROLS[key].text()}; });
+      values.K2 = listening ? {label: 'Freeze', pressed: frozen} : {label: 'Hold', pressed: holding};
+      values.K3 = listening ? {label: ''} : {label: 'Strike', pressed: striking};
+      values.K4 = listening ? {label: 'Hold', value: 'Synth'} : {label: 'Page', value: shown.name};
       try { void sdk.monitor.set(values).catch(() => {}); } catch (_) { /* unavailable */ }
     }, 40);
   }
@@ -370,15 +553,25 @@
   }
 
   /* ---------- checks ---------- */
-  // Frequency of one channel of the drawn history, from its upward zero crossings.
-  function pitchOf(channel) {
+  // Frequency from upward zero crossings of read(0..count-1).
+  function crossingsOf(read, count) {
     let first = -1, last = -1, crossings = 0, before = 0;
-    for (let i = 0; i < historyFill; i++) {
-      const value = history[2 * ((historyAt - historyFill + i + HISTORY) % HISTORY) + channel];
+    for (let i = 0; i < count; i++) {
+      const value = read(i);
       if (i && before < 0 && value >= 0) { const at = i - value / (value - before); if (first < 0) first = at; last = at; crossings++; }
       before = value;
     }
     return crossings > 1 ? (crossings - 1) * SR / (last - first) : 0;
+  }
+  // One channel of the drawn history (the last half second), and of what the input heard.
+  const pitchOf = channel => crossingsOf(i => history[2 * ((historyAt - historyFill + i + HISTORY) % HISTORY) + channel], historyFill);
+  const heardCount = () => Math.min(heard, HISTORY);
+  const heardPitch = channel => crossingsOf(i => heardRing[((heard - heardCount() + i) % HEARD) * 2 + channel], heardCount());
+  function heardRms(channel) {
+    const count = Math.min(heard, 960);
+    let sum = 0;
+    for (let f = heard - count; f < heard; f++) { const value = heardRing[(f % HEARD) * 2 + channel]; sum += value * value; }
+    return count ? Math.sqrt(sum / count) : 0;
   }
   function rmsOf(channel) {
     let sum = 0;
@@ -389,9 +582,14 @@
     role: isOutput ? 'output' : 'control',
     get firstFrameAt() { return firstFrameAt; },
     get trace() { return trace?.kind; },
-    state: () => ({mode: 'synth', pitchHz: settings().freq, ratio: settings().ratio, free: state.free, drift: state.drift, shape: state.shape / 100, spin: state.spin,
-      decay: state.decay, glow: state.glow / 100, colour: COLOURS[state.colour][0], holding, page: PAGES[state.page].name}),
-    probe: () => ({source, samples: lastCount, fx: pitchOf(0), fy: pitchOf(1), rmsL: rmsOf(0), rmsR: rmsOf(1)}),
+    state: () => ({mode, pitchHz: settings().freq, ratio: settings().ratio, free: state.free, drift: state.drift, shape: state.shape / 100, spin: state.spin,
+      decay: state.decay, glow: state.glow / 100, colour: COLOURS[state.colour][0], holding, page: PAGES[state.page].name,
+      ...(mode === 'input' ? {view: VIEWS[state.view], windowMs: state.window, gain: state.auto ? 'auto' : state.gain, frozen, listening: !!input} : {})}),
+    // In input mode: what the input heard (fx, fy, rms per channel), the spectrum's loudest frequency, the tuner's
+    // reading, and how much the Wave sweep moved since the frame before (0 = standing still).
+    probe: () => !isOutput && mode === 'input'
+      ? {source: 'input', samples: lastCount, fx: heardPitch(0), fy: heardPitch(1), rmsL: heardRms(0), rmsR: heardRms(1), peakHz, tuner: tuned, tunerHz: steady >= 3 ? tunedHz : 0, wander, notice: $('notice').hidden ? '' : $('notice').textContent}
+      : {source, samples: lastCount, fx: pitchOf(0), fy: pitchOf(1), rmsL: rmsOf(0), rmsR: rmsOf(1)},
     timing: () => ({displayDelayMs: DISPLAY_DELAY_MS, audioLatencyMs: AUDIO_LATENCY_MS, base, have, drawn, began: engine ? engine.began : null, context: engine ? engine.ctx.state : null, marks: {...marks, first: firstFrameAt}, frames: drawLog.slice()}),
     signal: () => bare(isOutput || source !== 'audio' || !snapshot ? sig : snapshot.s),
   };
@@ -416,7 +614,10 @@
     // One full figure at once, before the first animation frame.
     show(own(0.05, preview(settings())), 1 / 60, state.colour, state.glow);
     sdk.controls.onEvent(onControl);
-    sdk.audio.onAvailable(() => { if (!engine) void openAudio().catch(() => {}); });
+    sdk.audio.onAvailable(() => {
+      if (!engine) void openAudio().catch(() => {});
+      if (mode === 'input' && !input && inputWaits) void openInput();
+    });
     await sdk.ready();
     requestAnimationFrame(now => { lastNow = now; requestAnimationFrame(frame); });
     setInterval(publish, 1000); publish(); shareSoon();
@@ -424,6 +625,6 @@
     // sound; that is not an error: the first key opens it again.
     openAudio().catch(() => {});
   }
-  addEventListener('pagehide', () => { clearTimeout(saveTimer); closeAudio(); }, {once: true});
+  addEventListener('pagehide', () => { clearTimeout(saveTimer); closeInput(); closeAudio(); }, {once: true});
   void init();
 })();

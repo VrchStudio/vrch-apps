@@ -4,7 +4,10 @@
 //      draw(points, count, look)
 //        points   Float32Array of x,y pairs in figure units: -1..1 is a full-size figure, the canvas shows -view..view
 //        count    how many pairs to draw; the beam carries on from the last point of the previous call
-//        look     {colour: [r, g, b], glow: seconds the phosphor keeps its light, dt: seconds since the last draw}
+//        look     {colour: [r, g, b], glow: seconds the phosphor keeps its light, dt: seconds since the last draw,
+//                  fresh: true to lift the beam and start a new stroke at the first point,
+//                  rate: points per second being drawn, if not the 48000 of a running signal}
+//      extent()   half the canvas width and height in figure units, for strokes that span the screen
 // OUT  one beam on a black screen, added up like light: brighter where it moves slowly, fading like phosphor.
 //      Nothing else is drawn here: no text, no scale, no grid.
 //
@@ -118,6 +121,7 @@
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
       let segments = 0;
+      if (look.fresh) last = null;
       for (let i = Math.max(0, count - MAX_SEGMENTS); i < count; i++) {
         const bx = points[2 * i], by = points[2 * i + 1], ax = last ? last[0] : bx, ay = last ? last[1] : by;
         for (let corner = 0, at = segments * 24; corner < 4; corner++, at += 6) {
@@ -134,7 +138,7 @@
         gl.uniform2f(beam.u.u_unit, unit, unit); gl.uniform2f(beam.u.u_half, width / 2, height / 2);
         gl.uniform1f(beam.u.u_reach, reach); gl.uniform1f(beam.u.u_sigma, sigma); gl.uniform1f(beam.u.u_halo, HALO);
         // A resting figure is equally bright whatever the afterglow: the longer the glow, the less each pass adds.
-        gl.uniform1f(beam.u.u_energy, BRIGHT * unit * sigma / (RATE * glow) * (float ? 1 : 0.125));
+        gl.uniform1f(beam.u.u_energy, BRIGHT * unit * sigma / ((look.rate || RATE) * glow) * (float ? 1 : 0.125));
         gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices); gl.drawElements(gl.TRIANGLES, segments * 6, gl.UNSIGNED_SHORT, 0);
         gl.disable(gl.BLEND); gl.disableVertexAttribArray(a); gl.disableVertexAttribArray(b);
@@ -148,7 +152,8 @@
     canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); lost = true; });
     canvas.addEventListener('webglcontextrestored', () => { try { setup(); lost = false; } catch (_) { /* stays dark */ } });
     setup(); resize();
-    return {draw, resize, get kind() { return (second ? 'webgl2' : 'webgl') + (float ? '-float' : ''); }};
+    const extent = () => { const short = Math.min(canvas.width, canvas.height); return [view * canvas.width / short, view * canvas.height / short]; };
+    return {draw, resize, extent, get kind() { return (second ? 'webgl2' : 'webgl') + (float ? '-float' : ''); }};
   }
 
   // Without WebGL: plain lines that fade. The beam is evenly bright.
@@ -163,6 +168,7 @@
       const width = canvas.width, height = canvas.height, unit = Math.min(width, height) / (2 * options.view);
       context.globalCompositeOperation = 'source-over'; context.fillStyle = 'rgba(0,0,0,' + (1 - Math.exp(-look.dt / Math.max(look.glow, 1 / 240))).toFixed(3) + ')'; context.fillRect(0, 0, width, height);
       if (!count) return;
+      if (look.fresh) last = null;
       context.globalCompositeOperation = 'lighter'; context.lineWidth = Math.max(1, SPOT * 2 * Math.min(width, height)); context.lineJoin = context.lineCap = 'round';
       context.strokeStyle = 'rgb(' + look.colour.map(v => Math.round(Math.min(1, v) * 255)).join(',') + ')';
       context.beginPath();
@@ -171,7 +177,8 @@
       context.stroke(); last = [points[2 * count - 2], points[2 * count - 1]];
     }
     resize();
-    return {draw, resize, kind: '2d'};
+    const extent = () => { const short = Math.min(canvas.width, canvas.height); return [options.view * canvas.width / short, options.view * canvas.height / short]; };
+    return {draw, resize, extent, kind: '2d'};
   }
 
   globalThis.XYTrace = {

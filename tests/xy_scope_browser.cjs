@@ -39,13 +39,14 @@ function instrument() {
   if (navigator.mediaDevices?.getUserMedia) { const ask = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = constraints => { __asked.push(JSON.stringify(constraints)); return ask(constraints); }; }
   if (!Native) return;
   if (window === top) {
-    const tap = window.__host = {base: null, blocks: 0, peak: 0, step: 0, armed: false, onset: null, last: null, recent: []};
+    const tap = window.__host = {base: null, blocks: 0, peak: 0, step: 0, armed: false, onset: null, last: null, recent: [], nodes: 0, stepAt: null};
     tap.reset = () => { tap.peak = 0; tap.step = 0; };
     tap.when = frame => tap.base + frame / 48;
     window.AudioWorkletNode = class extends Native {
       constructor(ctx, name, options) {
         super(ctx, name, options);
         if (options?.processorOptions?.mode !== 'playback') return;
+        tap.nodes++;
         const listen = new Native(ctx, 'vrch-apps-pcm-v1', {numberOfInputs: 1, numberOfOutputs: 0, channelCount: 2, channelCountMode: 'explicit', processorOptions: {mode: 'capture', channels: 2, generation: -7}});
         const pair = new MessageChannel();
         pair.port2.onmessage = ({data}) => {
@@ -55,7 +56,7 @@ function instrument() {
           let peak = 0, square = 0;
           for (let i = 0; i < 960; i++) for (let c = 0; c < 2; c++) {
             const value = samples[2 * i + c]; peak = Math.max(peak, Math.abs(value)); square += value * value;
-            if (tap.last) tap.step = Math.max(tap.step, Math.abs(value - tap.last[c]));
+            if (tap.last && Math.abs(value - tap.last[c]) > tap.step) { tap.step = Math.abs(value - tap.last[c]); tap.stepAt = {block: data.sequence, i, c, from: tap.last[c], to: value, at: Math.round(performance.now())}; }
             (tap.last ||= [0, 0])[c] = value;
           }
           tap.peak = Math.max(tap.peak, peak); tap.recent.push({at: now, peak, rms: Math.sqrt(square / 1920)}); if (tap.recent.length > 400) tap.recent.shift();
@@ -66,7 +67,8 @@ function instrument() {
       }
     };
   } else {
-    const tap = window.__tap = {base: null, armed: false, onset: null, blocks: 0};
+    const tap = window.__tap = {base: null, armed: false, onset: null, blocks: 0, step: 0, last: null, next: -1, breaks: 0};
+    tap.reset = () => { tap.step = 0; tap.breaks = 0; };
     tap.when = frame => tap.base + frame / 48;
     window.AudioWorkletNode = class extends Native {
       constructor(ctx, name, options) {
@@ -76,6 +78,10 @@ function instrument() {
           if (data?.type !== 'pcm') return;
           const now = wall(), frames = data.samples.length / 2, made = now - (data.frame + frames) / 48;
           tap.base = tap.base === null ? made : Math.min(made, tap.base + 0.02); tap.blocks++;
+          // The engine's own stream, frame after frame: the largest move between two neighbouring samples.
+          if (tap.next >= 0 && data.frame !== tap.next) { tap.breaks++; tap.last = null; }
+          tap.next = data.frame + frames;
+          for (let i = 0; i < frames; i++) for (let c = 0; c < 2; c++) { const value = data.samples[2 * i + c]; if (tap.last) tap.step = Math.max(tap.step, Math.abs(value - tap.last[c])); (tap.last ||= [0, 0])[c] = value; }
           if (tap.armed && !tap.onset) for (let i = 0; i < frames; i++) if (Math.abs(data.samples[2 * i]) + Math.abs(data.samples[2 * i + 1]) > 1e-4) { tap.onset = {frame: data.frame + i, first: Array.from(data.samples.slice(2 * i, Math.min(frames * 2, 2 * i + 64)))}; break; }
         });
       }
@@ -229,11 +235,16 @@ async function main() {
     assert(died[0].rmsL < 0.25 * 2e-3 && died[1].rmsL < 0.25 * 2e-3 && heardNow.peak < 0.5 * 2e-3, 'after Decay the strike is gone from the screen, the output and the sound: ' + JSON.stringify(result.strike));
 
     /* ---- no clicks: fast turns of pitch, ratio and drift, and hold on and off ---- */
-    await v.key(1); await v.page.waitForTimeout(300); await v.page.evaluate(() => __host.reset());
+    await v.key(1); await v.page.waitForTimeout(300); await v.page.evaluate(() => __host.reset()); await app.evaluate(() => __tap.reset());
     for (let i = 0; i < 4; i++) { await v.turn(0, 36); await v.turn(1, 9); await v.turn(2, 60); await v.turn(0, -30); await v.turn(1, -9); await v.turn(2, -90); await v.key(1); await v.key(1); }
     await v.page.waitForTimeout(300);
-    // A full-scale sine at the highest pitch here (A4 x 4:1 + 2 Hz) moves at most this far between two samples.
-    result.largestStep = await v.page.evaluate(() => __host.step); const steepest = 2 * Math.PI * 1762 / 48000 * 0.345;
+    // A full-scale sine at the highest pitch here (A4 x 4:1 + 2 Hz) moves at most this far between two samples. The
+    // engine's stream is what the App answers for; the host output is reported too (a starved test machine can drop
+    // one of the host's 20 ms blocks, which is heard as a gap and is not the App's doing).
+    const engineStream = await app.evaluate(() => ({step: __tap.step, breaks: __tap.breaks}));
+    result.largestStep = engineStream.step; result.largestHostStep = await v.page.evaluate(() => __host.step); const steepest = 2 * Math.PI * 1762 / 48000 * 0.345;
+    assert.equal(engineStream.breaks, 0, 'the engine posts every frame it plays');
+    if (process.env.XY_SCOPE_DEBUG) console.log('STEP', JSON.stringify(await v.page.evaluate(() => ({nodes: __host.nodes, stepAt: __host.stepAt, blocks: __host.blocks, now: Math.round(performance.now()), dialogs: [...document.querySelectorAll('dialog[open]')].map(d => d.textContent.trim().slice(0, 80))}))), JSON.stringify(await app.evaluate(() => ({notice: document.getElementById('notice').textContent, state: __xy.state(), timing: {...__xy.timing(), frames: undefined, marks: undefined}}))));
     assert(result.largestStep < steepest * 1.05, 'no jump between neighbouring samples: ' + result.largestStep + ' against ' + steepest);
     await v.key(1); await v.page.waitForTimeout(200);
 

@@ -7,14 +7,17 @@
 <link rel="stylesheet" href="style.css">
 <script src="/apps/sdk/apps-v1.js"></script>
 <script src="signal.js"></script>
+<script src="scope.js"></script>
 <script src="trace.js"></script>
 <script src="app.js" defer></script>
 </head>
 <body>
 <main>
   <header>
+    <button id="mode" type="button">Synth</button>
     <nav id="pages"></nav>
     <p id="notice" role="status" hidden></p>
+    <span id="tuner"></span>
     <button id="hold" type="button">Hold</button>
   </header>
   <div id="stage"><canvas id="beam"></canvas><i class="cross h"></i><i class="cross v"></i></div>
