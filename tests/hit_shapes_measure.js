@@ -24,13 +24,13 @@ window.simulate = ({width, height, rows, theme = 0, style = 0, bpm = 120, swing 
 // Pixels that are (nearly) one palette colour at full strength, their bounding box and centre.
 window.blob = (data, width, hex, slack = 40) => {
   const want = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
-  let count = 0, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1, sy = 0;
+  let count = 0, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1, sx = 0, sy = 0;
   for (let i = 0; i < data.length; i += 4) {
     if (Math.abs(data[i] - want[0]) + Math.abs(data[i + 1] - want[1]) + Math.abs(data[i + 2] - want[2]) > slack) continue;
     const x = (i / 4) % width, y = Math.floor(i / 4 / width);
-    count++; sy += y; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    count++; sx += x; sy += y; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
   }
-  return {count, width: x1 - x0 + 1, height: y1 - y0 + 1, centerY: count ? sy / count : 0, share: count / (data.length / 4)};
+  return {count, width: x1 - x0 + 1, height: y1 - y0 + 1, centerX: count ? sx / count : 0, centerY: count ? sy / count : 0, share: count / (data.length / 4)};
 };
 const luminance = (data, out) => {
   const lin = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };

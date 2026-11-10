@@ -7,7 +7,7 @@
  * can change between them at any time, even mid-bar:
  *
  *   Score   one bar, time left to right (two rows on an upright screen), every voice on its own lane. A trace stays
- *           until the end of its bar.
+ *           until the end of its bar, and over eight bars the lanes close into one line of signs and open again.
  *   Orbit   the bar is a dial, step 1 at twelve o'clock, every voice on its own ring. A trace rides its ring for four
  *           bars, neighbouring rings turning opposite ways, and over sixteen bars the dial opens (the traces fan
  *           out along their rings) and closes again.
@@ -15,8 +15,8 @@
  *           several bars stay in view: a change of pattern, a mute or a turn of Tune is a visible seam, and every other four-bar phrase
  *           is woven on the opposite grounds.
  *
- * In every style Swing moves the off-beat places later by the share it delays their sound, and Tune moves a voice
- * along its own axis. While stopped, the picture is the current pattern laid out in the style.
+ * In every style Swing moves the off-beat places later by the share it delays their sound, Tune moves a voice
+ * along its own axis, and a kick shoves everything near it aside for a moment. While stopped, the picture is the current pattern laid out in the style.
  *
  * The picture depends only on the pattern, the settings, the hits and the time, never on chance, so the same playing
  * draws the same frames. Hits arrive stamped with their time on the audio clock; origin places that clock on the
@@ -41,6 +41,10 @@ const createStage = (() => {
   // second stay small, so no large part of the picture ever flashes quickly.
   const CALM_MS = 334;
   const KEEP_BARS = 9; // hits older than this are forgotten
+  // A kick shoves the other shapes away from itself: this far (in units of u) right beside it, half as far REACH away,
+  // and they are back within a few tenths of a second.
+  const SHOVE = 0.32, REACH = 4, SHOVE_MS = 110;
+  const FOLD = 0.62, GROW = 0.3; // how much of the way Score's lanes close toward the middle of their row, and how much the shapes grow as they do
   const TAU = 2 * Math.PI;
   const smooth = (a, b, x) => { const k = Math.max(0, Math.min(1, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
   const voiceOf = id => SHAPES.findIndex(shape => shape.id === id);
@@ -85,9 +89,11 @@ const createStage = (() => {
    * still(L)              the ages at which the pattern is laid out while stopped
    * depth                 true when older bars lie behind newer ones; otherwise voices lie over each other in order
    * single                true when a step struck again replaces its trace
-   * swell                 how much of a ringing hit's swell is shown (1 unless given): Orbit's dial is small */
+   * swell                 how much of a ringing hit's swell is shown (1 unless given): Orbit's dial is small
+   * shove                 how far a kick shoves the other shapes, as a share of SHOVE (1 unless given): Score's shapes
+   *                       are large and lie close, so they move less */
   const score = {
-    depth: false, single: true,
+    depth: false, single: true, shove: 0.62,
     // Rows of steps chosen so a step's cell is as close to square as the screen allows; u keeps every shape's share
     // of the picture the same on any screen, so nothing stretches and a circle stays a circle.
     measure(W, H, inset) {
@@ -98,8 +104,8 @@ const createStage = (() => {
     spot(q, L, m, e, v, pos, age, back, tune) {
       const s = Math.max(0, Math.floor(pos)), row = pos < 0 ? 0 : Math.floor(s / L.cols) % L.rows;
       q.x = pos < 0 ? L.W / 2 : L.pad + (place(pos, m.swing) - row * L.cols + 0.5) * L.cw;
-      q.y = (row + SHAPES[v].lane - tune * 0.0075) * L.bandH;
-      q.u = L.u; q.angle = 0; q.left = -q.x; q.right = L.W - q.x;
+      q.y = (row + 0.5 + (SHAPES[v].lane - 0.5) * (1 - FOLD * e.fold) - tune * 0.0075) * L.bandH;
+      q.u = L.u * (1 + GROW * e.fold); q.angle = 0; q.left = -q.x; q.right = L.W - q.x; // closed, the signs are larger
       return age >= 1 ? 0 : 1 - smooth(0.8, 1, age); // a trace keeps its size until the last fifth of its bar
     },
     still: () => [0],
@@ -133,7 +139,7 @@ const createStage = (() => {
   const RINGS = {BD: [0.45, 1], LT: [0.57, -1], SD: [0.68, 0.5], CB: [0.75, -0.5], CP: [0.83, 0.5], RS: [0.89, -0.5], OH: [0.96, 0.5], CH: [1, 0]};
   const ROUND = {BD: true, OH: true}; // shapes that look the same whichever way they are turned are not turned
   const orbit = {
-    depth: true, single: false, bars: 4, swell: 0.55,
+    depth: true, single: false, bars: 4, swell: 0.55, shove: 1.3,
     measure(W, H) {
       const R = Math.min(W, H) * 0.41;
       return {W, H, cx: W / 2, cy: H / 2, R, u: R / 5.2, far: Math.hypot(W, H)};
@@ -185,7 +191,7 @@ const createStage = (() => {
   // Where each voice sits within its step's cell, in row heights from the row's middle: the cell reads as one sign.
   const SIGNS = {BD: 0.04, SD: -0.04, CH: 0.44, OH: -0.2, CP: -0.3, LT: 0.1, RS: -0.12, CB: 0.2};
   const weave = {
-    depth: true, single: false,
+    depth: true, single: false, shove: 1.5,
     measure(W, H, inset) {
       const cols = W / H < 1.066 ? 8 : STEPS, side = columns(W, cols, Math.sqrt(W * H / 144), inset), rh = side.cw * 1.12;
       const rows = STEPS / cols; // rows per bar
@@ -239,14 +245,16 @@ const createStage = (() => {
     };
     const records = SHAPES.map(() => []); // each voice's hits, oldest first
     const stepLog = [], hitLog = [], items = [];
-    const CH = voiceOf('CH'), OH = voiceOf('OH');
+    const CH = voiceOf('CH'), OH = voiceOf('OH'), BD = voiceOf('BD');
+    const kicks = [];
     let W = 1, H = 1, edge = 0, scale = 1, lastT = 0, selAt = -1e9, voice = 0, step = 0, bar = 0, count = 0;
     let style = score, L = score.measure(1, 1, 0);
     const p = {x: 0, y: 0, u: 1, level: 0, t: 0, size: 1, step: 0, left: 0, right: 1, rand: n => hash(voice, step, n)};
     const q = {x: 0, y: 0, u: 1, angle: 0, left: 0, right: 0};
     // This frame's place in the music. step: the step being played (-1 while stopped). bars: bars since Start, with the
-    // part of the bar played so far. open: how far Orbit's rings carry their traces, 0 to 1.
-    const clock = {step: -1, bars: 0, open: 0.5};
+    // part of the bar played so far. open: how far Orbit's rings carry their traces, 0 to 1. fold: how far Score's
+    // lanes have closed, 0 to 1.
+    const clock = {step: -1, bars: 0, open: 0.5, fold: 0};
     // heard[v]: milliseconds since voice v was last heard, as of the last frame (Infinity when silent).
     const stage = {origin: 0, frames: 0, firstFrameAt: 0, playStep: -1, model, heard: SHAPES.map(() => Infinity)};
     const lay = () => { style = styles[model.style] || score; L = style.measure(W, H, edge); };
@@ -345,6 +353,8 @@ const createStage = (() => {
       }
       // Orbit opens over eight bars and closes over the next eight.
       clock.open = clock.step < 0 ? 0.5 : (1 - Math.cos(TAU * clock.bars / 16)) / 2;
+      // Score's lanes close over four bars and open over the next four.
+      clock.fold = clock.step < 0 ? 0 : (1 - Math.cos(TAU * clock.bars / 8)) / 2;
       stage.playStep = clock.step;
     }
 
@@ -358,6 +368,8 @@ const createStage = (() => {
       it.v = v; it.x = q.x; it.y = q.y; it.u = q.u; it.angle = q.angle; it.left = q.left; it.right = q.right;
       it.step = Math.max(0, Math.floor(pos)); it.level = level * (style.swell || 1); it.strength = strength; it.size = grow * shown;
       it.t = record ? (lastT - record.time) / 1000 : 1000; it.layer = layer; it.order = order;
+      // Kicks that come faster than twice a second shove less, and from about five a second not at all: nothing jitters.
+      it.shove = v === BD && record && level > 0 ? Math.max(0, (record.punch - 0.4) / 0.6) * (record.accent ? 1 : 0.8) * Math.exp(-it.t * 1000 / SHOVE_MS) : 0;
     }
 
     // A muted voice leaves the picture: only a hit by hand, which still sounds, is drawn.
@@ -422,6 +434,21 @@ const createStage = (() => {
       // Older bars lie behind newer ones; within a bar later voices in shapes.js lie over earlier ones, and the
       // selected voice over them all.
       const drawn = items.slice(0, count).sort((a, b) => a.layer - b.layer || a.order - b.order);
+      // A ringing kick shoves the other shapes away from where it sits. They jump with the hit and ease back.
+      kicks.length = 0;
+      for (const it of drawn) if (it.shove > 0.01) kicks.push(it.x, it.y, it.shove * it.u * SHOVE * (style.shove || 1), it.u * REACH);
+      for (const it of kicks.length ? drawn : []) {
+        if (it.shove > 0) continue;
+        let mx = 0, my = 0;
+        for (let k = 0; k < kicks.length; k += 4) {
+          const dx = it.x - kicks[k], dy = it.y - kicks[k + 1], d = Math.hypot(dx, dy);
+          if (d < 1) continue;
+          const far = d / kicks[k + 3], f = kicks[k + 2] / (1 + far * far) / d;
+          mx += dx * f; my += dy * f;
+        }
+        it.x += mx; it.y += my;
+        if (!it.angle) { it.left -= mx; it.right -= mx; } // a shape that reaches the screen's edges still reaches them
+      }
       for (const it of drawn) {
         voice = it.v; step = it.step;
         p.u = it.u; p.level = it.level; p.t = it.t; p.size = it.size; p.step = it.step;

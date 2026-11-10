@@ -1,5 +1,10 @@
 # Hit Shapes
 
+## 0.3.0
+
+- A kick now shoves the shapes around it aside for a moment, in every style.
+- Score moves on from bar to bar too: over eight bars its lanes close into one line of larger signs and open again.
+
 ## 0.2.0
 
 - Three styles of picture to change between at any time: Score, Orbit and Weave. Hold K4 or tap the style button.

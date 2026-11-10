@@ -64,13 +64,14 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     await control.evaluate(SIMULATE);
 
     /* ---------- the picture's rules, measured on the stage ---------- */
-    // The same loop draws the same frames: bar 2 and bar 3, pixel for pixel, at several moments in the bar.
+    // The same loop draws the same frames: Score closes its lanes and opens them again over eight bars, so bar 2 and
+    // bar 10 are the same pixel for pixel, at several moments in the bar.
     result.loopFramesCompared = await control.evaluate(([width, height]) => {
-      const run = simulate({width, height, rows: {BD: 'X..x..x.X...x.x.', SD: '....X..x....X...', CH: 'x.xxx.xxX.xxx.xx', OH: '.x...x...X...x..', CP: '....x.......X...', LT: '......x......xX.', RS: '..x......x......', CB: 'X..x..x..x..x...'}, swing: 0.16, loops: 5});
+      const run = simulate({width, height, rows: {BD: 'X..x..x.X...x.x.', SD: '....X..x....X...', CH: 'x.xxx.xxX.xxx.xx', OH: '.x...x...X...x..', CP: '....x.......X...', LT: '......x......xX.', RS: '..x......x......', CB: 'X..x..x..x..x...'}, swing: 0.16, loops: 12});
       const moments = [0, 20, 61, 125, 333, 700, 1001, 1500, 1990], second = moments.map(at => run.pixels(16 * run.stepMs + at).slice());
       moments.forEach((at, k) => {
-        const third = run.pixels(32 * run.stepMs + at);
-        for (let i = 0; i < third.length; i++) if (second[k][i] !== third[i]) throw new Error('bar 2 and bar 3 differ ' + at + ' ms into the bar');
+        const third = run.pixels(144 * run.stepMs + at);
+        for (let i = 0; i < third.length; i++) if (second[k][i] !== third[i]) throw new Error('bar 2 and bar 10 differ ' + at + ' ms into the bar');
         if (k && second[k].every((v, i) => v === second[0][i])) throw new Error('the picture does not move');
       });
       return moments.length;
@@ -112,6 +113,24 @@ const round = (value, digits = 3) => Math.round(value * 10 ** digits) / 10 ** di
     assert(short.count < normal.count && normal.count < long.count, 'a longer decay keeps a larger shape: ' + [short.count, normal.count, long.count]);
     assert.equal((await kickAt({mutes: 1})).count, 0, 'a muted voice is not drawn');
     result.tuneCenterY = [high.centerY, flat.centerY, low.centerY].map(v => round(v, 1)); result.decayPixels = [short.count, normal.count, long.count];
+
+    // A kick shoves the shapes near it aside for a moment: the clap two steps on sits somewhere else than it would
+    // without the kick, and is back where it belongs well within a second.
+    result.shovePx = await control.evaluate(() => {
+      const out = {};
+      for (const style of [0, 1, 2]) {
+        const clap = (mutes, after) => { const run = simulate({width: 960, height: 540, rows: {BD: '....x...........', CP: '......x.........'}, style, mutes, loops: 1}); return blob(run.pixels(4 * run.stepMs + after), 960, PALETTES[0].colors[3], 60); };
+        const moved = after => { const alone = clap(1, after), shoved = clap(0, after); return Math.round(Math.hypot(shoved.centerX - alone.centerX, shoved.centerY - alone.centerY) * 10) / 10; };
+        out[STYLES[style]] = [moved(30), moved(900)];
+      }
+      return out;
+    });
+    for (const [name, [during, later]] of Object.entries(result.shovePx)) assert(during > 1 && during < 40 && later < 0.5, name + ': a kick shoves its neighbours aside and they come back: ' + [during, later]);
+    // Score moves on too: four bars in, its lanes have closed toward the middle of the row and its shapes are larger.
+    const clapIn = bar => control.evaluate(n => { const run = simulate({width: 960, height: 540, rows: {CP: '....x...........'}, loops: n + 1}); return blob(run.pixels((n * 16 + 8) * run.stepMs), 960, PALETTES[0].colors[3], 60); }, bar);
+    const [open, closed] = [await clapIn(0), await clapIn(4)];
+    assert(closed.centerY > open.centerY + 30 && closed.count > open.count * 1.3, 'Score closes its lanes: ' + JSON.stringify([open, closed]));
+    result.scoreFoldCenterY = [open.centerY, closed.centerY].map(v => round(v, 1));
 
     // Photosensitivity: 240 BPM with every step of every voice accented, each palette, each screen shape, then other
     // dense patterns. Less than a quarter of the picture may flash more than three times a second, and a quarter of the
