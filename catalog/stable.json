@@ -1659,7 +1659,7 @@
     },
     "95d295da-7cf2-40ec-934a-07818d892b68": {
       "slug": "body-vibes",
-      "latest": "0.6.2",
+      "latest": "0.6.3",
       "versions": {
         "0.5.1": {
           "version": "0.5.1",
@@ -1812,6 +1812,25 @@
             "updateApi": 1
           },
           "notes": "- Wait for K2 before asking for the camera and sound: opening the App, or a link to it, no longer asks for the camera on its own.\n- Explain a blocked or missing camera, and press K2 to try again without reloading."
+        },
+        "0.6.3": {
+          "version": "0.6.3",
+          "name": "BODY VIBES",
+          "tag": "body-vibes-v0.6.3",
+          "sourceCommit": "20a5aad643b054497470eeb5f58ce7278e1d9e15",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/body-vibes-v0.6.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/body-vibes-v0.6.3/body-vibes-0.6.3.vrchapp",
+          "size": 43695116,
+          "sha256": "bfca458fe6a1f8bd4ac9cb822c2272b8f9383454185933e8930e96f6ad6db9cd",
+          "packageDigest": "bfca458fe6a1f8bd4ac9cb822c2272b8f9383454185933e8930e96f6ad6db9cd",
+          "revision": "2dbda283facb4467ec85b87c50d9b3fb0ed0c08db5af14767225dcb2c4f495e2",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Keep the sound on when you press K2 on the device: the music and body tracking now load while the App waits for K2, so playing starts sooner."
         }
       },
       "guide": {
