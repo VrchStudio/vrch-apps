@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.5
+
+- The camera button shows a camera crossed by a slash when the camera is off.
+
 ## 0.3.4
 
 - Show every knob name whole and different on each page, also with a 2x or 4x mark.

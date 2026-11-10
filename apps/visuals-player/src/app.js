@@ -506,6 +506,7 @@
     button.hidden = isOutput || !camera;
     const on = cameraState === 'on' || cameraState === 'starting';
     button.dataset.state = cameraState; button.dataset.on = String(on); button.setAttribute('aria-pressed', String(on));
+    button.firstElementChild.className = 'fas ' + (on ? 'fa-video' : 'fa-video-slash');
     button.setAttribute('aria-label', cameraState === 'error' ? cameraError : on ? 'Turn camera off' : 'Turn camera on');
     button.title = button.getAttribute('aria-label');
   }
