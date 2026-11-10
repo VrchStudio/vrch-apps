@@ -1,0 +1,26 @@
+:root{--beam:#4dff8a;--text:#d9dcd8;--dim:#737975;--line:#222624}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:var(--text)}
+body{font:600 12px/1.2 "Helvetica Neue",Helvetica,Arial,"Liberation Sans","DejaVu Sans",sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+main{height:100%;display:flex;flex-direction:column;padding-left:var(--inset-left,0px)}
+header{flex:0 0 30px;display:flex;align-items:center;gap:12px;padding:0 10px;white-space:nowrap}
+#pages{display:flex;gap:14px}
+.tab{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);padding:8px 0}
+.tab.on{color:var(--text);box-shadow:inset 0 -2px var(--beam)}
+#notice{flex:1 1 0;min-width:0;margin:0;font-size:11px;font-weight:500;color:var(--dim);overflow:hidden;text-overflow:ellipsis;text-align:center}
+#hold{margin-left:auto;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);padding:4px 10px;border:1px solid var(--line);border-radius:999px}
+#hold.on{color:#000;background:var(--beam);border-color:var(--beam)}
+#stage{position:relative;flex:1 1 0;min-height:0;touch-action:none}
+#beam{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cross{position:absolute;background:rgba(255,255,255,.07);pointer-events:none}
+.cross.h{left:0;right:0;top:50%;height:1px}
+.cross.v{top:0;bottom:0;left:50%;width:1px}
+footer{flex:0 0 50px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line)}
+.cell{display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0;padding:0 9px;border-left:1px solid var(--line);touch-action:none}
+.cell:first-child{border-left:0}
+.cell .lab{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.cell .val{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.cell.touch .lab{color:var(--beam)}
+:root[data-role=output] main{padding:0}
+:root[data-role=output] header,:root[data-role=output] footer,:root[data-role=output] .cross{display:none}
