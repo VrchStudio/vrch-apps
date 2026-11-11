@@ -1,5 +1,9 @@
 # Attractor
 
+## 0.3.1
+
+- The device now really draws fewer pixels when frames come late (0.3.0 never did).
+
 ## 0.3.0
 
 - Every figure can be turned in space: drag the picture, flick it to keep it spinning, or hold K3.

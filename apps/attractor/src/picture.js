@@ -250,7 +250,7 @@
     gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null);
     const cells = target(gl.RGBA8, 64, 64, 1), seen = new Uint8Array(64 * 64 * 4);
 
-    let W = 0, H = 0, side = 0, cap = CAP_MIN, liveMost = 0, asked = null, quality = 1, late = 0;
+    let W = 0, H = 0, side = 0, cap = CAP_MIN, liveMost = 0, asked = null, quality = 1, late = 0, drew = 0, slow = 16.7;
     let live = null, sum = null, work = null;
     // look: the view as nine numbers (across, down, away), then how much smaller the turned figure is drawn, then
     // how deep a map is.
@@ -345,8 +345,10 @@
     function pace(dt) {
       base = Math.min(base * 1.002, Math.max(dt, 4));
       rate = dt > base * 1.4 ? Math.max(1, rate * 0.7) : Math.min(MAX_RATE, rate * 1.05 + 0.1);
-      // Still late with the fewest points a frame, while the picture moves: fewer pixels.
-      late = mode === 'live' && rate < 1.05 && dt > LATE_MS ? late + 1 : Math.max(0, late - 2);
+      // Late on average while the picture moves (single frames come in whole refreshes of the screen), with only one
+      // batch of points in the frame before: fewer pixels.
+      slow += (dt - slow) * 0.05;
+      if (mode !== 'live' || slow <= LATE_MS) late = Math.max(0, late - 2); else if (drew <= 1) late++;
       if (late >= LATE_FRAMES && quality > COARSEST) { late = 0; quality = Math.max(COARSEST, quality * COARSER); size(true); }
     }
     // The picture's size in pixels, from the size asked for and the quality. keep: carry the live picture over.
@@ -420,7 +422,7 @@
           gl.enable(gl.BLEND); gl.blendColor(keep, keep, keep, keep); gl.blendFunc(gl.ZERO, gl.CONSTANT_COLOR);
           gl.useProgram(fadeProgram); quad();
           draw(count, live);
-          nLive = nLive * keep + count * BATCH; added = count * BATCH;
+          nLive = nLive * keep + count * BATCH; added = count * BATCH; drew = count;
           blur(live);
           if (!moving && performance.now() - changedAt > REST_MS) rest();
         } else if (!done) {
