@@ -4704,7 +4704,7 @@
     },
     "7456c5e9-8856-4134-90a5-c036a8d8b199": {
       "slug": "attractor",
-      "latest": "0.7.1",
+      "latest": "0.8.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4895,6 +4895,25 @@
             "updateApi": 1
           },
           "notes": "- A figure that performs keeps its shape: letters that cannot move far without the figure falling in on itself sway less, and when a figure does thin out its sway is calmed and its points start afresh.\n- A large output draws with the very letters the device draws with."
+        },
+        "0.8.0": {
+          "version": "0.8.0",
+          "name": "Attractor",
+          "tag": "attractor-v0.8.0",
+          "sourceCommit": "cbc60a4993ad39eadcd366851da8924525bd29db",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/attractor-v0.8.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/attractor-v0.8.0/attractor-0.8.0.vrchapp",
+          "size": 6312356,
+          "sha256": "7d141dc387476a90ace02841b92fe259bf0e7bfebdeca59f2446ebfcdc3c9743",
+          "packageDigest": "7d141dc387476a90ace02841b92fe259bf0e7bfebdeca59f2446ebfcdc3c9743",
+          "revision": "408018b6851a1ef8f2a2908cb3c4752148ae34ad8754abc9bf0fc2762b7f1167",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Every formula has six presets and there are six sets of colours, Aurora and Flare being new, so each fills two full rows in Figures.\n- A tap on the speaker while the music sounds always mutes it."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+RmlndXJlIHRyYWNlZCBieSBhIGZvcm11bGE8L3RpdGxlPgogIDxwYXRoIGQ9Ik0zMyA4QzE3IDggNyAyMSA4IDM2YzEgMTIgMTEgMjAgMjEgMTYgOC0zIDYtMTIgMy0yMCIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMyA4YzEzIDAgMjMgMTAgMjMgMjQgMCA5LTMgMTctOCAyNC0zLTktOC0xNy0xNi0yNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMiAzMmMtNC02LTExLTctMTQtM3MwIDExIDYgMTEgOS01IDgtOCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgo8L3N2Zz4K",
