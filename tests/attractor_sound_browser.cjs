@@ -64,7 +64,7 @@ const status = app => app.evaluate(() => document.getElementById('status').hidde
     await stopped(app);
     const base = await state(app);
     await v.key(3, 900);
-    await app.waitForFunction(() => __attractor.state().listening || (__attractor.state().source === 'music' && document.getElementById('status').innerText === 'music'), null, {timeout: 20000});
+    await app.waitForFunction(() => __attractor.state().listening || (__attractor.state().source === 'music' && document.getElementById('status').innerText.startsWith('music: ')), null, {timeout: 20000});
     if ((await state(app)).source === 'music') {
       await v.page.waitForTimeout(2500);
       const swayed = [];
@@ -73,7 +73,15 @@ const status = app => app.evaluate(() => document.getElementById('status').hidde
       assert(result.music.heard.left > 0.005 && result.music.heard.right > 0.005 && result.music.heard.left <= 1, 'the music is heard: ' + JSON.stringify(result.music));
       assert(Math.max(...result.music.sway) >= 0.02 && Math.max(...result.music.sway) <= 0.1201 && result.music.mode === 'live', 'the letters sway with the music, a little: ' + JSON.stringify(result.music));
       assert.deepEqual(await everyFrame(v.page, () => window.__asked || []), [], 'music asks for no input');
+      assert.deepEqual([await status(app), (await state(app)).piece], ['music: Strange Loop', 'Strange Loop']);
       await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-music.png')});
+      // Held again: the second piece.
+      await v.key(3, 900);
+      await app.waitForFunction(() => document.getElementById('status').innerText === 'music: Sacred Orbit', null, {timeout: 20000});
+      await v.page.waitForTimeout(2500);
+      result.second = await heard(v.page, 800);
+      assert(result.second.left > 0.005 && result.second.right > 0.005 && result.second.left <= 1, 'the second piece is heard: ' + JSON.stringify(result.second));
+      assert.deepEqual(await everyFrame(v.page, () => window.__asked || []), [], 'nor does the second piece ask for an input');
       // Held again: the audio input instead.
       await v.key(3, 900);
     } else result.music = 'this copy has no music';
@@ -110,7 +118,7 @@ const status = app => app.evaluate(() => document.getElementById('status').hidde
     const v = await t.visit(''), app = await v.find('control');
     await v.key(3, 900);
     await v.page.waitForTimeout(1200);
-    if ((await t.state(app)).source === 'music') await v.key(3, 900);
+    for (let i = 0; i < 3 && (await t.state(app)).source === 'music'; i++) { await v.key(3, 900); await v.page.waitForTimeout(1200); }
     await app.waitForFunction(() => /not allowed|No audio input/.test(document.getElementById('status').innerText), null, {timeout: 8000});
     result.refused = await status(app);
     assert.equal(result.refused, 'Audio input is not allowed.');

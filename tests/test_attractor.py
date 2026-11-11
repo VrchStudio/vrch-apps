@@ -52,13 +52,14 @@ class Attractor(unittest.TestCase):
         self.manifest = json.loads((SRC / 'app.json').read_text())
         self.text = {path.relative_to(SRC).as_posix(): path.read_text() for path in SRC.rglob('*') if path.is_file() and path.suffix != '.mp3'}
 
-    def test_the_code_is_at_most_0_3_megabytes_and_the_package_3(self):
-        # The music is the one large file; everything else stays small.
+    def test_the_code_is_at_most_0_3_megabytes_and_the_package_6(self):
+        # The music is the only large part (two pieces); everything else stays small.
         self.assertLessEqual(sum(path.stat().st_size for path in SRC.rglob('*') if path.is_file() and path.suffix != '.mp3'), int(0.3 * 1024 * 1024))
-        self.assertLessEqual(len([path for path in SRC.rglob('*.mp3')]), 1)
+        self.assertLessEqual(len([path for path in SRC.rglob('*.mp3')]), 2)
+        self.assertEqual(sorted(path.relative_to(SRC).as_posix() for path in SRC.rglob('*.mp3')), sorted(re.findall(r"file: '(music/[^']+)'", (SRC / 'app.js').read_text())))
         with tempfile.TemporaryDirectory() as temporary:
             package, release = apps.build(SLUG, output=Path(temporary), source_commit='0' * 40)
-            self.assertLessEqual(package.stat().st_size, 3 * 1024 * 1024)
+            self.assertLessEqual(package.stat().st_size, 6 * 1024 * 1024)
             self.assertEqual(release['size'], package.stat().st_size)
 
     def test_declares_controls_sound_and_the_output_picture(self):

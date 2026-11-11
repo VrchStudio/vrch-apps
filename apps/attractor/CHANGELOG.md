@@ -1,5 +1,11 @@
 # Attractor
 
+## 0.4.0
+
+- Two pieces of music come with the App, Strange Loop and Sacred Orbit: hold K4 and the figure moves with the one playing. Hold again for the next piece, then the audio input, then off.
+- The soft light around a figure no longer shows as steps.
+- On the device a figure at rest is drawn at full sharpness again, however coarsely it was drawn while it moved.
+
 ## 0.3.1
 
 - The device now really draws fewer pixels when frames come late (0.3.0 never did).

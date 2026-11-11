@@ -33,8 +33,7 @@
   const TILT = 1;                         // the view tilts this far up or down at most (radians)
   const PUSH = 12;                        // sound moves a letter this far at most (hundredths)
   const KICK = 6;                         // and a sudden swell knocks d this far, then lets it come back
-  const MUSIC = 'music/ambient.mp3';
-  const SOURCES = ['off', 'music', 'input'];
+  const MUSIC = [{name: 'Strange Loop', file: 'music/strange-loop.mp3'}, {name: 'Sacred Orbit', file: 'music/sacred-orbit.mp3'}];
 
   /* ---------- settings ---------- */
   // Letters are whole hundredths (149 is 1.49), so a hundred small turns add up exactly.
@@ -149,7 +148,7 @@
   }
   function write(letters) {
     const flagged = !!picture && picture.collapsed === true && picture.mode === 'still';
-    const status = [sounding ? 'sound on' : '', source === 'music' && music.node ? 'music' : '', source === 'input' ? 'listening' : '', said].filter(Boolean).join(' · ');
+    const status = [sounding ? 'sound on' : '', source === 'music' && music.node ? 'music: ' + MUSIC[music.piece].name : '', source === 'input' ? 'listening' : '', said].filter(Boolean).join(' · ');
     const next = [motion.formula, textShown, flagged, status, letters.map(two).join(' '), picture ? picture.points : 0].join('|');
     if (next === wrote) return;
     wrote = next;
@@ -335,7 +334,7 @@
   }
 
   /* ---------- the figure follows sound ---------- */
-  // Off until K4 is held: then the App's own music, then the audio input, then off again. The input opens only
+  // Off until K4 is held: then the App's own music, piece by piece, then the audio input, then off again. The input opens only
   // while it is the source; nothing it hears is played back or kept. What is heard is split in three (low, middle,
   // high). Each part's swell and fall sways a, b and c; a sudden swell in any part knocks d, which then returns.
   let source = 'off';
@@ -393,25 +392,32 @@
     }
   }
 
-  // The App's own music: one piece, looped. It is read and unpacked before any sound is opened, played through the
-  // host like the formula, and the figure is moved by the very samples being played.
-  // (A copy of the App without the piece goes straight to the audio input.)
-  const music = {samples: null, loading: null, missing: false, node: null, gain: null, began: 0, fed: 0, block: new Float32Array(960), epoch: 0};
-  function loadMusic() {
-    music.loading ||= (async () => {
-      const response = await fetch(MUSIC);
+  // The App's own music: a few pieces, one at a time, each played round and round. A piece is read and unpacked
+  // before any sound is opened, played through the host like the formula, and the figure is moved by the very
+  // samples being played. Only the piece last chosen stays unpacked.
+  // (A copy of the App without the pieces goes straight to the audio input.)
+  const music = {piece: 0, samples: null, holds: -1, loading: null, missing: false, node: null, gain: null, began: 0, fed: 0, block: new Float32Array(960), epoch: 0};
+  function loadMusic(piece) {
+    if (music.holds === piece) return Promise.resolve();
+    if (music.loading?.piece === piece) return music.loading.done;
+    music.samples = null; music.holds = -1;
+    const loading = music.loading = {piece, done: null};
+    loading.done = (async () => {
+      const response = await fetch(MUSIC[piece].file);
       if (!response.ok) throw new Error('no music');
-      music.samples = await new OfflineAudioContext(2, 1, 48000).decodeAudioData(await response.arrayBuffer());
-    })().catch(error => { music.loading = null; throw error; });
-    return music.loading;
+      const samples = await new OfflineAudioContext(2, 1, 48000).decodeAudioData(await response.arrayBuffer());
+      if (music.loading === loading) { music.samples = samples; music.holds = piece; music.loading = null; }
+    })().catch(error => { if (music.loading === loading) music.loading = null; throw error; });
+    return loading.done;
   }
   async function startMusic() {
-    const mine = ++music.epoch;
+    const mine = ++music.epoch, piece = music.piece;
     try {
-      if (!music.samples) say('Loading music…', true);
-      await loadMusic();
+      if (music.holds !== piece) say('Loading music…', true);
+      await loadMusic(piece);
+      if (mine !== music.epoch) return;
       const opened = await openRig();
-      if (mine !== music.epoch || source !== 'music' || rig !== opened) { closeRigIfIdle(); return; }
+      if (mine !== music.epoch || source !== 'music' || rig !== opened || music.holds !== piece) { closeRigIfIdle(); return; }
       const node = new AudioBufferSourceNode(opened.ctx, {buffer: music.samples, loop: true}), gain = new GainNode(opened.ctx, {gain: 0});
       node.connect(gain).connect(opened.destination);
       gain.gain.linearRampToValueAtTime(0.9, opened.ctx.currentTime + 1.5);
@@ -420,7 +426,7 @@
       say(''); label();
     } catch (error) {
       if (mine !== music.epoch || error?.code === 'stale') return;
-      if (!music.samples) { music.missing = true; say(''); setSource('input'); return; }
+      if (music.holds !== piece) { music.missing = true; say(''); setSource('input'); return; }
       source = 'off'; say('Music could not start. Hold K4 to try again.'); label();
     }
   }
@@ -504,7 +510,12 @@
   }
   // A key acts when it is let go; held for half a second it does its second job instead.
   const TAPS = {K2: nextPreset, K3: nextColours, K4: nextFormula};
-  const nextSource = () => { const next = SOURCES[(SOURCES.indexOf(source) + 1) % SOURCES.length]; setSource(next === 'music' && music.missing ? 'input' : next); };
+  // K4 held: each piece of music in turn, then the audio input, then nothing.
+  function nextSource() {
+    if (source === 'off' && !music.missing) { music.piece = 0; setSource('music'); }
+    else if (source === 'music' && music.piece + 1 < MUSIC.length) { stopMusic(); music.piece++; deaf(); say(''); void startMusic(); label(); }
+    else setSource(source === 'input' ? 'off' : 'input');
+  }
   const HOLDS = {K2: () => setSound(!sounding), K3: nextMoving, K4: nextSource};
   function onControl(event) {
     const control = event.control, knob = ['E1', 'E2', 'E3', 'E4'].indexOf(control);
@@ -563,7 +574,7 @@
     state: () => {
       const at = epoch(), letters = lettersAt(at);
       return {formula: FORMULAS[motion.formula].id, a: letters[0] / 100, b: letters[1] / 100, c: letters[2] / 100, d: letters[3] / 100, palette: PALETTES[palette].name,
-        drift: !!motion.drift, textVisible: !isOutput && textShown, sound: sounding, listening: source === 'input', source,
+        drift: !!motion.drift, textVisible: !isOutput && textShown, sound: sounding, listening: source === 'input', source, piece: source === 'music' ? MUSIC[music.piece].name : null,
         spin: motion.view.spin ? motion.view.spin.dir : 0, turn: Math.round(yawAt(at) * 1800 / Math.PI) / 10, tilt: Math.round(motion.view.pitch * 1800 / Math.PI) / 10};
     },
     stats,

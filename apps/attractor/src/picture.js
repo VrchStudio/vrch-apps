@@ -157,11 +157,17 @@
     '  return 0.25 * (textureLod(s, uv + h, 0.0).rg + textureLod(s, uv - h, 0.0).rg',
     '    + textureLod(s, uv + vec2(h.x, -h.y), 0.0).rg + textureLod(s, uv + vec2(-h.x, h.y), 0.0).rg);',
     '}',
+    '// The soft light comes from a small, blurred copy. Four taps half a cell apart, or its cells show as steps.',
+    'vec2 glow(sampler2D s, vec2 uv) {',
+    '  vec2 h = px * exp2(halo.z) * 0.5;',
+    '  return 0.25 * (textureLod(s, uv + h, halo.z).rg + textureLod(s, uv - h, halo.z).rg',
+    '    + textureLod(s, uv + vec2(h.x, -h.y), halo.z).rg + textureLod(s, uv + vec2(-h.x, h.y), halo.z).rg);',
+    '}',
     'void main() {',
     '  vec2 uv = gl_FragCoord.xy * px;',
     '  vec2 v = vec2(0.0);',
-    '  if (gains.w < 1.0) v += (soft(live, uv) * gains.x + textureLod(live, uv, halo.z).rg * halo.x) * (1.0 - gains.w);',
-    '  if (gains.w > 0.0) v += (soft(sum, uv) * gains.y + soft(work, uv) * gains.z + textureLod(sum, uv, halo.z).rg * halo.y) * gains.w;',
+    '  if (gains.w < 1.0) v += (soft(live, uv) * gains.x + glow(live, uv) * halo.x) * (1.0 - gains.w);',
+    '  if (gains.w > 0.0) v += (soft(sum, uv) * gains.y + soft(work, uv) * gains.z + glow(sum, uv) * halo.y) * gains.w;',
     '  float light = clamp(log(1.0 + GAIN * v.r) / log(1.0 + GAIN * TOP), 0.0, 1.0);',
     '  float u = clamp(v.g / max(v.r, 1e-6) * 2.0 - 1.0, -1.0, 1.0);',
     '  float t = (0.5 + 0.5 * sign(u) * pow(abs(u), 0.5)) * 4.0;',
@@ -250,7 +256,9 @@
     gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null);
     const cells = target(gl.RGBA8, 64, 64, 1), seen = new Uint8Array(64 * 64 * 4);
 
-    let W = 0, H = 0, side = 0, cap = CAP_MIN, liveMost = 0, asked = null, quality = 1, late = 0, drew = 0, slow = 16.7;
+    // quality: the share of the full size a moving picture is drawn at. fine: drawing at the full size all the same,
+    // which the still picture always does (it is in no hurry, and it is the one that is looked at).
+    let W = 0, H = 0, side = 0, cap = CAP_MIN, liveMost = 0, asked = null, quality = 1, fine = false, late = 0, drew = 0, slow = 16.7;
     let live = null, sum = null, work = null;
     // look: the view as nine numbers (across, down, away), then how much smaller the turned figure is drawn, then
     // how deep a map is.
@@ -354,7 +362,7 @@
     // The picture's size in pixels, from the size asked for and the quality. keep: carry the live picture over.
     function size(keep) {
       let w = Math.round(asked[0] * asked[2]), h = Math.round(asked[1] * asked[2]);
-      const shrink = Math.min(1, 1080 / Math.min(w, h), 2560 / Math.max(w, h)) * quality;
+      const shrink = Math.min(1, 1080 / Math.min(w, h), 2560 / Math.max(w, h)) * (fine ? 1 : quality);
       w = Math.max(16, Math.round(w * shrink)); h = Math.max(16, Math.round(h * shrink));
       if (w === W && h === H) return;
       const before = live, was = side;
@@ -369,7 +377,7 @@
         // A pixel now covers more of the figure, so it holds more of the points.
         gl.bindFramebuffer(gl.FRAMEBUFFER, live.fbo); gl.viewport(0, 0, w, h); gl.disable(gl.BLEND);
         gl.useProgram(copyProgram); bind(0, before); gl.uniform1i(copyAt.a, 0); gl.uniform3f(copyAt.k, 1 / w, 1 / h, (was / side) ** 2);
-        quad(); nLive = Math.min(nLive, liveMost);
+        quad(); nLive = Math.min(nLive, liveMost); blur(live);
       } else { nLive = 0; if (started) rest(); }
       free(before);
     }
@@ -416,6 +424,8 @@
         if (!W || !started) return false;
         const dt = last ? Math.min(100, now - last) : 16.7;
         last = now; pace(dt);
+        // Moving again after a still picture drawn finer than a moving one is: back to the coarser size.
+        if (fine && mode === 'live') { fine = false; size(true); }
         if (mode === 'live') {
           const keep = Math.exp(-dt / GLOW_MS), count = clamp(Math.round(rate), 1, Math.max(1, Math.ceil(liveMost * (1 - keep) / BATCH)));
           gl.bindFramebuffer(gl.FRAMEBUFFER, live.fbo); gl.viewport(0, 0, W, H);
@@ -424,7 +434,10 @@
           draw(count, live);
           nLive = nLive * keep + count * BATCH; added = count * BATCH; drew = count;
           blur(live);
-          if (!moving && performance.now() - changedAt > REST_MS) rest();
+          if (!moving && performance.now() - changedAt > REST_MS) {
+            if (quality < 1) { fine = true; size(true); }
+            rest();
+          }
         } else if (!done) {
           let folded = false;
           // (Warming a flow draws nothing, so several steps fit in a frame.)

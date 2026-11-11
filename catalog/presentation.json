@@ -111,7 +111,10 @@
       "category": "visuals"
     },
     "attractor": {
-      "category": "visuals"
+      "category": "visuals",
+      "deferred": [
+        "music/"
+      ]
     },
     "body-vibes": {
       "category": "audiovisual"

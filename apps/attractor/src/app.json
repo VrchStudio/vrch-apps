@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "7456c5e9-8856-4134-90a5-c036a8d8b199",
   "name": "Attractor",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -31,7 +31,7 @@
           },
           {
           "control": "K4 · Hold",
-          "action": "Listen: the figure moves with whatever the audio input hears. Hold again for off."
+          "action": "Music: the App plays one of its own pieces and the figure moves with it. Hold again for the next piece, then the audio input, then off."
           }
         ]
       },
@@ -84,7 +84,7 @@
           },
           {
             "control": "K4 · Hold",
-          "action": "Listen on or off: the figure follows the audio input."
+          "action": "Next thing to follow: Strange Loop, Sacred Orbit, the audio input, or nothing."
           }
         ]
       },
@@ -101,7 +101,7 @@
           },
           {
             "control": "Picture · Flick",
-            "action": "Set it spinning. Tap or drag to stop."
+            "action": "Set it spinning. Drag to stop."
           }
         ]
       },
@@ -111,11 +111,11 @@
       },
       {
         "title": "Sound",
-      "text": "Both are off until you hold their key. Listen opens the audio input only while it is on, and never plays it back or keeps it: the low, middle and high parts of what it hears sway a, b and c, and sudden swells nudge d; the letters return when it stops. Sound (K2) plays one point moving through the formula, x on the left and y on the right. Choose inputs and outputs and set levels in Menu."
+      "text": "Everything is silent until you hold a key. K4 chooses what the figure follows: one of the App's own two pieces of music, which it plays round and round, or the audio input, which opens only while it is chosen and is never played back or kept. The low, middle and high parts of the sound sway a, b and c, and sudden swells nudge d; the letters return when it stops. Sound (K2) plays one point moving through the formula, x on the left and y on the right. Choose inputs and outputs and set levels in Menu."
       },
       {
         "title": "Saved settings",
-      "text": "The formula, a, b, c and d, the colours, the view, spin, drift and whether the text shows save automatically. Sound and Listen start off each time. A shared link opens the same figure from the same side."
+      "text": "The formula, a, b, c and d, the colours, the view, spin, drift and whether the text shows save automatically. Sound, music and the audio input start off each time. A shared link opens the same figure from the same side."
       }
     ]
   }

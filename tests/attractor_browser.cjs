@@ -22,7 +22,7 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     await app.waitForFunction(() => __attractor.twoMillionAt !== null, null, {timeout: 60000});
     result.twoMillionMs = await app.evaluate(() => __attractor.twoMillionAt);
     if (GPU) assert(result.firstFrameMs < 1000 && result.twoMillionMs < 3000, 'a first figure within 1 s and two million points within 3 s: ' + JSON.stringify(result));
-    assert.deepEqual(await state(app), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', drift: false, textVisible: true, sound: false, listening: false, source: 'off', spin: 0, turn: 0, tilt: 0});
+    assert.deepEqual(await state(app), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', drift: false, textVisible: true, sound: false, listening: false, source: 'off', piece: null, spin: 0, turn: 0, tilt: 0});
     await stopped(app);
     result.finished = await stats(app);
     assert(result.finished.points === result.finished.cap && result.finished.cap >= 5e6 && result.finished.cap <= 20e6 && result.finished.degenerate === false, 'the picture finishes at its limit: ' + JSON.stringify(result.finished));

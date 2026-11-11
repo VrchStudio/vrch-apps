@@ -17,13 +17,15 @@ function fixture() {
   const catalog = JSON.parse(fs.readFileSync(path.join(APPS, 'catalog/playground.json'), 'utf8')), served = new Map();
   const meta = JSON.parse(execFileSync('python3', ['-c', PACK, APPS, SLUG], {maxBuffer: 64 << 20}).toString()), bytes = Buffer.from(meta.zip, 'base64'), digest = sha(bytes), version = meta.manifest.version;
   assert.deepEqual(meta.manifest.roles, ['output']);
-  assert(bytes.length <= 3 * 1024 * 1024, 'the package is at most 3 MB: ' + bytes.length);
+  assert(bytes.length <= 6 * 1024 * 1024, 'the package is at most 6 MB: ' + bytes.length);
+  // As in the published catalog, the Playground may start the App before its music has arrived.
+  const later = meta.files.map(file => file.path).filter(name => name.startsWith('music/')).sort();
   const listing = Buffer.from(JSON.stringify({schemaVersion: 1, appId: meta.manifest.id, version, revision: meta.revision, packageDigest: digest, base: RAW + ZERO + '/apps/' + SLUG + '/src/', files: meta.files}));
   const icon = fs.readFileSync(path.join(APPS, 'apps', SLUG, 'src', meta.manifest.icon));
   served.set('catalog/assets/' + sha(listing) + '.json', listing); served.set('catalog/assets/' + sha(icon) + '.svg', icon);
   catalog.apps = catalog.apps.filter(app => app.slug !== SLUG);
   catalog.apps.push({appId: meta.manifest.id, slug: SLUG, name: meta.manifest.name, version, summary: meta.manifest.guide.description, category: 'visuals', featured: null, tags: [], capabilities: Object.keys(meta.manifest.capabilities).sort(),
-    size: bytes.length, revision: meta.revision, packageDigest: digest, roles: ['output'], assets: {
+    size: bytes.length, revision: meta.revision, packageDigest: digest, roles: ['output'], ...(later.length ? {deferred: later} : {}), assets: {
       files: {url: RAW + 'main/catalog/assets/' + sha(listing) + '.json', sha256: sha(listing), size: listing.length},
       package: {url: RELEASE + SLUG + '-v' + version + '/' + SLUG + '-' + version + '.vrchapp', size: bytes.length, sha256: digest},
       icon: {url: RAW + 'main/catalog/assets/' + sha(icon) + '.svg', sha256: sha(icon), size: icon.length, mediaType: 'image/svg+xml'}}});
