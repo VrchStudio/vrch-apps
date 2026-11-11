@@ -1,5 +1,10 @@
 # Attractor
 
+## 0.8.0
+
+- Every formula has six presets and there are six sets of colours, Aurora and Flare being new, so each fills two full rows in Figures.
+- A tap on the speaker while the music sounds always mutes it.
+
 ## 0.7.1
 
 - A figure that performs keeps its shape: letters that cannot move far without the figure falling in on itself sway less, and when a figure does thin out its sway is calmed and its points start afresh.

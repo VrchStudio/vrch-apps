@@ -17,11 +17,14 @@
   const epoch = () => performance.timeOrigin + performance.now();
 
   // Five stops from one side of the figure to the other; the densest parts turn white whatever the stop.
+  // Six sets fill two rows in Figures.
   const PALETTES = [
     {name: 'Ember', stops: [0.02, 0.16, 0.95, 0.22, 0.52, 1, 1, 1, 1, 1, 0.64, 0.2, 1, 0.17, 0.03]},
     {name: 'Neon', stops: [0, 0.5, 0.72, 0.15, 0.88, 0.95, 1, 1, 1, 1, 0.42, 0.85, 0.88, 0.04, 0.55]},
     {name: 'Silver', stops: [0.86, 0.78, 0.68, 0.95, 0.88, 0.78, 1, 0.95, 0.88, 0.95, 0.88, 0.78, 0.86, 0.78, 0.68]},
     {name: 'Iris', stops: [0.4, 0.1, 0.95, 0.66, 0.48, 1, 1, 1, 1, 1, 0.84, 0.38, 0.95, 0.58, 0.04]},
+    {name: 'Aurora', stops: [0.02, 0.72, 0.38, 0.4, 0.95, 0.62, 1, 1, 1, 1, 0.55, 0.78, 0.95, 0.12, 0.5]},
+    {name: 'Flare', stops: [0.92, 0.05, 0.14, 1, 0.4, 0.32, 1, 1, 1, 1, 0.8, 0.3, 1, 0.6, 0.03]},
   ];
   const GLIDE_MS = 1500;                  // a preset change slides the letters this long
   const HOLD_MS = 500;                    // a key held this long does its second job
@@ -657,7 +660,7 @@
     event.stopPropagation();
     if (!player) return;
     if (player.source !== 'music') { player.setMuted(false); setSource('music'); }
-    else if (!player.muted && !player.audible) { player.retryAt = 0; player.wake(); }
+    else if (!player.muted && !player.audible && !player.sounding) { player.retryAt = 0; player.wake(); }
     else { player.setMuted(!player.muted); saveSoon(); }
   }
 

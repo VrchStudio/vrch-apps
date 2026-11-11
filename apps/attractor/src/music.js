@@ -29,6 +29,8 @@
       this.input = null; this.ears = {lo: 0, mid: 0}; this.said = '';
     }
     get audible() { return !!this.output?.playing; }
+    // The music can be heard right now, also in the moment a piece starts again and "audible" is not yet true.
+    get sounding() { const output = this.output; return !!output && !output.audio.paused && output.gain.gain.value > 0.001; }
     get listening() { return !!this.input?.port; }
     get title() { return this.tracks[this.index]?.title || ''; }
     get track() { return this.tracks[this.index]; }

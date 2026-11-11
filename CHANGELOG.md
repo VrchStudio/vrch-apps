@@ -4,6 +4,7 @@
 
 ### Added
 
+- Attractor: six presets for every formula and six sets of colours, with Aurora and Flare new.
 - Attractor: a large output can show the figure whole, in three views, mirrored or close up.
 - Attractor: choose formula, preset and colours in a Figures panel, and Auto, Hold or Still in Player; no key needs holding.
 - Attractor: opens in a show that performs by itself with the music; Player and a speaker button choose and mute the sound; Lorenz, Aizawa and Thomas are drawn as one line.

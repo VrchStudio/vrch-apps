@@ -6,7 +6,7 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const {open, OUT, GPU, LIVE} = require('./attractor_playground.cjs');
 const FORMULAS = ['dejong', 'clifford', 'svensson', 'dream', 'mira', 'ikeda', 'lorenz', 'aizawa', 'thomas'], FLOWS = ['lorenz', 'aizawa', 'thomas'];
-const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
+const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris', 'Aurora', 'Flare'], BATCH = 50000;
 // The reference figure as a link: a link opens one figure at rest, with no show and no sound moving it.
 const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
 
@@ -160,7 +160,7 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
         await v.page.waitForTimeout(1700);
       }
       result.presets[FORMULAS[f]] = seen.length;
-      assert(seen.length >= 6, FORMULAS[f] + ' has six or more presets: ' + seen.length);
+      assert.equal(seen.length, 6, FORMULAS[f] + ' has six presets');
     }
     assert.equal((await state(app)).formula, 'dejong', 'K2 comes round to the first formula');
     assert.deepEqual(figure(await state(out)), figure(await state(app)));
