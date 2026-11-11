@@ -4704,7 +4704,7 @@
     },
     "7456c5e9-8856-4134-90a5-c036a8d8b199": {
       "slug": "attractor",
-      "latest": "0.7.0",
+      "latest": "0.7.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4876,6 +4876,25 @@
             "updateApi": 1
           },
           "notes": "- A large output can show the figure in four ways, chosen under Output in Figures: Whole, Three (the same figure from two other sides beside it), Mirror (the figure and its mirror image) or Close (filling the screen from edge to edge)."
+        },
+        "0.7.1": {
+          "version": "0.7.1",
+          "name": "Attractor",
+          "tag": "attractor-v0.7.1",
+          "sourceCommit": "0ad4505e2cc95242ca3e49f9ee11f995d3705745",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/attractor-v0.7.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/attractor-v0.7.1/attractor-0.7.1.vrchapp",
+          "size": 6312084,
+          "sha256": "3fd27720605010b418477723bf88bfcfad98e3d00d1c6a735363452d71544051",
+          "packageDigest": "3fd27720605010b418477723bf88bfcfad98e3d00d1c6a735363452d71544051",
+          "revision": "ec5d8b88141bebf7c3fc11cad52eed13c127d643fbded97f39b7326ee0732723",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- A figure that performs keeps its shape: letters that cannot move far without the figure falling in on itself sway less, and when a figure does thin out its sway is calmed and its points start afresh.\n- A large output draws with the very letters the device draws with."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+RmlndXJlIHRyYWNlZCBieSBhIGZvcm11bGE8L3RpdGxlPgogIDxwYXRoIGQ9Ik0zMyA4QzE3IDggNyAyMSA4IDM2YzEgMTIgMTEgMjAgMjEgMTYgOC0zIDYtMTIgMy0yMCIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMyA4YzEzIDAgMjMgMTAgMjMgMjQgMCA5LTMgMTctOCAyNC0zLTktOC0xNy0xNi0yNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMiAzMmMtNC02LTExLTctMTQtM3MwIDExIDYgMTEgOS01IDgtOCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgo8L3N2Zz4K",
