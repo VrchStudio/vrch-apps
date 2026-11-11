@@ -4704,7 +4704,7 @@
     },
     "7456c5e9-8856-4134-90a5-c036a8d8b199": {
       "slug": "attractor",
-      "latest": "0.3.1",
+      "latest": "0.4.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4781,6 +4781,25 @@
             "updateApi": 1
           },
           "notes": "- The device now really draws fewer pixels when frames come late (0.3.0 never did)."
+        },
+        "0.4.0": {
+          "version": "0.4.0",
+          "name": "Attractor",
+          "tag": "attractor-v0.4.0",
+          "sourceCommit": "ffa34d1554733b12050e44ba2cf52bc8001daaee",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/attractor-v0.4.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/attractor-v0.4.0/attractor-0.4.0.vrchapp",
+          "size": 4870518,
+          "sha256": "926f122c67b1d964bb8e1543f8ac035e0deda33ac638ea9da2b21a92045a8606",
+          "packageDigest": "926f122c67b1d964bb8e1543f8ac035e0deda33ac638ea9da2b21a92045a8606",
+          "revision": "47b9009f15e6cdcb910b5f70f89273ed3b52434cfb739e455ee3387a03817979",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Two pieces of music come with the App, Strange Loop and Sacred Orbit: hold K4 and the figure moves with the one playing. Hold again for the next piece, then the audio input, then off.\n- The soft light around a figure no longer shows as steps.\n- On the device a figure at rest is drawn at full sharpness again, however coarsely it was drawn while it moved."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+RmlndXJlIHRyYWNlZCBieSBhIGZvcm11bGE8L3RpdGxlPgogIDxwYXRoIGQ9Ik0zMyA4QzE3IDggNyAyMSA4IDM2YzEgMTIgMTEgMjAgMjEgMTYgOC0zIDYtMTIgMy0yMCIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMyA4YzEzIDAgMjMgMTAgMjMgMjQgMCA5LTMgMTctOCAyNC0zLTktOC0xNy0xNi0yNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMiAzMmMtNC02LTExLTctMTQtM3MwIDExIDYgMTEgOS01IDgtOCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgo8L3N2Zz4K",
@@ -4800,7 +4819,7 @@
               },
               {
                 "control": "K4 · Hold",
-                "action": "Listen: the figure moves with whatever the audio input hears. Hold again for off."
+                "action": "Music: the App plays one of its own pieces and the figure moves with it. Hold again for the next piece, then the audio input, then off."
               }
             ]
           },
@@ -4853,7 +4872,7 @@
               },
               {
                 "control": "K4 · Hold",
-                "action": "Listen on or off: the figure follows the audio input."
+                "action": "Next thing to follow: Strange Loop, Sacred Orbit, the audio input, or nothing."
               }
             ]
           },
@@ -4870,7 +4889,7 @@
               },
               {
                 "control": "Picture · Flick",
-                "action": "Set it spinning. Tap or drag to stop."
+                "action": "Set it spinning. Drag to stop."
               }
             ]
           },
@@ -4880,11 +4899,11 @@
           },
           {
             "title": "Sound",
-            "text": "Both are off until you hold their key. Listen opens the audio input only while it is on, and never plays it back or keeps it: the low, middle and high parts of what it hears sway a, b and c, and sudden swells nudge d; the letters return when it stops. Sound (K2) plays one point moving through the formula, x on the left and y on the right. Choose inputs and outputs and set levels in Menu."
+            "text": "Everything is silent until you hold a key. K4 chooses what the figure follows: one of the App's own two pieces of music, which it plays round and round, or the audio input, which opens only while it is chosen and is never played back or kept. The low, middle and high parts of the sound sway a, b and c, and sudden swells nudge d; the letters return when it stops. Sound (K2) plays one point moving through the formula, x on the left and y on the right. Choose inputs and outputs and set levels in Menu."
           },
           {
             "title": "Saved settings",
-            "text": "The formula, a, b, c and d, the colours, the view, spin, drift and whether the text shows save automatically. Sound and Listen start off each time. A shared link opens the same figure from the same side."
+            "text": "The formula, a, b, c and d, the colours, the view, spin, drift and whether the text shows save automatically. Sound, music and the audio input start off each time. A shared link opens the same figure from the same side."
           }
         ]
       }
