@@ -41,6 +41,7 @@
   const HALO = 0.12;          // soft light around dense parts
   const JITTER = 1e-4;        // each step is nudged by this share of the view, so points that fell together part again
   const FEW = 24;             // a figure that touches fewer of the 64 x 64 cells than this has collapsed
+  const SHARED = 8;           // while it moves, a cell counts as filled when this many points of a batch land in it
   const SEED = 0.6;           // fresh points start within this share of the view around its middle
   const FAR = 16;             // a point this many views from the middle is lost and starts again
   const FLOW_WARM = 240;      // steps a fresh point of a flow takes to reach the figure
@@ -100,11 +101,11 @@
         '    vec3 k3 = rule(n + 0.5 * dt * k2, a, b, c, d), k4 = rule(n + dt * k3, a, b, c, d);',
         '    n += dt / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);',
         '  }',
-        '  q = n + nudge * frame.w;',
-      ] : ['  q = rule(p, a, b, c, d) + nudge * frame.w;']),
-      '  vec3 r = q - home.xyz, was = p - home.xyz;',
+        '  vec3 to = n + nudge * frame.w;',
+      ] : ['  vec3 to = rule(vec3(p.xy, 0.0), a, b, c, d) + nudge * frame.w;']),
+      '  vec3 r = to - home.xyz, was = p - home.xyz;',
       '  float away = dot(r, r);',
-      '  if (isnan(away) || isinf(away) || away >= space.y) { r = nudge * home.w; q = home.xyz + r; was = r; }',
+      '  if (isnan(away) || isinf(away) || away >= space.y) { r = nudge * home.w; to = home.xyz + r; was = r; }',
       ...(flow ? [
         '  vec3 at = vec3(r.x, -r.z, r.y);   // z is up',
         '  vec2 spot = vec2(dot(at, ax), dot(at, ay));',
@@ -116,7 +117,9 @@
       ]),
       '  side = clamp(side * frame.z + 0.5, 0.0, 1.0);',
       '  count = vec2(1.0, floor(side * 2.0 + float(h >> 20) / 4096.0) * 0.5);',
-      ...(flow ? [] : ['  q.z = home.x + was.x;   // a map keeps where the point was: a copy of the figure is drawn from it']),
+      // (The point is written out once, whole. A map keeps in it where the point was before: a copy of the figure
+      // is drawn from that.)
+      flow ? '  q = to;' : '  q = vec3(to.xy, home.x + was.x);',
       '  gl_Position = vec4(spot.x * frame.x + shift.x, spot.y * frame.y + shift.y, 0.0, 1.0);',
       '  gl_PointSize = 1.0;',
       '}'].join('\n');
@@ -391,15 +394,19 @@
     }
     // How many of 64 x 64 cells one batch touches, seen from the front: very few means the figure has collapsed to
     // some points. (Not asked of a flow.)
-    function census() {
+    function census(only) {
       const view = formulas[formula].view;
-      wipe(cells); gl.disable(gl.BLEND);
+      wipe(cells);
+      // Asked while the figure moves, each point adds a little to its cell, and the cells that many points share
+      // are counted: stray points on their way to a figure that has fallen in on itself do not pass for a figure.
+      if (only) { gl.enable(gl.BLEND); gl.blendColor(0, 0, 0, 1 / 255); gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE); } else gl.disable(gl.BLEND);
       run(1, cells, 1 / view, -1 / view, FRONT);
       gl.bindFramebuffer(gl.FRAMEBUFFER, cells.fbo);
       gl.readPixels(0, 0, 64, 64, gl.RGBA, gl.UNSIGNED_BYTE, seen);
       let touched = 0;
-      for (let i = 0; i < seen.length; i += 4) if (seen[i]) touched++;
-      collapsed = touched < FEW;
+      for (let i = 0; i < seen.length; i += 4) if (seen[i] >= (only ? SHARED : 1)) touched++;
+      if (!only) collapsed = touched < FEW;
+      return touched;
     }
     function add(into, first, second, k1, k2, blend) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, into.fbo); gl.viewport(0, 0, into.w, into.h);
@@ -584,6 +591,18 @@
       get size() { return [W, H]; },
       get quality() { return quality; },
       get lined() { return !!thread && thread.on && thread.formula === formula; },
+      // While the figure moves: how many of the 64 x 64 cells it fills now, seen from the front (null at rest).
+      // The App asks now and then, to notice a figure that has fallen in on itself.
+      sample() { return W && started && mode === 'live' ? census(true) : null; },
+      // While the figure moves: every point starts afresh and takes its first steps unseen. Some figures have a
+      // place beside them that swallows points for good, a few at a time as the letters sway, until little of the
+      // figure is left; started afresh, the points fill it again.
+      renew() {
+        if (!W || !started || mode !== 'live') return;
+        if (formulas[formula].flow) { if (lined()) { afresh = 2; thread.on = true; } return; }
+        afresh = 1;
+        run(WARM, null, 0, 0);
+      },
       get rate() { return rate; },
       get lost() { return gl.isContextLost(); },
     };

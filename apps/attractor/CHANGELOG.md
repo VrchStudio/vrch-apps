@@ -1,5 +1,10 @@
 # Attractor
 
+## 0.7.1
+
+- A figure that performs keeps its shape: letters that cannot move far without the figure falling in on itself sway less, and when a figure does thin out its sway is calmed and its points start afresh.
+- A large output draws with the very letters the device draws with.
+
 ## 0.7.0
 
 - A large output can show the figure in four ways, chosen under Output in Figures: Whole, Three (the same figure from two other sides beside it), Mirror (the figure and its mirror image) or Close (filling the screen from edge to edge).

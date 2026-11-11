@@ -11,6 +11,9 @@
 //   step     one step of the formula: a GLSL ES 3.0 expression for the next point (a vec2) from the current point p
 //            (p.x, p.y) and the letters a, b, c, d. Write whole numbers with a decimal point (2.0, not 2).
 //   with     optional helper values, each 'name = expression', worked out in order before step and usable in it.
+//   sway     optional [a, b, c, d], each 0 to 1: how much of the show's sway, and of what sound adds, each letter
+//            takes (1 if left out). Some letters of some formulas cannot move far before the figure falls in on
+//            itself (a letter that sets how fast the points close in, mostly): give those a small share.
 //   presets  six or more [a, b, c, d] sets with two decimals, inside the range. The first opens with the formula.
 //            Look at each one on the screen: it should stay inside the square and not collapse to a few points.
 //
@@ -38,6 +41,7 @@ window.Formulas = [
     range: [-3, 3],
     view: 2.1,
     step: 'vec2(sin(a * p.y) - cos(b * p.x), sin(c * p.x) - cos(d * p.y))',
+    sway: [1, 1, 0.5, 0.5],
     presets: [
       [1.49, -2.28, 2.36, -2.13],
       [-2.0, -2.0, -1.2, 2.0],
@@ -108,6 +112,7 @@ window.Formulas = [
     centre: [1.7, -1.4],
     with: ['u = p.y + 0.01 * b * (1.0 - 0.1 * c * p.y * p.y) * p.y + a * p.x + 2.0 * d * (1.0 - a) * p.x * p.x / (1.0 + p.x * p.x)'],
     step: 'vec2(u, a * u + 2.0 * d * (1.0 - a) * u * u / (1.0 + u * u) - p.x)',
+    sway: [0.1, 1, 1, 1],
     presets: [
       [-0.48, 0.9, 0.5, 1.0],
       [-0.2, 0.8, 0.5, 1.0],
@@ -127,6 +132,7 @@ window.Formulas = [
     centre: [0.8, -0.5],
     with: ['t = 0.4 * b - 6.0 * c / (1.0 + p.x * p.x + p.y * p.y)'],
     step: 'vec2(a + d * (p.x * cos(t) - p.y * sin(t)), d * (p.x * sin(t) + p.y * cos(t)))',
+    sway: [0.1, 0.3, 0.1, 0.03],
     presets: [
       [1.0, 1.0, 1.0, 0.9],
       [1.24, 1.24, 1.72, 0.85],

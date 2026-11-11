@@ -72,25 +72,31 @@
     return motion.p.map((v, i) => g.from[i] + (v - g.from[i]) * ease);
   }
   const gliding = at => !!motion.glide && at < motion.glide.at + (motion.glide.ms || GLIDE_MS);
-  const swayed = (list, at) => { const [lo, hi] = limits(), seconds = (at - motion.drift) / 1000; return list.map((v, i) => clamp(v + DRIFT * Math.sin(2 * Math.PI * seconds / DRIFT_SECONDS[i]), lo, hi)); };
+  // calm: how much of the sway and of what sound adds is let through (0 to 1). These figures live at the edge of
+  // falling in on themselves, and a letter moved a little too far leaves a few dots: the device watches the figure
+  // while it performs, and when it thins out the sway is calmed, at once and for as long as this figure stays.
+  const calm = {now: 1, to: 1, most: 1, askedAt: 0, seen: 0, renewedAt: 0};
+  // (And each letter takes only the share of it that its formula allows.)
+  const share = i => calm.now * ((FORMULAS[motion.formula].sway || [])[i] ?? 1);
+  const swayed = (list, at) => { const [lo, hi] = limits(), seconds = (at - motion.drift) / 1000; return list.map((v, i) => clamp(v + share(i) * DRIFT * Math.sin(2 * Math.PI * seconds / DRIFT_SECONDS[i]), lo, hi)); };
   const hearing = at => at < heardUntil && heard.some(v => v !== 0);   // (a still figure follows no sound)
   function lettersAt(at) {
     const [lo, hi] = limits();
     let list = settled(at);
     if (motion.drift) list = swayed(list, at);
-    if (hearing(at)) list = list.map((v, i) => clamp(v + heard[i], lo, hi));
+    if (hearing(at)) list = list.map((v, i) => clamp(v + share(i) * heard[i], lo, hi));
     return list;
   }
   // The letters the picture is drawn with. A map takes them as they are. A flow is drawn as a line, and the far end
   // of that line lands somewhere else for the smallest change of a letter: followed frame by frame it would only
   // blur. So while its letters move by themselves the line is strung again in steps, on the beat, and stands clear
   // in between. A knob in the hand is followed at once. An output is told the letters the device strung.
-  let strung = null, beat = false, handsAt = 0;
+  let strung = null, beat = false, handsAt = 0, drawn = motion.p;
   function drawnAt(at) {
     const now = lettersAt(at);
-    if (!FORMULAS[motion.formula].flow) { strung = null; return now; }
-    if (isOutput && strung && strung.formula === motion.formula && at < strung.until) return strung.list;
-    const since = strung && strung.formula === motion.formula && !strung.until ? at - strung.at : Infinity;
+    if (isOutput) return strung && strung.formula === motion.formula && at < strung.until ? strung.list : now;
+    if (!FORMULAS[motion.formula].flow) { strung = {formula: motion.formula, list: now, at}; return now; }
+    const since = strung && strung.formula === motion.formula ? at - strung.at : Infinity;
     const byItself = (!!motion.drift || gliding(at) || hearing(at)) && at - handsAt > 300;
     if (!byItself || since >= STRING_LONGEST_MS || (beat && since >= STRING_MS)) { strung = {formula: motion.formula, list: now, at}; beat = false; }
     return strung.list;
@@ -177,8 +183,9 @@
     if (motion.glide && !gliding(at)) motion.glide = null;
     // An output hears of a dragged view some twenty times a second and eases towards it.
     if (aim) { const v = motion.view; v.yaw += (aim.yaw - v.yaw) * 0.35; v.pitch += (aim.pitch - v.pitch) * 0.35; if (Math.abs(aim.yaw - v.yaw) + Math.abs(aim.pitch - v.pitch) < 1e-4) { v.yaw = aim.yaw; v.pitch = aim.pitch; aim = null; } }
-    if (!isOutput) { if (player) player.follow(now); direct(at); }
-    const letters = drawnAt(at).map(v => v / 100);
+    if (!isOutput) { if (player) player.follow(now); direct(at); watch(at); }
+    drawn = drawnAt(at);
+    const letters = drawn.map(v => v / 100);
     let added = 0;
     if (picture && told) {
       try { picture.set(motion.formula, letters, inMotion(at) || !!aim, lookAt(at)); picture.frame(now); added = picture.added; }
@@ -323,7 +330,8 @@
     sent = now;
     try { relay.send({v: 1, o: now ? heard.slice() : [0, 0, 0, 0]}); } catch (_) { /* no output */ }
   }
-  // A flow's line: the output strings it with the very letters the device did.
+  // The letters the device draws with go to the output as they change, so that both show the very same figure:
+  // a flow's line strung with the same letters, and a sway calmed by the same amount.
   function sendLine() {
     if (!relay) return;
     const now = strung ? strung.formula + ':' + strung.list.join() : '';
@@ -417,6 +425,26 @@
   function chooseMode(next) { lent.show = false; if (next !== show.mode) setMode(next); renderPanel(); changed(); }
   // A hand has set something: the show leaves it be.
   function hold() { if (show.mode === 'auto') { lent.show = false; setMode('hold'); renderPanel(); } }
+  // Twice a second while the figure performs: has it thinned out to a few dots? Then less sway, at once, and no
+  // more than a good part of that for as long as this figure stays. Otherwise the sway comes back little by little.
+  const THIN = 40;                // a figure that fills fewer of the 4096 cells than this has fallen in on itself
+  const RENEW_MS = 6000;          // while it performs, the figure's points start afresh this often,
+  const RENEW_SOONEST_MS = 1500;  // or this soon after the last time when it has thinned out
+  function watch(at) {
+    calm.now += (calm.to - calm.now) * 0.2;
+    if (show.mode === 'still' || !picture || at - calm.askedAt < 500) return;
+    calm.askedAt = at;
+    const touched = picture.sample();
+    if (touched === null) return;
+    calm.seen = touched;
+    // Points that a figure has lost for good come back when all start afresh: now and then anyway, and at once when
+    // the figure has thinned out.
+    if (at - calm.renewedAt > (touched < THIN ? RENEW_SOONEST_MS : RENEW_MS)) { calm.renewedAt = at; picture.renew(); }
+    if (touched < THIN) { if (calm.to > 0.05) { calm.most = Math.max(0.05, 0.6 * calm.to); calm.to = 0.5 * calm.most; } }
+    else calm.to = Math.min(calm.most, calm.to + 0.04);
+  }
+  // Another figure: the sway may come back in full.
+  const anew = () => { calm.most = 1; };
   // Each frame: is it time for the next figure?
   function direct(at) {
     if (show.mode !== 'auto' || dragging) return;
@@ -446,17 +474,17 @@
     if (motion.glide) { motion.p = settled(epoch()).map(Math.round); motion.glide = null; }
     motion.p = motion.p.slice();
     motion.p[knob] = clamp(motion.p[knob] + detents * size, lo, hi);
-    handsAt = epoch();
+    handsAt = epoch(); anew();
     hold(); renderPanel(); changed();
   }
   function glideTo(index, ms) {
     const formula = FORMULAS[motion.formula], at = epoch();
-    preset = index;
+    preset = index; anew();
     motion.glide = {from: settled(at).slice(), at, ms};
     motion.p = hundredths(formula.presets[preset]);
   }
   function goFormula(index, first) {
-    motion.formula = index; preset = first % FORMULAS[index].presets.length;
+    motion.formula = index; preset = first % FORMULAS[index].presets.length; anew();
     motion.p = hundredths(FORMULAS[index].presets[preset]); motion.glide = null;
   }
   // Chosen by hand: a preset of this formula (the letters glide there), or another formula at its first preset.
@@ -639,11 +667,11 @@
     get firstFrameAt() { return firstFrameAt; },
     get twoMillionAt() { return twoMillionAt; },
     state: () => {
-      const at = epoch(), letters = lettersAt(at);
+      const at = epoch(), letters = isOutput ? drawn : lettersAt(at);
       return {formula: FORMULAS[motion.formula].id, a: letters[0] / 100, b: letters[1] / 100, c: letters[2] / 100, d: letters[3] / 100, palette: PALETTES[palette].name,
         show: isOutput ? (motion.show ? 'on' : 'still') : show.mode, scene: show.scene, textVisible: !isOutput && textShown,
         source: player ? player.source : 'silent', track: player && player.source === 'music' ? player.title : null, muted: player ? player.muted : false, audible: player ? player.audible : false,
-        listening: player ? player.source === 'input' && player.listening : false, panel, layout: LAYOUTS[arrange],
+        listening: player ? player.source === 'input' && player.listening : false, panel, layout: LAYOUTS[arrange], calm: Math.round(calm.now * 100) / 100, touched: calm.seen,
         spin: motion.view.spin ? motion.view.spin.dir : 0, turn: Math.round(yawAt(at) * 1800 / Math.PI) / 10, tilt: Math.round(pitchAt(at) * 1800 / Math.PI) / 10};
     },
     stats,

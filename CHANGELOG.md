@@ -25,6 +25,7 @@
 
 ### Fixed
 
+- Attractor: a figure no longer thins out to a few dots while it performs, and a large output shows the same figure as the device.
 - Install Visuals Player from Official Apps on the device without the "package or installed App changed" error.
 - Keep the Visuals Player speaker button on screen with Silent or Mic / Line in, and mark the camera button with a cross while the camera is off.
 - Start Visuals Player in the Playground from its one release download as soon as the first files arrive.

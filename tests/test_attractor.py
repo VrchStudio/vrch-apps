@@ -110,6 +110,7 @@ class Attractor(unittest.TestCase):
             self.assertTrue(formula['name'] and 2 <= len(formula['text']) <= 3 and formula['view'] > 0, formula['id'])
             self.assertEqual('flow' in formula, 'dt' in formula, formula['id'])
             self.assertEqual('flow' in formula, formula.get('thread', 0) > 0, formula['id'])
+            self.assertTrue(len(formula.get('sway', [1, 1, 1, 1])) == 4 and all(0 <= share <= 1 for share in formula.get('sway', [])), formula['id'])
             self.assertNotEqual('flow' in formula, 'step' in formula, formula['id'])
             self.assertGreaterEqual(len(formula['presets']), 6, formula['id'])
             self.assertEqual(len({tuple(preset) for preset in formula['presets']}), len(formula['presets']), formula['id'])
