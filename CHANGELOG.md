@@ -4,6 +4,7 @@
 
 ### Added
 
+- Add Attractor: four two-line formulas drawn as silk from millions of points, with the four knobs as the letters a, b, c and d, on the device and on a large output.
 - Add XY Scope, an oscilloscope synthesizer: the left and right channels draw the figure you hear, on the device and on a large output, and an input mode shows any incoming sound as a wave, XY figure or spectrum with a tuner.
 - Add Botanica Core, a petalcore synthesizer around a holographic glass flower that also plays on a large output or second screen.
 - Add Hit Shapes, a drum machine where every hit has a shape and the rhythm becomes a picture on a large output or second screen.

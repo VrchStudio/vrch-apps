@@ -13,6 +13,7 @@ Update notifications require a My Apps platform release with official update sup
 - [Drum 808](apps/drum-808): program twelve synthesized drum voices on a 16-step sequencer.
 - [Magic Circle](apps/magic-circle): perform with audio-reactive geometry and synthesized sound.
 - [XY Scope](apps/xy-scope): play an oscilloscope synthesizer whose two channels draw the figure you hear, or watch any incoming sound as a wave, XY figure or spectrum.
+- [Attractor](apps/attractor): turn the four letters of a two-line formula and watch millions of points draw it as silk.
 
 - [Wavescape](apps/wavescape): play a two-layer wavetable synthesizer with a sequencer and arpeggiator.
 

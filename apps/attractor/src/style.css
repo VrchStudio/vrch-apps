@@ -1,0 +1,14 @@
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#000}
+body{-webkit-user-select:none;user-select:none;touch-action:none;font:11px/1.55 ui-monospace,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;color:#b6b8b4}
+main{position:relative;height:100%;margin-left:var(--inset-left,0px)}
+#picture{position:absolute;inset:0;width:100%;height:100%;display:block}
+#corner{position:absolute;left:12px;top:10px;pointer-events:none;text-shadow:0 0 3px #000,0 0 3px #000}
+pre{margin:0;font:inherit}
+#letters,#count{font-size:10px;color:#787b77}
+#letters{margin-top:5px}
+#flag{margin:5px 0 0;font-size:10px;color:#a8875a}
+#notice{position:absolute;inset:0;margin:auto;height:2em;text-align:center;color:#787b77}
+[hidden]{display:none!important}
+:root[data-role=output] #corner,:root[data-role=output] #notice{display:none}
+:root[data-role=output] main{margin:0}
