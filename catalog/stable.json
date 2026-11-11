@@ -4704,7 +4704,7 @@
     },
     "7456c5e9-8856-4134-90a5-c036a8d8b199": {
       "slug": "attractor",
-      "latest": "0.3.0",
+      "latest": "0.3.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4762,6 +4762,25 @@
             "updateApi": 1
           },
           "notes": "- Every figure can be turned in space: drag the picture, flick it to keep it spinning, or hold K3.\n- Listen follows quiet, beatless sound too: low, middle and high parts each move a letter.\n- Lorenz, Aizawa and Thomas now rest and sharpen like the others when nothing moves.\n- The formula on the device screen sits on a small label.\n- Smoother motion on the device: it draws fewer pixels when frames come late."
+        },
+        "0.3.1": {
+          "version": "0.3.1",
+          "name": "Attractor",
+          "tag": "attractor-v0.3.1",
+          "sourceCommit": "411d19387a3921160918682c959a2430fe7e94f8",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/attractor-v0.3.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/attractor-v0.3.1/attractor-0.3.1.vrchapp",
+          "size": 82796,
+          "sha256": "9198229c62bc364b3cd666e70ce9b08b538eee829fa57f2f5c6b6606657b9791",
+          "packageDigest": "9198229c62bc364b3cd666e70ce9b08b538eee829fa57f2f5c6b6606657b9791",
+          "revision": "28bf7a224946f51aa07f84834c18d02665d3dc8528e3895ab47a8f8d387c16ab",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- The device now really draws fewer pixels when frames come late (0.3.0 never did)."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+RmlndXJlIHRyYWNlZCBieSBhIGZvcm11bGE8L3RpdGxlPgogIDxwYXRoIGQ9Ik0zMyA4QzE3IDggNyAyMSA4IDM2YzEgMTIgMTEgMjAgMjEgMTYgOC0zIDYtMTIgMy0yMCIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMyA4YzEzIDAgMjMgMTAgMjMgMjQgMCA5LTMgMTctOCAyNC0zLTktOC0xNy0xNi0yNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMiAzMmMtNC02LTExLTctMTQtM3MwIDExIDYgMTEgOS01IDgtOCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgo8L3N2Zz4K",
