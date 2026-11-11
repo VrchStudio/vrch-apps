@@ -14,6 +14,9 @@
 //
 // A half float holds whole numbers exactly only up to 2048. The still picture therefore gathers a short run of
 // points in "work" and adds each run, scaled down, to "sum"; the live picture is kept below that by its fading.
+//
+// A formula is a map (each step gives the next point) or a flow in three dimensions (each step moves the point a
+// little along its rate of change). A flow is drawn turning slowly, so its picture is always the live one.
 (() => {
   'use strict';
   const BATCH = 50000;        // points that take a step together
@@ -29,6 +32,8 @@
   const HALO = 0.12;          // soft light around dense parts
   const JITTER = 1e-4;        // each step is nudged by this share of the view, so points that fell together part again
   const FEW = 24;             // a figure that touches fewer of the 64 x 64 cells than this has collapsed
+  const SEED = 0.6;           // fresh points start within this share of the view around its middle
+  const FAR = 16;             // a point this many views from the middle is lost and starts again
 
   const QUAD = [
     '#version 300 es',
@@ -36,31 +41,62 @@
     '  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));',
     '  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);',
     '}'].join('\n');
-  // One step for one point. STEP is the formula. "count" goes to the pixel: one point, and its colour side.
-  // The colour side follows x (left to right): halves, chosen by chance, keep the sum exact in a half float.
-  const STEP_VS = [
-    '#version 300 es',
-    'precision highp float;',
-    'precision highp int;',
-    'layout(location = 0) in vec2 p;',
-    'uniform vec4 k;      // a, b, c, d',
-    'uniform vec4 frame;  // x scale, y scale, colour scale, jitter',
-    'uniform uint tick;',
-    'out vec2 q;',
-    'out vec2 count;',
-    'void main() {',
-    '  float a = k.x, b = k.y, c = k.z, d = k.w;',
-    '  uint h = uint(gl_VertexID) * 747796405u + tick * 2891336453u + 12345u;',
-    '  h = (h ^ (h >> 16)) * 2246822519u;',
-    '  h = (h ^ (h >> 13)) * 3266489917u;',
-    '  h ^= h >> 16;',
-    '  vec2 nudge = vec2(float(h & 1023u), float((h >> 10) & 1023u)) / 1023.0 - 0.5;',
-    '  q = STEP + nudge * frame.w;',
-    '  float side = clamp((0.75 * q.x + 0.25 * p.x) * frame.z + 0.5, 0.0, 1.0);',
-    '  count = vec2(1.0, floor(side * 2.0 + float(h >> 20) / 4096.0) * 0.5);',
-    '  gl_Position = vec4(q.x * frame.x, q.y * frame.y, 0.0, 1.0);',
-    '  gl_PointSize = 1.0;',
-    '}'].join('\n');
+  // One step for one point of a formula. "rule" is the formula itself: the next point of a map, or the rate of change
+  // of a flow, which then moves by one Runge-Kutta step. A point that is lost, or no longer a number, starts again
+  // near the middle. "count" goes to the pixel: one point, and its colour side. The colour side follows the point
+  // from left to right (a flow adds its depth); halves, chosen by chance, keep the sum exact in a half float.
+  function stepShader(formula) {
+    const flow = !!formula.flow;
+    return [
+      '#version 300 es',
+      'precision highp float;',
+      'precision highp int;',
+      'layout(location = 0) in vec3 p;',
+      'uniform vec4 k;      // a, b, c, d',
+      'uniform vec4 frame;  // x scale, y scale, colour scale, jitter',
+      'uniform vec4 home;   // the middle of the view, and the size of the cube fresh points start in',
+      'uniform vec3 turn;   // cos and sin of the turn, and the square of how far is lost',
+      'uniform uint tick;',
+      'out vec3 q;',
+      'out vec2 count;',
+      'vec3 rule(vec3 p, float a, float b, float c, float d) {',
+      ...(formula.with || []).map(line => '  float ' + line + ';'),
+      '  return ' + (flow ? formula.flow : 'vec3(' + formula.step + ', 0.0)') + ';',
+      '}',
+      'void main() {',
+      '  float a = k.x, b = k.y, c = k.z, d = k.w;',
+      '  uint h = uint(gl_VertexID) * 747796405u + tick * 2891336453u + 12345u;',
+      '  h = (h ^ (h >> 16)) * 2246822519u;',
+      '  h = (h ^ (h >> 13)) * 3266489917u;',
+      '  h ^= h >> 16;',
+      '  vec3 nudge = vec3(float(h & 1023u), float((h >> 10) & 1023u), ' + (flow ? 'float((h >> 20) & 1023u)' : '511.5') + ') / 1023.0 - 0.5;',
+      ...(flow ? [
+        '  const float dt = ' + Number(formula.dt).toFixed(5) + ';',
+        '  vec3 n = p;',
+        '  for (int i = 0; i < ' + Math.max(1, Math.round(formula.steps || 1)) + '; i++) {',
+        '    vec3 k1 = rule(n, a, b, c, d), k2 = rule(n + 0.5 * dt * k1, a, b, c, d);',
+        '    vec3 k3 = rule(n + 0.5 * dt * k2, a, b, c, d), k4 = rule(n + dt * k3, a, b, c, d);',
+        '    n += dt / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);',
+        '  }',
+        '  q = n + nudge * frame.w;',
+      ] : ['  q = rule(p, a, b, c, d) + nudge * frame.w;']),
+      '  vec3 r = q - home.xyz, was = p - home.xyz;',
+      '  float away = dot(r, r);',
+      '  if (isnan(away) || isinf(away) || away >= turn.z) { r = nudge * home.w; q = home.xyz + r; }',
+      ...(flow ? [
+        '  float across = r.x * turn.x + r.y * turn.y, depth = r.y * turn.x - r.x * turn.y;',
+        '  vec2 spot = vec2(across, -r.z);',
+        '  float side = 0.6 * across + 0.4 * depth;',
+      ] : [
+        '  vec2 spot = r.xy;',
+        '  float side = 0.75 * r.x + 0.25 * was.x;',
+      ]),
+      '  side = clamp(side * frame.z + 0.5, 0.0, 1.0);',
+      '  count = vec2(1.0, floor(side * 2.0 + float(h >> 20) / 4096.0) * 0.5);',
+      '  gl_Position = vec4(spot.x * frame.x, spot.y * frame.y, 0.0, 1.0);',
+      '  gl_PointSize = 1.0;',
+      '}'].join('\n');
+  }
   const STEP_FS = [
     '#version 300 es',
     'precision highp float;',
@@ -174,26 +210,27 @@
     const steppers = [];
     function stepper(index) {
       if (!steppers[index]) {
-        const program = link(STEP_VS.replace('STEP', formulas[index].step), STEP_FS, ['q']);
-        steppers[index] = {program, ...at(program, ['k', 'frame', 'tick'])};
+        const program = link(stepShader(formulas[index]), STEP_FS, ['q']);
+        steppers[index] = {program, ...at(program, ['k', 'frame', 'home', 'turn', 'tick'])};
       }
       return steppers[index];
     }
+    const middle = formula => [0, 1, 2].map(i => (formula.centre || [])[i] || 0);
 
-    // Fixed seeds: the still picture always starts from the same points.
-    const seeds = new Float32Array(BATCH * 2);
-    for (let i = 0, h = 20261111; i < seeds.length; i++) { h = (Math.imul(h, 1664525) + 1013904223) >>> 0; seeds[i] = (h / 4294967296 - 0.5) * 3; }
+    // Fixed seeds, -0.5 to 0.5 each way: the still picture always starts from the same points.
+    const seeds = new Float32Array(BATCH * 3), fresh = new Float32Array(BATCH * 3);
+    for (let i = 0, h = 20261111; i < seeds.length; i++) { h = (Math.imul(h, 1664525) + 1013904223) >>> 0; seeds[i] = h / 4294967296 - 0.5; }
     const buffers = [gl.createBuffer(), gl.createBuffer()], arrays = [gl.createVertexArray(), gl.createVertexArray()], empty = gl.createVertexArray();
     for (let i = 0; i < 2; i++) {
       gl.bindBuffer(gl.ARRAY_BUFFER, buffers[i]); gl.bufferData(gl.ARRAY_BUFFER, seeds, gl.DYNAMIC_COPY);
-      gl.bindVertexArray(arrays[i]); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.bindVertexArray(arrays[i]); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
     }
     gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null);
     const cells = target(gl.RGBA8, 64, 64, 1), seen = new Uint8Array(64 * 64 * 4);
 
     let W = 0, H = 0, side = 0, cap = CAP_MIN, liveMost = 0;
     let live = null, sum = null, work = null;
-    let formula = 0, letters = [0, 0, 0, 0], moving = false, changedAt = 0, started = false;
+    let formula = 0, letters = [0, 0, 0, 0], moving = false, angle = 0, changedAt = 0, started = false;
     let mode = 'still', done = false, warm = 0, tick = 0, current = 0;
     let nLive = 0, nStill = 0, pending = 0, summed = 0, collapsed = null, dirty = true;
     let rate = 2, base = 16.7, last = 0, added = 0;
@@ -204,10 +241,12 @@
 
     // "count" batches take a step. They are drawn into "into", or only stepped when it is null.
     function run(count, into, scaleX, scaleY) {
-      const s = stepper(formula), view = formulas[formula].view;
+      const s = stepper(formula), view = formulas[formula].view, centre = middle(formulas[formula]);
       gl.useProgram(s.program);
       gl.uniform4f(s.k, letters[0], letters[1], letters[2], letters[3]);
       gl.uniform4f(s.frame, scaleX, scaleY, 0.6 / view, JITTER * view);
+      gl.uniform4f(s.home, centre[0], centre[1], centre[2], 2 * SEED * view);
+      gl.uniform3f(s.turn, Math.cos(angle), Math.sin(angle), (FAR * view) ** 2);
       if (into) { gl.bindFramebuffer(gl.FRAMEBUFFER, into.fbo); gl.viewport(0, 0, into.w, into.h); } else gl.enable(gl.RASTERIZER_DISCARD);
       for (let i = 0; i < count; i++) {
         gl.uniform1ui(s.tick, tick++);
@@ -225,7 +264,8 @@
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
       run(count, into, side * FIT / (W * view), -side * FIT / (H * view));
     }
-    // How many of 64 x 64 cells one batch touches: very few means the figure has collapsed to some points.
+    // How many of 64 x 64 cells one batch touches: very few means the figure has collapsed to some points. (A flow
+    // is always turning and never comes here.)
     function census() {
       const view = formulas[formula].view;
       wipe(cells); gl.disable(gl.BLEND);
@@ -248,10 +288,18 @@
       add(sum, work, work, side * side / cap, 0, true);
       wipe(work); summed += pending; pending = 0;
     }
+    // Every point back to its seed, spread around the middle of this formula's view.
+    function scatter() {
+      const centre = middle(formulas[formula]), size = 2 * SEED * formulas[formula].view, deep = formulas[formula].flow ? size : 0;
+      for (let i = 0; i < fresh.length; i += 3) {
+        fresh[i] = centre[0] + seeds[i] * size; fresh[i + 1] = centre[1] + seeds[i + 1] * size; fresh[i + 2] = centre[2] + seeds[i + 2] * deep;
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers[current]); gl.bufferSubData(gl.ARRAY_BUFFER, 0, fresh); gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    }
     // The letters rest: begin the still picture from the seeds.
     function rest() {
       mode = 'still'; done = false; warm = WARM; tick = 0; nStill = 0; pending = 0; summed = 0;
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffers[current]); gl.bufferSubData(gl.ARRAY_BUFFER, 0, seeds); gl.bindBuffer(gl.ARRAY_BUFFER, null);
+      scatter();
       wipe(sum); wipe(work);
     }
     // A letter moved: the picture on screen becomes the fading one and bends from there.
@@ -304,14 +352,23 @@
         wipe(live); nLive = 0; dirty = true;
         if (started) rest();
       },
-      // The formula (its place in the list) and the four letters now. "inMotion": they are still on their way.
-      set(index, values, inMotion) {
-        moving = inMotion;
-        if (started && index === formula && values.every((v, i) => v === letters[i])) return;
+      // The formula (its place in the list) and the four letters now. "inMotion": the picture keeps changing (letters
+      // on their way, or a flow turning). "turn": the angle a flow is seen from.
+      set(index, values, inMotion, turn = 0) {
+        moving = inMotion; angle = turn;
+        const same = started && index === formula && values.every((v, i) => v === letters[i]);
+        if (same && !(inMotion && mode === 'still')) return;
         const first = !started;
-        formula = index; letters = values.slice(); changedAt = performance.now(); started = true;
+        if (!same) {
+          const other = index !== formula;
+          formula = index; letters = values.slice(); changedAt = performance.now();
+          // Points arriving from another formula would all enter a flow by the same path and take long to spread.
+          if (other) { collapsed = null; if (W && !first && formulas[index].flow) scatter(); }
+        }
+        started = true;
         if (!W) return;
-        if (first) rest(); else if (mode === 'still') wake();
+        if (first) rest();
+        if (mode === 'still' && (!first || inMotion)) wake();
       },
       colours(list) { stops.set(list); dirty = true; },
       // One frame. Returns whether anything was drawn.

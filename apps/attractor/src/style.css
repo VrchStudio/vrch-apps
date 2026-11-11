@@ -7,7 +7,8 @@ main{position:relative;height:100%;margin-left:var(--inset-left,0px)}
 pre{margin:0;font:inherit}
 #letters,#count{font-size:10px;color:#787b77}
 #letters{margin-top:5px}
-#flag{margin:5px 0 0;font-size:10px;color:#a8875a}
+#flag,#status{margin:5px 0 0;font-size:10px;color:#a8875a}
+#status{color:#787b77}
 #notice{position:absolute;inset:0;margin:auto;height:2em;text-align:center;color:#787b77}
 [hidden]{display:none!important}
 :root[data-role=output] #corner,:root[data-role=output] #notice{display:none}

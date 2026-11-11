@@ -22,7 +22,7 @@ function fixture() {
   const icon = fs.readFileSync(path.join(APPS, 'apps', SLUG, 'src', meta.manifest.icon));
   served.set('catalog/assets/' + sha(listing) + '.json', listing); served.set('catalog/assets/' + sha(icon) + '.svg', icon);
   catalog.apps = catalog.apps.filter(app => app.slug !== SLUG);
-  catalog.apps.push({appId: meta.manifest.id, slug: SLUG, name: meta.manifest.name, version, summary: meta.manifest.guide.description, category: 'visuals', featured: null, tags: [], capabilities: ['controls'],
+  catalog.apps.push({appId: meta.manifest.id, slug: SLUG, name: meta.manifest.name, version, summary: meta.manifest.guide.description, category: 'visuals', featured: null, tags: [], capabilities: Object.keys(meta.manifest.capabilities).sort(),
     size: bytes.length, revision: meta.revision, packageDigest: digest, roles: ['output'], assets: {
       files: {url: RAW + 'main/catalog/assets/' + sha(listing) + '.json', sha256: sha(listing), size: listing.length},
       package: {url: RELEASE + SLUG + '-v' + version + '/' + SLUG + '-' + version + '.vrchapp', size: bytes.length, sha256: digest},
@@ -31,13 +31,42 @@ function fixture() {
 }
 
 // Runs in every frame before its scripts: notes any request for a microphone or camera and any sound being set up.
+// In the top page it also listens to the host's playback node with the SDK's own PCM processor, so "heard" means the
+// exact samples the host hands to the audio device.
 function instrument() {
-  window.__asked = []; window.__sound = 0;
-  if (navigator.mediaDevices?.getUserMedia) { const ask = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = constraints => { __asked.push(JSON.stringify(constraints)); return ask(constraints); }; }
-  if (window !== top && window.AudioContext) { const Native = window.AudioContext; window.AudioContext = class extends Native { constructor(...args) { super(...args); window.__sound++; } }; }
+  window.__asked = []; window.__tracks = []; window.__sound = [];
+  if (navigator.mediaDevices?.getUserMedia) { const ask = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = constraints => { __asked.push(JSON.stringify(constraints)); return ask(constraints).then(stream => { __tracks.push(...stream.getTracks()); return stream; }); }; }
+  if (window !== top && window.AudioContext) { const Native = window.AudioContext; window.AudioContext = class extends Native { constructor(options) { super(options); window.__sound.push({sampleRate: options?.sampleRate, sink: options?.sinkId?.type}); } }; }
+  if (window === top && window.AudioWorkletNode) {
+    const Native = window.AudioWorkletNode, tap = window.__host = {nodes: 0, recent: []};
+    window.AudioWorkletNode = class extends Native {
+      constructor(ctx, name, options) {
+        super(ctx, name, options);
+        if (options?.processorOptions?.mode !== 'playback') return;
+        tap.nodes++;
+        const listen = new Native(ctx, 'vrch-apps-pcm-v1', {numberOfInputs: 1, numberOfOutputs: 0, channelCount: 2, channelCountMode: 'explicit', processorOptions: {mode: 'capture', channels: 2, generation: -7}});
+        const pair = new MessageChannel();
+        pair.port2.onmessage = ({data}) => {
+          if (data?.type !== 'pcm') return;
+          pair.port2.postMessage({type: 'ack', sequence: data.sequence, generation: -7});
+          let left = 0, right = 0, apart = 0, step = 0;
+          for (let i = 0; i < 960; i++) {
+            const l = data.samples[2 * i], r = data.samples[2 * i + 1];
+            left = Math.max(left, Math.abs(l)); right = Math.max(right, Math.abs(r)); apart = Math.max(apart, Math.abs(l - r));
+            if (tap.last) step = Math.max(step, Math.abs(l - tap.last[0]), Math.abs(r - tap.last[1]));
+            tap.last = [l, r];
+          }
+          tap.recent.push({at: performance.now(), left, right, apart, step}); if (tap.recent.length > 500) tap.recent.shift();
+        };
+        listen.port.postMessage({type: 'attach', port: pair.port1}, [pair.port1]);
+        this.connect(listen);
+      }
+    };
+  }
 }
 
-async function open() {
+// args: extra Chrome switches; permissions: granted to every page (none: refused).
+async function open({args = [], permissions = []} = {}) {
   fs.mkdirSync(OUT, {recursive: true});
   let fx = null, server = null, origin = LIVE;
   if (!LIVE) {
@@ -63,12 +92,12 @@ async function open() {
   }
   const {chromium} = require(process.env.PLAYWRIGHT || 'playwright');
   const gpu = GPU ? ['--enable-gpu', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=gl-egl'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
-  const options = {executablePath: '/usr/bin/google-chrome', headless: true, args: gpu};
+  const options = {executablePath: '/usr/bin/google-chrome', headless: true, args: [...gpu, '--autoplay-policy=no-user-gesture-required', ...args]};
   const browser = LIVE ? await chromium.launch(options) : await require(path.join(PAGES, 'tests/vrch_playground_test_github.cjs')).launch(chromium, options);
   const errors = [];
   // query: appended to the Playground address. format: the output panel's {ratio, size}.
   async function visit(query, format) {
-    const context = await browser.newContext({viewport: {width: 1440, height: 900}});
+    const context = await browser.newContext({viewport: {width: 1440, height: 900}, permissions});
     if (!LIVE) await context.route(RAW + '**', route => route.abort('blockedbyclient'));
     await context.addInitScript(instrument);
     if (format) await context.addInitScript(value => { if (window === top) localStorage.setItem('vrch-playground-output-format', value); }, JSON.stringify(format));
@@ -91,7 +120,18 @@ async function open() {
     };
     const control = (group, index) => page.locator('[data-hardware="' + group + '"] button').nth(index);
     const settled = () => page.waitForFunction(() => !document.getAnimations().some(a => a.effect?.pseudoElement?.startsWith('::view-transition')), null, {timeout: 20000}).catch(() => {});
-    const over = async (group, index) => { const box = await control(group, index).boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); };
+    // The pointer goes to a control once it has stopped moving and can be hit: while the layout slides (the output
+    // opening is a view transition) a press lands on the page instead.
+    const over = async (group, index) => {
+      let box = await control(group, index).boundingBox();
+      for (let i = 0; i < 300; i++) {
+        await page.waitForTimeout(70);
+        const now = await control(group, index).boundingBox(), still = box && now && Math.abs(now.x - box.x) < 0.5 && Math.abs(now.y - box.y) < 0.5;
+        box = now;
+        if (still && await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest('[data-hardware]'), [box.x + box.width / 2, box.y + box.height / 2])) break;
+      }
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    };
     // Turn an encoder by its wheel, one detent an event with "gap" ms between (positive is clockwise).
     const turn = async (index, detents, gap = 90) => { await over('encoders', index); for (let i = 0; i < Math.abs(detents); i++) { await page.mouse.wheel(0, detents > 0 ? -100 : 100); await page.waitForTimeout(gap); } };
     // A simulated knob is pressed once the pointer has rested on it.
@@ -103,6 +143,9 @@ async function open() {
   }
   const state = frame => frame.evaluate(() => __attractor.state()), stats = frame => frame.evaluate(() => __attractor.stats());
   const stopped = (frame, timeout = 60000) => frame.waitForFunction(() => __attractor.stats().stopped, null, {timeout});
+  // What the host sent to the audio device in the last "ms": the loudest sample left and right, how far the two were
+  // apart, and the largest jump between neighbouring samples.
+  const heard = (page, ms) => page.evaluate(span => { const now = performance.now(), blocks = (window.__host?.recent || []).filter(b => now - b.at < span), most = key => blocks.reduce((m, b) => Math.max(m, b[key]), 0); return {blocks: blocks.length, left: most('left'), right: most('right'), apart: most('apart'), step: most('step')}; }, ms);
   // The picture as the browser holds it: its exact bytes, and the centred square as a 64 x 64 grid of light.
   const bytes = frame => frame.evaluate(() => document.getElementById('picture').toDataURL('image/png'));
   const grid = frame => frame.evaluate(() => {
@@ -129,6 +172,6 @@ async function open() {
     requestAnimationFrame(tick);
   });
   const watched = frame => frame.evaluate(() => { __watch.on = false; return __watch.frames; });
-  return {fx, origin, browser, errors, visit, state, stats, stopped, bytes, grid, alike, watch, watched, sha, close: async () => { await browser.close(); if (server) server.close(); }};
+  return {fx, origin, browser, errors, visit, state, stats, stopped, heard, bytes, grid, alike, watch, watched, sha, close: async () => { await browser.close(); if (server) server.close(); }};
 }
 module.exports = {open, OUT, SLUG, APPS, GPU, LIVE};

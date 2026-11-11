@@ -5,7 +5,8 @@
 // Screenshots go to ATTRACTOR_OUT (default /tmp/attractor-test).
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const {open, OUT, GPU, LIVE} = require('./attractor_playground.cjs');
-const FORMULAS = ['dejong', 'clifford', 'svensson', 'dream'], COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
+const FORMULAS = ['dejong', 'clifford', 'svensson', 'dream', 'mira', 'ikeda', 'lorenz', 'aizawa', 'thomas'], FLOWS = ['lorenz', 'aizawa', 'thomas'];
+const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
 
 (async () => {
   const t = await open(), {state, stats, stopped} = t, result = {gpu: GPU, origin: t.origin, packageBytes: t.fx?.size, files: t.fx?.files.map(f => [f.path, f.size])};
@@ -21,7 +22,7 @@ const FORMULAS = ['dejong', 'clifford', 'svensson', 'dream'], COLOURS = ['Ember'
     await app.waitForFunction(() => __attractor.twoMillionAt !== null, null, {timeout: 60000});
     result.twoMillionMs = await app.evaluate(() => __attractor.twoMillionAt);
     if (GPU) assert(result.firstFrameMs < 1000 && result.twoMillionMs < 3000, 'a first figure within 1 s and two million points within 3 s: ' + JSON.stringify(result));
-    assert.deepEqual(await state(app), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', drift: false, textVisible: true});
+    assert.deepEqual(await state(app), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', drift: false, textVisible: true, sound: false, listening: false});
     await stopped(app);
     result.finished = await stats(app);
     assert(result.finished.points === result.finished.cap && result.finished.cap >= 5e6 && result.finished.cap <= 20e6 && result.finished.degenerate === false, 'the picture finishes at its limit: ' + JSON.stringify(result.finished));
@@ -29,7 +30,7 @@ const FORMULAS = ['dejong', 'clifford', 'svensson', 'dream'], COLOURS = ['Ember'
     assert.deepEqual(v.prompts, []);
     for (const frame of v.page.frames()) {
       assert.deepEqual(await frame.evaluate(() => window.__asked || []).catch(() => []), [], 'no microphone or camera request');
-      assert.equal(await frame.evaluate(() => window.__sound || 0).catch(() => 0), 0, 'no sound is set up');
+      assert.deepEqual(await frame.evaluate(() => window.__sound || []).catch(() => []), [], 'no sound is set up');
     }
     await v.settled();
     await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-open.png')});
@@ -83,17 +84,19 @@ const FORMULAS = ['dejong', 'clifford', 'svensson', 'dream'], COLOURS = ['Ember'
     await v.press(1); await v.turn(1, -10, 150);
     assert(near((await state(app)).b, -2.28), 'pressed again it steps by 0.01: ' + (await state(app)).b);
 
-    /* ---- every formula, every preset: reached by gliding, none collapsed ---- */
+    /* ---- every formula, every preset: reached by gliding, none collapsed. A flow turns and never rests. ---- */
     result.presets = {};
     for (let f = 0; f < FORMULAS.length; f++) {
-      const first = await state(app), seen = [];
+      const first = await state(app), seen = [], flow = FLOWS.includes(FORMULAS[f]);
       assert.equal(first.formula, FORMULAS[f]);
       for (let i = 0; i < 12; i++) {
-        await stopped(app);
+        if (flow) { await v.page.waitForTimeout(1500); const turning = [await stats(app), await stats(out)]; assert(turning.every(s => s.mode === 'live' && !s.stopped && s.points > 2 * BATCH), FORMULAS[f] + ' keeps turning: ' + JSON.stringify(turning)); }
+        else await stopped(app);
         const now = await state(app), key = [now.a, now.b, now.c, now.d].join(' ');
         if (seen.includes(key)) break;
         seen.push(key);
-        assert.equal((await stats(app)).degenerate, false, FORMULAS[f] + ' preset ' + key + ' has not collapsed');
+        assert.equal((await stats(app)).degenerate, flow ? null : false, FORMULAS[f] + ' preset ' + key + ' has not collapsed');
+        if (flow) { const lit = (await t.grid(out)).filter(light => light > 60).length; assert(lit > 300, FORMULAS[f] + ' preset ' + key + ' fills the picture: ' + lit + ' of 4096 cells lit'); }
         if (i < 2) { await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'preset-' + FORMULAS[f] + '-' + (i + 1) + '.png')}); save('figure-' + FORMULAS[f] + '-' + (i + 1) + '.png', await t.bytes(out)); }
         await v.key(1);
         if (i === 0) {

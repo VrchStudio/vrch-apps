@@ -4,14 +4,16 @@
   "data_schema_version": 1,
   "id": "7456c5e9-8856-4134-90a5-c036a8d8b199",
   "name": "Attractor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
     "output"
   ],
   "capabilities": {
-    "controls": true
+    "controls": true,
+    "audio_input": true,
+    "audio_output": true
   },
   "guide": {
     "description": "Two lines of maths, repeated millions of times, drawn as silk. The four knobs are the four letters in the formula.",
@@ -29,7 +31,7 @@
           },
           {
             "control": "K4 · Press",
-            "action": "Next formula: De Jong, Clifford, Svensson, Fractal Dream."
+            "action": "Next formula. There are nine, from De Jong to the slowly turning Lorenz."
           }
         ]
       },
@@ -58,11 +60,15 @@
           },
           {
             "control": "K1 · Press",
-            "action": "Open Menu for Guide, Reload or Exit."
+            "action": "Open Menu for Guide, audio, Reload or Exit."
           },
           {
             "control": "K2 · Press",
             "action": "Next preset. The letters glide there, so you see the figure change."
+          },
+          {
+            "control": "K2 · Hold",
+            "action": "Sound on or off: hear the formula."
           },
           {
             "control": "K3 · Press",
@@ -75,6 +81,10 @@
           {
             "control": "K4 · Press",
             "action": "Next formula, at its first preset."
+          },
+          {
+            "control": "K4 · Hold",
+            "action": "Listen on or off: the figure follows the audio input."
           }
         ]
       },
@@ -89,11 +99,15 @@
       },
       {
         "title": "The picture",
-        "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. While a knob turns the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text."
+        "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. While a knob turns the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Lorenz, Aizawa and Thomas live in three dimensions and turn slowly, so their picture keeps moving. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text."
+      },
+      {
+        "title": "Sound",
+        "text": "Both are off until you hold their key. Listen opens the audio input only while it is on, and never plays it back or keeps it: bass pushes a, and each beat nudges b, c or d, which then return. Sound plays one point moving through the formula, x on the left and y on the right: mostly a textured noise that changes with every knob, and a tone where the figure closes into a loop. Choose inputs and outputs and set levels in Menu."
       },
       {
         "title": "Saved settings",
-        "text": "The formula, a, b, c and d, the colours, drift and whether the text shows save automatically. A shared link opens the same figure."
+        "text": "The formula, a, b, c and d, the colours, drift and whether the text shows save automatically. Sound and Listen start off each time. A shared link opens the same figure."
       }
     ]
   }

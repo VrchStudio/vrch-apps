@@ -1,12 +1,14 @@
-// app.js: the App around the picture. Knobs and keys, the text on the device screen, saved settings, the share link
-// and the large output live here. The formulas are in formulas.js; how they are drawn is in picture.js.
+// app.js: the App around the picture. Knobs and keys, the text on the device screen, saved settings, the share link,
+// the large output, and the two things sound does (following what the audio input hears, and playing the formula)
+// live here. The formulas are in formulas.js; how they are drawn is in picture.js; how they sound is in voice.js.
 (() => {
   'use strict';
   const sdk = window.VrchApp, FORMULAS = window.Formulas, Picture = window.Picture;
   let context = {};
   try { context = sdk.context; } catch (_) { /* defaults */ }
-  // Output role: a picture-only instance (a large or second screen). It reads no controls, saves nothing and shows no
-  // text. The controlling instance tells it the formula and letters, and it gathers the same points itself.
+  // Output role: a picture-only instance (a large or second screen). It reads no controls, saves nothing, makes and
+  // hears no sound and shows no text. The controlling instance tells it the formula and letters, and it gathers the
+  // same points itself.
   const isOutput = context.role === 'output', relay = sdk.output || null;
   document.documentElement.dataset.role = isOutput ? 'output' : 'control';
   if (context.name) document.title = context.name;
@@ -22,9 +24,13 @@
     {name: 'Iris', stops: [0.4, 0.1, 0.95, 0.66, 0.48, 1, 1, 1, 1, 1, 0.84, 0.38, 0.95, 0.58, 0.04]},
   ];
   const GLIDE_MS = 1500;                  // a preset change slides the letters this long
-  const HOLD_MS = 500;                    // K3 held this long: drift
+  const HOLD_MS = 500;                    // a key held this long does its second job
   const DRIFT = 7;                        // each letter sways this far (hundredths) either way,
   const DRIFT_SECONDS = [23, 31, 41, 53]; // each at its own pace
+  const TURN_SECONDS = 48;                // a flow turns once in this time
+  const PUSH = 12;                        // listening: the loudest bass moves a this far (hundredths)
+  const KICK = 6;                         // and a beat knocks b, c or d this far, then lets it come back
+  const QUIET = 0.002;                    // bass below this is silence
 
   /* ---------- settings ---------- */
   // Letters are whole hundredths (149 is 1.49), so a hundred small turns add up exactly.
@@ -34,21 +40,30 @@
   const motion = {formula: 0, p: hundredths(FORMULAS[0].presets[0]), glide: null, drift: 0};
   let palette = 0, textShown = true, preset = 0;
   const coarse = [false, false, false, false];
+  // What sound adds to the letters while listening (hundredths), and until when it counts. The device works it out
+  // from the audio input; an output is sent it.
+  const heard = [0, 0, 0, 0];
+  let heardUntil = 0;
   const limits = () => FORMULAS[motion.formula].range.map(v => Math.round(v * 100));
-  // The letters at a moment, before the sway is added.
+  // The letters at a moment, before drift and sound are added.
   function settled(at) {
     const g = motion.glide;
     if (!g) return motion.p;
     const u = clamp((at - g.at) / GLIDE_MS, 0, 1), ease = u * u * (3 - 2 * u);
     return motion.p.map((v, i) => g.from[i] + (v - g.from[i]) * ease);
   }
+  const hearing = at => at < heardUntil && heard.some(v => v !== 0);
   function lettersAt(at) {
-    const [lo, hi] = limits(), list = settled(at);
-    if (!motion.drift) return list;
-    const seconds = (at - motion.drift) / 1000;
-    return list.map((v, i) => clamp(v + DRIFT * Math.sin(2 * Math.PI * seconds / DRIFT_SECONDS[i]), lo, hi));
+    const [lo, hi] = limits();
+    let list = settled(at);
+    if (motion.drift) {
+      const seconds = (at - motion.drift) / 1000;
+      list = list.map((v, i) => clamp(v + DRIFT * Math.sin(2 * Math.PI * seconds / DRIFT_SECONDS[i]), lo, hi));
+    }
+    if (hearing(at)) list = list.map((v, i) => clamp(v + heard[i], lo, hi));
+    return list;
   }
-  const inMotion = at => !!motion.drift || (!!motion.glide && at < motion.glide.at + GLIDE_MS);
+  const inMotion = at => !!motion.drift || (!!motion.glide && at < motion.glide.at + GLIDE_MS) || hearing(at) || !!FORMULAS[motion.formula].flow;
   const presetNow = () => FORMULAS[motion.formula].presets.findIndex(set => hundredths(set).every((v, i) => v === motion.p[i]));
   const valid = (list, lo, hi) => Array.isArray(list) && list.length === 4 && list.every(v => Number.isFinite(v) && v >= lo && v <= hi);
 
@@ -75,14 +90,15 @@
     const letters = lettersAt(at).map(v => v / 100);
     let added = 0;
     if (picture && told) {
-      try { picture.set(motion.formula, letters, inMotion(at)); picture.frame(now); added = picture.added; }
+      try { picture.set(motion.formula, letters, inMotion(at), 2 * Math.PI * (at / 1000 % TURN_SECONDS) / TURN_SECONDS); picture.frame(now); added = picture.added; }
       catch (error) { console.error(error); picture = null; $('notice').hidden = false; }
       if (picture && firstFrameAt === null && picture.points > 0) firstFrameAt = performance.now();
       if (picture && twoMillionAt === null && picture.points >= 2e6) twoMillionAt = performance.now();
     }
     log.push([now, added]);
     while (log.length > 2 && now - log[0][0] > 1000) log.shift();
-    if (!isOutput) write(letters);
+    if (isOutput) return;
+    write(letters); tell(letters); send();
   }
   function frame(now) {
     requestAnimationFrame(frame);
@@ -105,11 +121,18 @@
   }
 
   /* ---------- text on the device screen ---------- */
-  let wrote = '';
+  let wrote = '', said = '', saidTimer = 0;
   const two = v => (Math.round(v * 100) / 100).toFixed(2);
+  // A short message under the text, gone after a few seconds.
+  function say(text) {
+    clearTimeout(saidTimer);
+    said = text;
+    if (text) saidTimer = setTimeout(() => { said = ''; }, 4500);
+  }
   function write(letters) {
     const flagged = !!picture && picture.collapsed === true && picture.mode === 'still';
-    const next = [motion.formula, textShown, flagged, letters.map(two).join(' '), picture ? picture.points : 0].join('|');
+    const status = [sounding ? 'sound on' : '', listening ? 'listening' : '', said].filter(Boolean).join(' · ');
+    const next = [motion.formula, textShown, flagged, status, letters.map(two).join(' '), picture ? picture.points : 0].join('|');
     if (next === wrote) return;
     wrote = next;
     const formula = FORMULAS[motion.formula];
@@ -117,6 +140,7 @@
     $('lines').textContent = formula.text.join('\n');
     $('letters').textContent = 'abcd'.split('').map((name, i) => name + '=' + two(letters[i])).join('  ');
     $('count').textContent = 'n = ' + (picture ? picture.points : 0).toLocaleString('en-US');
+    $('status').textContent = status; $('status').hidden = !status;
     $('flag').hidden = !flagged;
   }
   let monitorTimer = 0;
@@ -125,15 +149,15 @@
     monitorTimer = setTimeout(() => {
       const formula = FORMULAS[motion.formula], on = presetNow(), values = {};
       'abcd'.split('').forEach((name, i) => { values['E' + (i + 1)] = {label: name, value: two(motion.p[i] / 100) + (coarse[i] ? ' ×10' : '')}; });
-      values.K2 = {label: 'Preset', value: (on < 0 ? '–' : on + 1) + '/' + formula.presets.length};
+      values.K2 = {label: 'Preset', value: (on < 0 ? '–' : on + 1) + '/' + formula.presets.length, pressed: sounding};
       values.K3 = {label: motion.drift ? 'Drift on' : 'Colour', value: PALETTES[palette].name, pressed: !!motion.drift};
-      values.K4 = {label: formula.name};
+      values.K4 = {label: formula.name, pressed: listening};
       try { void sdk.monitor.set(values).catch(() => {}); } catch (_) { /* unavailable */ }
     }, 40);
   }
 
   /* ---------- saved settings, the share link and the output ---------- */
-  let version, saveTimer = 0, shareTimer = 0, shared = '';
+  let version, saveTimer = 0, shareTimer = 0, shared = '', sent = '';
   function restore(value) {
     if (!value || value.v !== 1) return;
     const index = FORMULAS.findIndex(f => f.id === value.formula);
@@ -181,8 +205,21 @@
     if (isOutput || !relay) return;
     try { relay.publish({v: 1, f: FORMULAS[motion.formula].id, p: motion.p, g: motion.glide, drift: motion.drift, c: palette}); } catch (_) { /* no output */ }
   }
+  // What sound adds goes to the output as it changes, frame by frame.
+  function send() {
+    if (!relay) return;
+    const now = hearing(epoch()) ? heard.join() : '';
+    if (now === sent) return;
+    sent = now;
+    try { relay.send({v: 1, o: now ? heard.slice() : [0, 0, 0, 0]}); } catch (_) { /* no output */ }
+  }
   function follow({kind, data} = {}) {
-    if (kind !== 'state' || !data || data.v !== 1) return;
+    if (!data || data.v !== 1) return;
+    if (kind === 'event') {
+      if (valid(data.o, -100, 100)) { for (let i = 0; i < 4; i++) heard[i] = data.o[i]; heardUntil = epoch() + 400; }
+      return;
+    }
+    if (kind !== 'state') return;
     const index = FORMULAS.findIndex(f => f.id === data.f);
     if (index < 0) return;
     const [lo, hi] = FORMULAS[index].range.map(v => Math.round(v * 100));
@@ -195,9 +232,122 @@
   // Something changed: the labels, the saved copy, the share link and the output all follow.
   function changed() { label(); saveSoon(); shareSoon(); publish(); }
 
+  /* ---------- listening: the figure follows sound ---------- */
+  // Off until K4 is held. The audio input opens then and closes when listening ends; nothing heard is played back
+  // or kept. Bass pushes a; each beat knocks b, c or d in turn, a little, and lets it return.
+  let listening = false;
+  const ears = {port: null, epoch: 0, low1: 0, low2: 0, top: 0, mean: 0, level: 0, since: 99, beats: 0, kick: [0, 0, 0]};
+  const tidy = v => Math.abs(v) < 0.05 ? 0 : Math.round(v * 10) / 10;
+  // One block of what the input hears (mono, 48 kHz).
+  function hear(samples) {
+    let energy = 0, a = ears.low1, b = ears.low2;
+    for (let i = 0; i < samples.length; i++) { a += 0.0207 * (samples[i] - a); b += 0.0207 * (a - b); energy += b * b; }   // below about 160 Hz
+    ears.low1 = a; ears.low2 = b;
+    const bass = Math.sqrt(energy / Math.max(1, samples.length));
+    ears.top = Math.max(bass, ears.top * 0.997);   // the loudest bass of the last few seconds: quiet and loud music move the figure alike
+    const loud = bass > QUIET;
+    const level = loud ? Math.min(1, bass / ears.top) : 0;
+    ears.level += (level - ears.level) * (level > ears.level ? 0.5 : 0.12);
+    ears.since++;
+    // A beat: bass well above its recent average, and not within 180 ms of the last one.
+    if (loud && bass > 1.6 * ears.mean && ears.since >= 9) { ears.since = 0; ears.beats++; ears.kick[ears.beats % 3] += (ears.beats % 2 ? KICK : -KICK); }
+    ears.mean += (bass - ears.mean) * 0.06;
+    for (let i = 0; i < 3; i++) ears.kick[i] *= 0.94;
+    heard[0] = tidy(PUSH * ears.level);
+    for (let i = 0; i < 3; i++) heard[i + 1] = tidy(ears.kick[i]);
+    heardUntil = epoch() + 300;
+  }
+  function closeEars() {
+    const old = ears.port;
+    ears.port = null; ++ears.epoch; heardUntil = 0;
+    for (let i = 0; i < 4; i++) heard[i] = 0;
+    if (old) void Promise.resolve(old.close()).catch(() => {});
+  }
+  async function openEars() {
+    const mine = ++ears.epoch;
+    try {
+      const port = await sdk.audio.openInput({channels: 1});
+      if (mine !== ears.epoch || !listening) { void Promise.resolve(port.close()).catch(() => {}); return; }
+      Object.assign(ears, {port, low1: 0, low2: 0, top: 0, mean: 0, level: 0, since: 99, beats: 0, kick: [0, 0, 0]});
+      port.onData(samples => { if (ears.port === port) hear(samples); });
+      port.onError(() => { if (ears.port === port) { closeEars(); listening = false; say('Audio input stopped.'); label(); } });
+    } catch (error) {
+      if (mine !== ears.epoch) return;
+      const code = error?.code || error?.name, refused = ['permission_required', 'permission_denied', 'capability_denied', 'io_not_authorized', 'NotAllowedError'].includes(code);
+      // Asked once: holding K4 again asks again.
+      listening = false; say(refused ? 'Audio input is not allowed.' : 'No audio input.'); label();
+    }
+  }
+  function setListening(on) {
+    listening = on; say('');
+    if (on) void openEars(); else closeEars();
+    label();
+  }
+
+  /* ---------- sound: the formula played ---------- */
+  // Off until K2 is held. voice.js follows one point through the formula on the audio thread.
+  let sounding = false, voice = null, voiceOpening = null, voiceEpoch = 0;
+  function openVoice() {
+    if (voice) return Promise.resolve(voice);
+    if (voiceOpening) return voiceOpening;
+    const mine = ++voiceEpoch;
+    voiceOpening = (async () => {
+      let ctx = null, output = null;
+      try {
+        // The host plays the sound: this context renders to nowhere and hands its samples to the host's output.
+        ctx = new AudioContext({sampleRate: 48000, latencyHint: 'interactive', sinkId: {type: 'none'}});
+        void ctx.resume().catch(() => {});
+        output = await sdk.audio.openOutput({channels: 2});
+        const destination = await output.createNode(ctx);
+        await ctx.audioWorklet.addModule('voice.js');
+        if (mine !== voiceEpoch) throw Object.assign(new Error('stale'), {code: 'stale'});
+        const node = new AudioWorkletNode(ctx, 'voice', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
+        const opened = {ctx, output, node, formula: -1, letters: ''};
+        node.onprocessorerror = () => { if (voice === opened) voiceLost(); };
+        output.onError(() => { if (voice === opened) voiceLost(); });
+        node.connect(destination);
+        voice = opened;
+        return opened;
+      } catch (error) {
+        await Promise.allSettled([output?.close(), ctx?.close()]);
+        throw error;
+      } finally { voiceOpening = null; }
+    })();
+    return voiceOpening;
+  }
+  function closeVoice() {
+    const old = voice;
+    voice = null; ++voiceEpoch;
+    if (!old) return;
+    try { old.node.disconnect(); } catch (_) { /* gone */ }
+    void Promise.allSettled([old.output.close(), old.ctx.state === 'closed' ? null : old.ctx.close()]);
+  }
+  function voiceLost() { closeVoice(); sounding = false; say('Sound stopped. Hold K2 to try again.'); label(); }
+  // The audio thread hears of the formula and the letters whenever they change.
+  function tell(letters) {
+    if (!voice) return;
+    if (voice.formula !== motion.formula) {
+      const {step: rule, flow, dt, view, centre, hear: speed} = FORMULAS[motion.formula];
+      voice.formula = motion.formula;
+      voice.node.port.postMessage({type: 'formula', formula: {with: FORMULAS[motion.formula].with, step: rule, flow, dt, view, centre, hear: speed}});
+    }
+    const key = letters.join();
+    if (key !== voice.letters) { voice.letters = key; voice.node.port.postMessage({type: 'letters', k: letters}); }
+  }
+  function setSound(on) {
+    sounding = on; say(''); label();
+    if (on) {
+      openVoice().then(opened => { if (sounding && voice === opened) { tell(lettersAt(epoch()).map(v => v / 100)); opened.node.port.postMessage({type: 'on', on: true}); } })
+        .catch(error => { if (error?.code !== 'stale' && sounding) { sounding = false; say('Sound could not start. Hold K2 to try again.'); label(); } });
+    } else if (voice) {
+      const old = voice;
+      old.node.port.postMessage({type: 'on', on: false});   // fades out, then the output is given back
+      setTimeout(() => { if (voice === old && !sounding) closeVoice(); }, 200);
+    }
+  }
+
   /* ---------- controls ---------- */
-  const held = {}, turnedAt = [0, 0, 0, 0], spin = [0, 0, 0, 0];
-  let driftTimer = 0;
+  const held = {}, timers = {}, turnedAt = [0, 0, 0, 0], spin = [0, 0, 0, 0];
   // One detent is 0.01, or 0.10 after a press. A sustained fast spin (several detents under 40 ms apart) covers more
   // ground; a slow turn is always one step.
   function turn(knob, detents) {
@@ -229,11 +379,18 @@
   }
   // Drift: each letter sways a little around where it stands. Turning it off leaves the letters where they are.
   function setDrift(on) {
-    const at = epoch();
-    if (!on) { motion.p = lettersAt(at).map(Math.round); motion.glide = null; }
+    const at = epoch(), [lo, hi] = limits();
+    if (!on) {
+      const seconds = (at - motion.drift) / 1000;
+      motion.p = settled(at).map((v, i) => Math.round(clamp(v + DRIFT * Math.sin(2 * Math.PI * seconds / DRIFT_SECONDS[i]), lo, hi)));
+      motion.glide = null;
+    }
     motion.drift = on ? at : 0;
     changed();
   }
+  // A key acts when it is let go; held for half a second it does its second job instead.
+  const TAPS = {K2: nextPreset, K3: nextColours, K4: nextFormula};
+  const HOLDS = {K2: () => setSound(!sounding), K3: () => setDrift(!motion.drift), K4: () => setListening(!listening)};
   function onControl(event) {
     const control = event.control, knob = ['E1', 'E2', 'E3', 'E4'].indexOf(control);
     if (event.type === 'rotate') {
@@ -243,14 +400,11 @@
       if (held[control]) return;
       held[control] = true;
       if (knob >= 0) { coarse[knob] = !coarse[knob]; label(); }
-      else if (control === 'K2') nextPreset();
-      // K3 held: drift. A short press changes the colours (on release).
-      else if (control === 'K3') driftTimer = setTimeout(() => { driftTimer = 0; setDrift(!motion.drift); }, HOLD_MS);
-      else if (control === 'K4') nextFormula();
+      else if (HOLDS[control]) timers[control] = setTimeout(() => { timers[control] = 0; HOLDS[control](); }, HOLD_MS);
     } else if (event.type === 'up' || event.type === 'cancel') {
       if (!held[control]) return;
       held[control] = false;
-      if (control === 'K3' && driftTimer) { clearTimeout(driftTimer); driftTimer = 0; if (event.type === 'up') nextColours(); }
+      if (timers[control]) { clearTimeout(timers[control]); timers[control] = 0; if (event.type === 'up') TAPS[control](); }
     }
   }
 
@@ -261,7 +415,8 @@
     get twoMillionAt() { return twoMillionAt; },
     state: () => {
       const letters = lettersAt(epoch());
-      return {formula: FORMULAS[motion.formula].id, a: letters[0] / 100, b: letters[1] / 100, c: letters[2] / 100, d: letters[3] / 100, palette: PALETTES[palette].name, drift: !!motion.drift, textVisible: !isOutput && textShown};
+      return {formula: FORMULAS[motion.formula].id, a: letters[0] / 100, b: letters[1] / 100, c: letters[2] / 100, d: letters[3] / 100, palette: PALETTES[palette].name,
+        drift: !!motion.drift, textVisible: !isOutput && textShown, sound: sounding, listening};
     },
     stats,
   };
@@ -293,6 +448,6 @@
     requestAnimationFrame(frame);
     setInterval(publish, 1000); publish(); shareSoon();
   }
-  addEventListener('pagehide', () => clearTimeout(saveTimer), {once: true});
+  addEventListener('pagehide', () => { clearTimeout(saveTimer); closeEars(); closeVoice(); }, {once: true});
   void init();
 })();

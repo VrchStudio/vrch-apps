@@ -4,6 +4,8 @@ import json
 import math
 from pathlib import Path
 import re
+import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -13,30 +15,42 @@ SRC = ROOT / 'apps' / SLUG / 'src'
 spec = importlib.util.spec_from_file_location('apps', ROOT / 'tools/apps.py')
 apps = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(apps)
-ENTRY = re.compile(r"\{\s*id: '([a-z0-9-]+)',\s*name: '([^']+)',\s*text: \['([^']+)', '([^']+)'\],\s*range: \[(-?[\d.]+), (-?[\d.]+)\],\s*view: ([\d.]+),\s*step: '([^']+)',\s*presets: \[(.*?)\],\s*\},", re.S)
+NAMES = {name: getattr(math, name) for name in ('sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'atan', 'floor')}
+NAMES.update({'abs': abs, 'pow': pow, 'min': min, 'max': max, 'sign': lambda v: (v > 0) - (v < 0), '__builtins__': {}})
 
 
-def formulas(text):
-    found = []
-    for identifier, name, first, second, low, high, view, step, presets in ENTRY.findall(text):
-        sets = [tuple(float(v) for v in row.split(',')) for row in re.findall(r'\[([^\]]+)\]', presets)]
-        found.append({'id': identifier, 'name': name, 'text': (first, second), 'range': (float(low), float(high)), 'view': float(view), 'step': step, 'presets': sets, 'raw': presets})
-    return found
+def formulas():
+    """The list in formulas.js, read by Node (the file is plain JavaScript)."""
+    script = 'global.window = {}; require(process.argv[1]); process.stdout.write(JSON.stringify(window.Formulas));'
+    return json.loads(subprocess.check_output(['node', '-e', script, str(SRC / 'formulas.js')]))
 
 
-def stepper(expression):
-    """The GLSL step as a Python function of (x, y, a, b, c, d)."""
-    source = re.sub(r'\bvec2\(', '(', expression).replace('p.x', 'x').replace('p.y', 'y')
-    names = {name: getattr(math, name) for name in ('sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'atan', 'floor')}
-    names.update({'abs': abs, 'pow': pow, 'min': min, 'max': max, '__builtins__': {}})
-    return eval('lambda x, y, a, b, c, d: ' + source, names)
+def rule(formula):
+    """The formula's expressions as a Python function (x, y, z, a, b, c, d) -> the next point, or the rate of change."""
+    tidy = lambda text: re.sub(r'\bvec[23]\(', '(', text).replace('p.x', 'x').replace('p.y', 'y').replace('p.z', 'z')
+    lines = ['def f(x, y, z, a, b, c, d):'] + ['    ' + tidy(line) for line in formula.get('with', [])] + ['    return ' + tidy(formula.get('flow') or formula['step'])]
+    scope = dict(NAMES)
+    exec('\n'.join(lines), scope)
+    return scope['f']
+
+
+def advance(formula, f, p, k):
+    """One step of a map, or one Runge-Kutta step of a flow."""
+    if 'flow' not in formula:
+        x, y = f(p[0], p[1], 0.0, *k)
+        return (x, y, 0.0)
+    dt = formula['dt']
+    k1 = f(*p, *k)
+    k2 = f(*[p[i] + 0.5 * dt * k1[i] for i in range(3)], *k)
+    k3 = f(*[p[i] + 0.5 * dt * k2[i] for i in range(3)], *k)
+    k4 = f(*[p[i] + dt * k3[i] for i in range(3)], *k)
+    return tuple(p[i] + dt / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]) for i in range(3))
 
 
 class Attractor(unittest.TestCase):
     def setUp(self):
         self.manifest = json.loads((SRC / 'app.json').read_text())
         self.text = {path.relative_to(SRC).as_posix(): path.read_text() for path in SRC.rglob('*') if path.is_file()}
-        self.formulas = formulas(self.text['formulas.js'])
 
     def test_package_is_at_most_0_3_megabytes(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -44,8 +58,8 @@ class Attractor(unittest.TestCase):
             self.assertLessEqual(package.stat().st_size, int(0.3 * 1024 * 1024))
             self.assertEqual(release['size'], package.stat().st_size)
 
-    def test_declares_only_controls_and_the_output_picture(self):
-        self.assertEqual(self.manifest['capabilities'], {'controls': True})
+    def test_declares_controls_sound_and_the_output_picture(self):
+        self.assertEqual(self.manifest['capabilities'], {'controls': True, 'audio_input': True, 'audio_output': True})
         self.assertEqual(self.manifest['roles'], ['output'])
         self.assertEqual([section['title'] for section in self.manifest['guide']['sections'][:3]], ['Quick start', 'Common controls', 'Touch'])
         quick = self.manifest['guide']['sections'][0]['controls']
@@ -68,43 +82,55 @@ class Attractor(unittest.TestCase):
         self.assertEqual(re.findall(r'<script[^>]*src="([^"]+)"', self.text['index.html']), ['/apps/sdk/apps-v1.js', 'formulas.js', 'picture.js', 'app.js'])
 
     def test_the_source_is_not_packed(self):
-        for path in ('formulas.js', 'picture.js', 'app.js'):
+        for path in ('formulas.js', 'picture.js', 'voice.js', 'app.js'):
             self.assertLessEqual(max(len(line) for line in self.text[path].splitlines()), 320, path)
 
+    @unittest.skipUnless(shutil.which('node'), 'Node reads formulas.js')
     def test_every_formula_is_one_complete_entry(self):
-        self.assertEqual(len(self.formulas), self.text['formulas.js'].count("\n    id: '"))
-        self.assertEqual([formula['id'] for formula in self.formulas], ['dejong', 'clifford', 'svensson', 'dream'])
-        self.assertEqual(self.formulas[0]['presets'][0], (1.49, -2.28, 2.36, -2.13))
-        for formula in self.formulas:
+        listed = formulas()
+        self.assertEqual([formula['id'] for formula in listed], ['dejong', 'clifford', 'svensson', 'dream', 'mira', 'ikeda', 'lorenz', 'aizawa', 'thomas'])
+        self.assertEqual(listed[0]['presets'][0], [1.49, -2.28, 2.36, -2.13])
+        for formula in listed:
             low, high = formula['range']
+            self.assertRegex(formula['id'], r'^[a-z0-9-]{1,24}$')
+            self.assertTrue(formula['name'] and 2 <= len(formula['text']) <= 3 and formula['view'] > 0, formula['id'])
+            self.assertEqual('flow' in formula, 'dt' in formula, formula['id'])
+            self.assertNotEqual('flow' in formula, 'step' in formula, formula['id'])
             self.assertGreaterEqual(len(formula['presets']), 6, formula['id'])
-            self.assertEqual(len(set(formula['presets'])), len(formula['presets']), formula['id'])
+            self.assertEqual(len({tuple(preset) for preset in formula['presets']}), len(formula['presets']), formula['id'])
             for preset in formula['presets']:
                 self.assertEqual(len(preset), 4)
                 for value in preset:
                     self.assertTrue(low <= value <= high and abs(value * 100 - round(value * 100)) < 1e-9, (formula['id'], preset))
 
-    def test_every_preset_fills_the_square_without_leaving_it(self):
-        for formula in self.formulas:
-            step, view = stepper(formula['step']), formula['view']
+    @unittest.skipUnless(shutil.which('node'), 'Node reads formulas.js')
+    def test_every_preset_fills_the_view_without_leaving_it(self):
+        for formula in formulas():
+            f, view, flow = rule(formula), formula['view'], 'flow' in formula
+            centre = (formula.get('centre', []) + [0, 0, 0])[:3]
             for preset in formula['presets']:
-                x = y = 0.1
+                p = (centre[0] + 0.1 * view, centre[1] + 0.07 * view, centre[2] + (0.05 * view if flow else 0.0))
                 cells, far = set(), 0.0
-                for i in range(6000):
-                    x, y = step(x, y, *preset)
-                    if i >= 500:
-                        far = max(far, abs(x), abs(y))
-                        cells.add((int((x / view * 0.5 + 0.5) * 64), int((y / view * 0.5 + 0.5) * 64)))
-                self.assertLessEqual(far, view, (formula['id'], preset, 'leaves the square'))
-                self.assertGreaterEqual(len(cells), 250, (formula['id'], preset, 'collapses'))
+                for i in range(9000 if flow else 6000):
+                    p = advance(formula, f, p, preset)
+                    if i >= (3000 if flow else 500):
+                        r = [p[j] - centre[j] for j in range(3)]
+                        # A flow turns about its upright axis: what must fit is its distance from that axis and its height.
+                        across, up = (math.hypot(r[0], r[1]), r[2]) if flow else (r[0], r[1])
+                        far = max(far, abs(across), abs(up))
+                        cells.add((int((r[0] / view * 0.5 + 0.5) * 64), int(((r[2] if flow else r[1]) / view * 0.5 + 0.5) * 64)))
+                self.assertLessEqual(far, view, (formula['id'], preset, 'leaves the view'))
+                # One path of a flow is a thin thread; a map's points scatter over its whole figure.
+                self.assertGreaterEqual(len(cells), 100 if flow else 250, (formula['id'], preset, 'collapses'))
 
+    @unittest.skipUnless(shutil.which('node'), 'Node reads formulas.js')
     def test_a_collapsed_setting_is_told_apart(self):
         # De Jong with every letter at 0 lands on one point: the App marks such a figure on the device screen.
-        step = stepper(self.formulas[0]['step'])
-        x = y = 0.1
+        formula = formulas()[0]
+        f, p = rule(formula), (0.1, 0.1, 0.0)
         for _ in range(200):
-            x, y = step(x, y, 0.0, 0.0, 0.0, 0.0)
-        self.assertEqual((x, y), (-1.0, -1.0))
+            p = advance(formula, f, p, (0.0, 0.0, 0.0, 0.0))
+        self.assertEqual(p, (-1.0, -1.0, 0.0))
 
 
 if __name__ == '__main__':
