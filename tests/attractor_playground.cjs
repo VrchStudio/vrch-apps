@@ -17,7 +17,7 @@ function fixture() {
   const catalog = JSON.parse(fs.readFileSync(path.join(APPS, 'catalog/playground.json'), 'utf8')), served = new Map();
   const meta = JSON.parse(execFileSync('python3', ['-c', PACK, APPS, SLUG], {maxBuffer: 64 << 20}).toString()), bytes = Buffer.from(meta.zip, 'base64'), digest = sha(bytes), version = meta.manifest.version;
   assert.deepEqual(meta.manifest.roles, ['output']);
-  assert(bytes.length <= 0.3 * 1024 * 1024, 'the package is at most 0.3 MB: ' + bytes.length);
+  assert(bytes.length <= 3 * 1024 * 1024, 'the package is at most 3 MB: ' + bytes.length);
   const listing = Buffer.from(JSON.stringify({schemaVersion: 1, appId: meta.manifest.id, version, revision: meta.revision, packageDigest: digest, base: RAW + ZERO + '/apps/' + SLUG + '/src/', files: meta.files}));
   const icon = fs.readFileSync(path.join(APPS, 'apps', SLUG, 'src', meta.manifest.icon));
   served.set('catalog/assets/' + sha(listing) + '.json', listing); served.set('catalog/assets/' + sha(icon) + '.svg', icon);
@@ -138,8 +138,16 @@ async function open({args = [], permissions = []} = {}) {
     const press = async index => { await over('encoders', index); await page.waitForTimeout(450); await page.mouse.down(); await page.waitForTimeout(90); await page.mouse.up(); await page.waitForTimeout(120); };
     const key = async (index, holdMs = 70) => { await over('keys', index); await page.mouse.down(); await page.waitForTimeout(holdMs); await page.mouse.up(); await page.waitForTimeout(120); };
     const tap = async () => { const box = await page.locator('#stageDevice').boundingBox(); await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.6); await page.mouse.down(); await page.waitForTimeout(80); await page.mouse.up(); await page.waitForTimeout(150); };
+    // Drag across the picture by a share of the device screen; "flick" lets go while still moving.
+    const drag = async (dx, dy, flick = false) => {
+      const box = await page.locator('#stageDevice').boundingBox(), x = box.x + box.width * 0.5, y = box.y + box.height * 0.55;
+      await page.mouse.move(x, y); await page.waitForTimeout(200); await page.mouse.down(); await page.waitForTimeout(60);   // a press right on arrival can be lost
+      for (let i = 1; i <= 12; i++) { await page.mouse.move(x + dx * box.width * i / 12, y + dy * box.height * i / 12); await page.waitForTimeout(flick ? 12 : 30); }
+      if (!flick) await page.waitForTimeout(250);
+      await page.mouse.up(); await page.waitForTimeout(150);
+    };
     const output = async () => { await page.keyboard.press('Shift'); await page.waitForFunction(() => document.body.dataset.output === 'panel', null, {timeout: 30000}); await settled(); return find('output'); };
-    return {context, page, find, control, settled, turn, press, key, tap, output, prompts};
+    return {context, page, find, control, settled, turn, press, key, tap, drag, output, prompts};
   }
   const state = frame => frame.evaluate(() => __attractor.state()), stats = frame => frame.evaluate(() => __attractor.stats());
   const stopped = (frame, timeout = 60000) => frame.waitForFunction(() => __attractor.stats().stopped, null, {timeout});

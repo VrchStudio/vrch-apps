@@ -22,7 +22,7 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     await app.waitForFunction(() => __attractor.twoMillionAt !== null, null, {timeout: 60000});
     result.twoMillionMs = await app.evaluate(() => __attractor.twoMillionAt);
     if (GPU) assert(result.firstFrameMs < 1000 && result.twoMillionMs < 3000, 'a first figure within 1 s and two million points within 3 s: ' + JSON.stringify(result));
-    assert.deepEqual(await state(app), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', drift: false, textVisible: true, sound: false, listening: false});
+    assert.deepEqual(await state(app), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', drift: false, textVisible: true, sound: false, listening: false, source: 'off', spin: 0, turn: 0, tilt: 0});
     await stopped(app);
     result.finished = await stats(app);
     assert(result.finished.points === result.finished.cap && result.finished.cap >= 5e6 && result.finished.cap <= 20e6 && result.finished.degenerate === false, 'the picture finishes at its limit: ' + JSON.stringify(result.finished));
@@ -40,7 +40,7 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     await v.page.waitForTimeout(1300);
     const idle = await stats(app);
     assert(idle.stopped && idle.pointsPerFrame === 0 && idle.points === idle.cap, 'a finished picture adds no points: ' + JSON.stringify(idle));
-    const mine = await t.bytes(app);
+    const mine = await t.bytes(app), mineGrid = await t.grid(app);
 
     /* ---- a knob: the next frame differs, nothing flashes, and the same letters give the same picture again ---- */
     await t.watch(app);
@@ -67,7 +67,15 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     const early = await stats(app);
     await stopped(app);
     assert(early.points < (await stats(app)).points, 'the figure keeps gathering points after the hand lets go');
-    assert.equal(await t.bytes(app), mine, 'the same formula, letters and colours finish as the same picture');
+    // (A slow machine may by now draw fewer pixels: then the picture is the same figure, not the same bytes.)
+    const again = await stats(app);
+    result.again = {size: again.size, quality: again.quality, alike: t.alike(await t.grid(app), mineGrid)};
+    if (String(again.size) === String(idle.size)) assert((await t.bytes(app)) === mine, 'the same formula, letters and colours finish as the same picture: ' + JSON.stringify([result.again, await state(app)]));
+    else assert(result.again.alike > 0.97, 'the same formula, letters and colours finish as the same figure: ' + JSON.stringify(result.again));
+    // And again and again: a nudge there and back, with the pause between falling around the moment the picture
+    // would come to rest (uploading the starting points into a buffer the graphics chip was still writing once made
+    // about one picture in fourteen come out different).
+    if (GPU) for (let i = 0; i < 12; i++) { await v.turn(0, 1, 120); await v.turn(0, -1, 120); await v.page.waitForTimeout(100); await stopped(app); assert((await t.bytes(app)) === mine, 'the same picture every time: differs after nudge ' + i); }
 
     /* ---- the output: the same figure, no text ---- */
     const out = await v.output();
@@ -84,19 +92,18 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     await v.press(1); await v.turn(1, -10, 150);
     assert(near((await state(app)).b, -2.28), 'pressed again it steps by 0.01: ' + (await state(app)).b);
 
-    /* ---- every formula, every preset: reached by gliding, none collapsed. A flow turns and never rests. ---- */
+    /* ---- every formula, every preset: reached by gliding, none collapsed ---- */
     result.presets = {};
     for (let f = 0; f < FORMULAS.length; f++) {
       const first = await state(app), seen = [], flow = FLOWS.includes(FORMULAS[f]);
       assert.equal(first.formula, FORMULAS[f]);
       for (let i = 0; i < 12; i++) {
-        if (flow) { await v.page.waitForTimeout(1500); const turning = [await stats(app), await stats(out)]; assert(turning.every(s => s.mode === 'live' && !s.stopped && s.points > 2 * BATCH), FORMULAS[f] + ' keeps turning: ' + JSON.stringify(turning)); }
-        else await stopped(app);
+        await stopped(app);
         const now = await state(app), key = [now.a, now.b, now.c, now.d].join(' ');
         if (seen.includes(key)) break;
         seen.push(key);
         assert.equal((await stats(app)).degenerate, flow ? null : false, FORMULAS[f] + ' preset ' + key + ' has not collapsed');
-        if (flow) { const lit = (await t.grid(out)).filter(light => light > 60).length; assert(lit > 300, FORMULAS[f] + ' preset ' + key + ' fills the picture: ' + lit + ' of 4096 cells lit'); }
+        if (flow) { await stopped(out); const lit = (await t.grid(out)).filter(light => light > 60).length; assert(lit > 300, FORMULAS[f] + ' preset ' + key + ' fills the picture: ' + lit + ' of 4096 cells lit'); }
         if (i < 2) { await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'preset-' + FORMULAS[f] + '-' + (i + 1) + '.png')}); save('figure-' + FORMULAS[f] + '-' + (i + 1) + '.png', await t.bytes(out)); }
         await v.key(1);
         if (i === 0) {
@@ -128,35 +135,19 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     assert.equal((await state(app)).palette, 'Ember');
     assert.equal((await stats(app)).stopped, true, 'a colour change does not start the picture again');
 
-    /* ---- drift ---- */
-    await v.key(2, 900);
-    assert.equal((await state(app)).drift, true, 'K3 held turns drift on');
-    assert.equal((await state(app)).palette, 'Ember', 'holding K3 does not change the colours');
-    await v.page.waitForTimeout(2500);
-    const adrift = [await state(app), await state(out), await stats(app)];
-    assert(Math.abs(adrift[0].a - 1.49) > 0.005 && Math.abs(adrift[0].a - 1.49) <= 0.0701, 'the letters sway a little: ' + adrift[0].a);
-    assert(Math.abs(adrift[0].a - adrift[1].a) < 0.01 && adrift[1].drift, 'the output sways with the device');
-    assert.equal(adrift[2].mode, 'live');
-    result.drift = {fps: adrift[2].fps, pointsPerFrame: adrift[2].pointsPerFrame};
-    await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-drift.png')});
-    await v.key(2, 900);
-    const rested = await state(app);
-    assert.equal(rested.drift, false);
-    await v.page.waitForTimeout(600);
-    assert.deepEqual(await state(app), rested, 'with drift off the letters stay where they were');
-
     /* ---- a tap hides and shows the text ---- */
     await v.tap();
     assert.equal((await state(app)).textVisible, false);
-    assert.equal(await app.evaluate(() => getComputedStyle(document.getElementById('text')).display), 'none');
+    assert.equal(await app.evaluate(() => getComputedStyle(document.getElementById('corner')).display), 'none');
     await v.tap();
     assert.equal((await state(app)).textVisible, true);
+    assert.equal((await state(app)).turn, 0, 'a tap does not turn the figure');
 
     /* ---- share link: another browser opens the same figure ---- */
     await v.key(1); await v.page.waitForTimeout(1800); await v.key(2); await stopped(app); await v.page.waitForTimeout(1200);
     const sent = await state(app), link = new URL(v.page.url());
     result.shareState = link.searchParams.get('s');
-    assert(/^v1\.dejong\.(-?\d+\.){4}1$/.test(result.shareState || ''), 'the address carries the figure: ' + link.search);
+    assert(/^v2\.dejong\.(-?\d+\.){4}1\.0\.0$/.test(result.shareState || ''), 'the address carries the figure: ' + link.search);
     const sentPicture = await t.bytes(app);
     await v.context.close();
     const w = await t.visit('&s=' + encodeURIComponent(result.shareState)), theirs = await w.find('control');
@@ -168,6 +159,63 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     const bad = await t.visit('&s=v1.nothing.1.2.3.4.0'), fallback = await bad.find('control');
     assert.equal((await state(fallback)).a, 1.49, 'an unreadable link opens with the defaults');
     await bad.context.close();
+    const old = await t.visit('&s=v1.clifford.-140.160.100.70.2'), earlier = await old.find('control');
+    assert.deepEqual([(await state(earlier)).formula, (await state(earlier)).a, (await state(earlier)).palette], ['clifford', -1.4, 'Silver'], 'a link from an earlier version still opens');
+    await old.context.close();
+
+    /* ---- motion: K3 held goes through spin, drift, both and none; a drag turns the figure; a flick spins it ---- */
+    const m = await t.visit(''), dev = await m.find('control'), far = await m.output();
+    await stopped(dev); await stopped(far);
+    const front = await t.grid(far);
+    await m.key(2, 900);
+    assert.deepEqual([(await state(dev)).spin, (await state(dev)).drift, (await state(dev)).palette], [1, false, 'Ember'], 'K3 held once: spin, and the colours stay');
+    await m.page.waitForTimeout(2500);
+    const spun = [await state(dev), await state(far), await stats(dev), await stats(far)];
+    assert(spun[0].turn > 10 && Math.abs(spun[0].turn - spun[1].turn) < 3 && spun[1].spin === 1, 'the figure turns, and the output with it: ' + JSON.stringify([spun[0].turn, spun[1].turn]));
+    assert(spun[2].mode === 'live' && spun[3].mode === 'live');
+    result.spin = {device: {fps: spun[2].fps, pointsPerFrame: spun[2].pointsPerFrame}, output: {fps: spun[3].fps, pointsPerFrame: spun[3].pointsPerFrame}};
+    await m.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-spin.png')});
+    save('output-spin.png', await t.bytes(far));
+    await m.key(2, 900);
+    assert.deepEqual([(await state(dev)).spin, (await state(dev)).drift], [0, true], 'held again: drift alone');
+    await m.page.waitForTimeout(2500);
+    const adrift = [await state(dev), await state(far), await stats(dev)];
+    assert(Math.abs(adrift[0].a - 1.49) > 0.005 && Math.abs(adrift[0].a - 1.49) <= 0.0701, 'the letters sway a little: ' + adrift[0].a);
+    assert(Math.abs(adrift[0].a - adrift[1].a) < 0.01 && adrift[1].drift, 'the output sways with the device');
+    assert.equal(adrift[2].mode, 'live');
+    result.drift = {fps: adrift[2].fps, pointsPerFrame: adrift[2].pointsPerFrame};
+    await m.key(2, 900);
+    assert.deepEqual([(await state(dev)).spin, (await state(dev)).drift], [1, true], 'held again: both');
+    await m.key(2, 900);
+    const rested = await state(dev);
+    assert.deepEqual([rested.spin, rested.drift], [0, false], 'held again: none');
+    await m.page.waitForTimeout(600);
+    assert.deepEqual(await state(dev), rested, 'the letters and the view stay where they were');
+    await stopped(dev); await stopped(far);
+    const aside = t.alike(await t.grid(far), front);
+    assert(aside < 0.9, 'seen from another side it is another picture: ' + aside);
+    // A drag: across turns the figure, down tilts it. (The whole short side of the screen is half a turn.)
+    await m.drag(0.15, 0.05);
+    const dragged = await state(dev);
+    assert(dragged.turn - rested.turn > 15 && dragged.turn - rested.turn < 90 && dragged.tilt > 3 && dragged.tilt < 57 && dragged.spin === 0 && dragged.textVisible, 'a drag turns and tilts the figure and hides nothing: ' + JSON.stringify([rested.turn, dragged.turn, dragged.tilt]));
+    await stopped(dev); await stopped(far);
+    assert(Math.abs((await state(far)).turn - dragged.turn) < 0.2 && Math.abs((await state(far)).tilt - dragged.tilt) < 0.2, 'the output is seen from the same side');
+    result.turnedAlike = t.alike(await t.grid(dev), await t.grid(far));
+    assert(result.turnedAlike > 0.9, 'and shows the same turned figure: ' + result.turnedAlike);
+    await m.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-turned.png')});
+    save('output-turned.png', await t.bytes(far));
+    await m.page.waitForTimeout(1200);
+    const viewed = new URL(m.page.url()).searchParams.get('s');
+    const from = await t.visit('&s=' + encodeURIComponent(viewed)), same = await from.find('control');
+    assert(Math.abs((await state(same)).turn - dragged.turn % 360) < 0.6 && Math.abs((await state(same)).tilt - dragged.tilt) < 0.6, 'the link opens the figure from the same side: ' + viewed);
+    await from.context.close();
+    await m.drag(-0.2, 0, true);
+    assert.equal((await state(dev)).spin, -1, 'a flick sets it spinning the way it was thrown');
+    await m.tap();
+    assert.deepEqual([(await state(dev)).spin, (await state(dev)).textVisible], [-1, false], 'a tap is still a tap');
+    await m.drag(0.05, 0);
+    assert.equal((await state(dev)).spin, 0, 'a drag stops the spin');
+    await m.context.close();
 
     /* ---- a collapsed setting: marked on the device only, and K2 leads back ---- */
     const c = await t.visit('&s=v1.dejong.0.0.0.0.0'), lone = await c.find('control');

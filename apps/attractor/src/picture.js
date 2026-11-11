@@ -16,7 +16,11 @@
 // points in "work" and adds each run, scaled down, to "sum"; the live picture is kept below that by its fading.
 //
 // A formula is a map (each step gives the next point) or a flow in three dimensions (each step moves the point a
-// little along its rate of change). A flow is drawn turning slowly, so its picture is always the live one.
+// little along its rate of change). Every figure is seen in space and can be turned: a map's third direction is where
+// the point was one step before. While the view turns the picture is the live one; at rest it gathers and sharpens.
+//
+// A slow graphics chip spends most of a frame filling pixels, not stepping points. When frames stay late with the
+// fewest points a frame, the picture is drawn at fewer pixels and scaled up by the browser.
 (() => {
   'use strict';
   const BATCH = 50000;        // points that take a step together
@@ -34,6 +38,11 @@
   const FEW = 24;             // a figure that touches fewer of the 64 x 64 cells than this has collapsed
   const SEED = 0.6;           // fresh points start within this share of the view around its middle
   const FAR = 16;             // a point this many views from the middle is lost and starts again
+  const FLOW_WARM = 240;      // steps a fresh point of a flow takes to reach the figure
+  const LATE_MS = 20;         // a frame longer than this is late
+  const LATE_FRAMES = 90;     // this many late frames: draw fewer pixels,
+  const COARSER = 0.85;       // by this factor each time,
+  const COARSEST = 0.6;       // down to this share of the full size
 
   const QUAD = [
     '#version 300 es',
@@ -51,11 +60,13 @@
       '#version 300 es',
       'precision highp float;',
       'precision highp int;',
-      'layout(location = 0) in vec3 p;',
+      'layout(location = 0) in vec3 point;',
       'uniform vec4 k;      // a, b, c, d',
       'uniform vec4 frame;  // x scale, y scale, colour scale, jitter',
       'uniform vec4 home;   // the middle of the view, and the size of the cube fresh points start in',
-      'uniform vec3 turn;   // cos and sin of the turn, and the square of how far is lost',
+      'uniform vec4 start;  // for a first step from the seeds: the size of the box they fill, and 1',
+      'uniform vec3 ax, ay, az;  // the view: which way is across, down and away',
+      'uniform vec2 space;  // how deep a map is drawn, and the square of how far is lost',
       'uniform uint tick;',
       'out vec3 q;',
       'out vec2 count;',
@@ -65,6 +76,7 @@
       '}',
       'void main() {',
       '  float a = k.x, b = k.y, c = k.z, d = k.w;',
+      '  vec3 p = start.w > 0.5 ? home.xyz + point * start.xyz : point;',
       '  uint h = uint(gl_VertexID) * 747796405u + tick * 2891336453u + 12345u;',
       '  h = (h ^ (h >> 16)) * 2246822519u;',
       '  h = (h ^ (h >> 13)) * 3266489917u;',
@@ -82,13 +94,14 @@
       ] : ['  q = rule(p, a, b, c, d) + nudge * frame.w;']),
       '  vec3 r = q - home.xyz, was = p - home.xyz;',
       '  float away = dot(r, r);',
-      '  if (isnan(away) || isinf(away) || away >= turn.z) { r = nudge * home.w; q = home.xyz + r; }',
+      '  if (isnan(away) || isinf(away) || away >= space.y) { r = nudge * home.w; q = home.xyz + r; was = r; }',
       ...(flow ? [
-        '  float across = r.x * turn.x + r.y * turn.y, depth = r.y * turn.x - r.x * turn.y;',
-        '  vec2 spot = vec2(across, -r.z);',
-        '  float side = 0.6 * across + 0.4 * depth;',
+        '  vec3 at = vec3(r.x, -r.z, r.y);   // z is up',
+        '  vec2 spot = vec2(dot(at, ax), dot(at, ay));',
+        '  float side = 0.6 * spot.x + 0.4 * dot(at, az);',
       ] : [
-        '  vec2 spot = r.xy;',
+        '  vec3 at = vec3(r.xy, was.x * space.x);',
+        '  vec2 spot = vec2(dot(at, ax), dot(at, ay));',
         '  float side = 0.75 * r.x + 0.25 * was.x;',
       ]),
       '  side = clamp(side * frame.z + 0.5, 0.0, 1.0);',
@@ -119,6 +132,14 @@
     '  ivec2 at = ivec2(gl_FragCoord.xy);',
     '  o = texelFetch(a, at, 0) * k.x + texelFetch(b, at, 0) * k.y;',
     '}'].join('\n');
+  // A picture copied to another size.
+  const COPY_FS = [
+    '#version 300 es',
+    'precision highp float;',
+    'uniform sampler2D a;',
+    'uniform vec3 k;   // 1 / width, 1 / height, scale',
+    'out vec4 o;',
+    'void main() { o = textureLod(a, gl_FragCoord.xy * k.xy, 0.0) * k.z; }'].join('\n');
   // Counts to light. v.r is the density (1 = points spread evenly over the view square), v.g / v.r the colour side.
   const SHOW_FS = [
     '#version 300 es',
@@ -205,33 +226,37 @@
     }
     if (!format) return null;
 
-    const fadeProgram = link(QUAD, FADE_FS), addProgram = link(QUAD, ADD_FS), showProgram = link(QUAD, SHOW_FS);
-    const addAt = at(addProgram, ['a', 'b', 'k']), showAt = at(showProgram, ['live', 'sum', 'work', 'gains', 'halo', 'px', 'stops']);
+    const fadeProgram = link(QUAD, FADE_FS), addProgram = link(QUAD, ADD_FS), copyProgram = link(QUAD, COPY_FS), showProgram = link(QUAD, SHOW_FS);
+    const addAt = at(addProgram, ['a', 'b', 'k']), copyAt = at(copyProgram, ['a', 'k']), showAt = at(showProgram, ['live', 'sum', 'work', 'gains', 'halo', 'px', 'stops']);
     const steppers = [];
     function stepper(index) {
       if (!steppers[index]) {
         const program = link(stepShader(formulas[index]), STEP_FS, ['q']);
-        steppers[index] = {program, ...at(program, ['k', 'frame', 'home', 'turn', 'tick'])};
+        steppers[index] = {program, ...at(program, ['k', 'frame', 'home', 'start', 'ax', 'ay', 'az', 'space', 'tick'])};
       }
       return steppers[index];
     }
     const middle = formula => [0, 1, 2].map(i => (formula.centre || [])[i] || 0);
 
-    // Fixed seeds, -0.5 to 0.5 each way: the still picture always starts from the same points.
-    const seeds = new Float32Array(BATCH * 3), fresh = new Float32Array(BATCH * 3);
+    // Fixed seeds, -0.5 to 0.5 each way: the still picture always starts from the same points. They stay in a buffer
+    // of their own that is only ever read; the points on their way live in two others that take turns.
+    const seeds = new Float32Array(BATCH * 3);
     for (let i = 0, h = 20261111; i < seeds.length; i++) { h = (Math.imul(h, 1664525) + 1013904223) >>> 0; seeds[i] = h / 4294967296 - 0.5; }
-    const buffers = [gl.createBuffer(), gl.createBuffer()], arrays = [gl.createVertexArray(), gl.createVertexArray()], empty = gl.createVertexArray();
-    for (let i = 0; i < 2; i++) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffers[i]); gl.bufferData(gl.ARRAY_BUFFER, seeds, gl.DYNAMIC_COPY);
+    const buffers = [gl.createBuffer(), gl.createBuffer(), gl.createBuffer()], arrays = [gl.createVertexArray(), gl.createVertexArray(), gl.createVertexArray()], empty = gl.createVertexArray();
+    for (let i = 0; i < 3; i++) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers[i]); gl.bufferData(gl.ARRAY_BUFFER, seeds, i < 2 ? gl.DYNAMIC_COPY : gl.STATIC_DRAW);
       gl.bindVertexArray(arrays[i]); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
     }
     gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null);
     const cells = target(gl.RGBA8, 64, 64, 1), seen = new Uint8Array(64 * 64 * 4);
 
-    let W = 0, H = 0, side = 0, cap = CAP_MIN, liveMost = 0;
+    let W = 0, H = 0, side = 0, cap = CAP_MIN, liveMost = 0, asked = null, quality = 1, late = 0;
     let live = null, sum = null, work = null;
-    let formula = 0, letters = [0, 0, 0, 0], moving = false, angle = 0, changedAt = 0, started = false;
-    let mode = 'still', done = false, warm = 0, tick = 0, current = 0;
+    // look: the view as nine numbers (across, down, away), then how much smaller the turned figure is drawn, then
+    // how deep a map is.
+    const FRONT = [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0];
+    let formula = 0, letters = [0, 0, 0, 0], look = FRONT, moving = false, changedAt = 0, started = false;
+    let mode = 'still', done = false, warm = 0, tick = 0, current = 0, afresh = false;
     let nLive = 0, nStill = 0, pending = 0, summed = 0, collapsed = null, dirty = true;
     let rate = 2, base = 16.7, last = 0, added = 0;
     const stops = new Float32Array(15).fill(1);
@@ -240,17 +265,20 @@
     const bind = (unit, t) => { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t.tex); };
 
     // "count" batches take a step. They are drawn into "into", or only stepped when it is null.
-    function run(count, into, scaleX, scaleY) {
+    function run(count, into, scaleX, scaleY, from = look) {
       const s = stepper(formula), view = formulas[formula].view, centre = middle(formulas[formula]);
       gl.useProgram(s.program);
       gl.uniform4f(s.k, letters[0], letters[1], letters[2], letters[3]);
       gl.uniform4f(s.frame, scaleX, scaleY, 0.6 / view, JITTER * view);
       gl.uniform4f(s.home, centre[0], centre[1], centre[2], 2 * SEED * view);
-      gl.uniform3f(s.turn, Math.cos(angle), Math.sin(angle), (FAR * view) ** 2);
+      gl.uniform3f(s.ax, from[0], from[1], from[2]); gl.uniform3f(s.ay, from[3], from[4], from[5]); gl.uniform3f(s.az, from[6], from[7], from[8]);
+      gl.uniform2f(s.space, from[10], (FAR * view) ** 2);
       if (into) { gl.bindFramebuffer(gl.FRAMEBUFFER, into.fbo); gl.viewport(0, 0, into.w, into.h); } else gl.enable(gl.RASTERIZER_DISCARD);
       for (let i = 0; i < count; i++) {
         gl.uniform1ui(s.tick, tick++);
-        gl.bindVertexArray(arrays[current]);
+        gl.uniform4f(s.start, 2 * SEED * view, 2 * SEED * view, formulas[formula].flow ? 2 * SEED * view : 0, afresh ? 1 : 0);
+        gl.bindVertexArray(arrays[afresh ? 2 : current]);
+        afresh = false;
         gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, buffers[1 - current]);
         gl.beginTransformFeedback(gl.POINTS); gl.drawArrays(gl.POINTS, 0, BATCH); gl.endTransformFeedback();
         gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
@@ -260,16 +288,16 @@
     }
     // y runs down the screen, as on paper and in the usual pictures of these formulas.
     function draw(count, into) {
-      const view = formulas[formula].view;
+      const view = formulas[formula].view / look[9];
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
       run(count, into, side * FIT / (W * view), -side * FIT / (H * view));
     }
-    // How many of 64 x 64 cells one batch touches: very few means the figure has collapsed to some points. (A flow
-    // is always turning and never comes here.)
+    // How many of 64 x 64 cells one batch touches, seen from the front: very few means the figure has collapsed to
+    // some points. (Not asked of a flow.)
     function census() {
       const view = formulas[formula].view;
       wipe(cells); gl.disable(gl.BLEND);
-      run(1, cells, 1 / view, -1 / view);
+      run(1, cells, 1 / view, -1 / view, FRONT);
       gl.bindFramebuffer(gl.FRAMEBUFFER, cells.fbo);
       gl.readPixels(0, 0, 64, 64, gl.RGBA, gl.UNSIGNED_BYTE, seen);
       let touched = 0;
@@ -288,17 +316,12 @@
       add(sum, work, work, side * side / cap, 0, true);
       wipe(work); summed += pending; pending = 0;
     }
-    // Every point back to its seed, spread around the middle of this formula's view.
-    function scatter() {
-      const centre = middle(formulas[formula]), size = 2 * SEED * formulas[formula].view, deep = formulas[formula].flow ? size : 0;
-      for (let i = 0; i < fresh.length; i += 3) {
-        fresh[i] = centre[0] + seeds[i] * size; fresh[i + 1] = centre[1] + seeds[i + 1] * size; fresh[i + 2] = centre[2] + seeds[i + 2] * deep;
-      }
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffers[current]); gl.bufferSubData(gl.ARRAY_BUFFER, 0, fresh); gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    }
+    // Every point back to its seed, spread around the middle of this formula's view: the next step starts from them.
+    function scatter() { afresh = true; }
     // The letters rest: begin the still picture from the seeds.
     function rest() {
-      mode = 'still'; done = false; warm = WARM; tick = 0; nStill = 0; pending = 0; summed = 0;
+      mode = 'still'; done = false; warm = formulas[formula].flow ? FLOW_WARM : WARM; tick = 0; nStill = 0; pending = 0; summed = 0;
+      if (formulas[formula].flow) collapsed = null;
       scatter();
       wipe(sum); wipe(work);
     }
@@ -322,6 +345,31 @@
     function pace(dt) {
       base = Math.min(base * 1.002, Math.max(dt, 4));
       rate = dt > base * 1.4 ? Math.max(1, rate * 0.7) : Math.min(MAX_RATE, rate * 1.05 + 0.1);
+      // Still late with the fewest points a frame, while the picture moves: fewer pixels.
+      late = mode === 'live' && rate < 1.05 && dt > LATE_MS ? late + 1 : Math.max(0, late - 2);
+      if (late >= LATE_FRAMES && quality > COARSEST) { late = 0; quality = Math.max(COARSEST, quality * COARSER); size(true); }
+    }
+    // The picture's size in pixels, from the size asked for and the quality. keep: carry the live picture over.
+    function size(keep) {
+      let w = Math.round(asked[0] * asked[2]), h = Math.round(asked[1] * asked[2]);
+      const shrink = Math.min(1, 1080 / Math.min(w, h), 2560 / Math.max(w, h)) * quality;
+      w = Math.max(16, Math.round(w * shrink)); h = Math.max(16, Math.round(h * shrink));
+      if (w === W && h === H) return;
+      const before = live, was = side;
+      W = w; H = h; canvas.width = w; canvas.height = h; side = Math.min(w, h);
+      cap = Math.round(clamp(side * side * PER_PIXEL, CAP_MIN, CAP_MAX) / BATCH) * BATCH;
+      liveMost = side * side * LIVE_PER_PIXEL;
+      const levels = blurs ? Math.floor(Math.log2(Math.max(w, h))) + 1 : 1;
+      free(sum); free(work);
+      live = target(format, w, h, levels); sum = target(format, w, h, levels); work = target(format, w, h, 1);
+      wipe(live); wipe(sum); wipe(work); dirty = true;
+      if (keep && before && mode === 'live') {
+        // A pixel now covers more of the figure, so it holds more of the points.
+        gl.bindFramebuffer(gl.FRAMEBUFFER, live.fbo); gl.viewport(0, 0, w, h); gl.disable(gl.BLEND);
+        gl.useProgram(copyProgram); bind(0, before); gl.uniform1i(copyAt.a, 0); gl.uniform3f(copyAt.k, 1 / w, 1 / h, (was / side) ** 2);
+        quad(); nLive = Math.min(nLive, liveMost);
+      } else { nLive = 0; if (started) rest(); }
+      free(before);
     }
     function show() {
       const square = side * side, part = share();
@@ -336,32 +384,21 @@
     }
 
     return {
-      // Size in CSS pixels and the screen's pixel ratio. The longer side is drawn at 1080 pixels at most.
+      // Size in CSS pixels and the screen's pixel ratio. The shorter side is drawn at 1080 pixels at most.
       resize(width, height, ratio) {
-        let w = Math.round(width * ratio), h = Math.round(height * ratio);
-        if (w < 16 || h < 16) return;
-        const shrink = Math.min(1, 1080 / Math.min(w, h), 2560 / Math.max(w, h));
-        w = Math.round(w * shrink); h = Math.round(h * shrink);
-        if (w === W && h === H) return;
-        W = w; H = h; canvas.width = w; canvas.height = h; side = Math.min(w, h);
-        cap = Math.round(clamp(side * side * PER_PIXEL, CAP_MIN, CAP_MAX) / BATCH) * BATCH;
-        liveMost = side * side * LIVE_PER_PIXEL;
-        const levels = blurs ? Math.floor(Math.log2(Math.max(w, h))) + 1 : 1;
-        free(live); free(sum); free(work);
-        live = target(format, w, h, levels); sum = target(format, w, h, levels); work = target(format, w, h, 1);
-        wipe(live); nLive = 0; dirty = true;
-        if (started) rest();
+        if (width * ratio < 16 || height * ratio < 16) return;
+        asked = [width, height, ratio];
+        size(false);
       },
-      // The formula (its place in the list) and the four letters now. "inMotion": the picture keeps changing (letters
-      // on their way, or a flow turning). "turn": the angle a flow is seen from.
-      set(index, values, inMotion, turn = 0) {
-        moving = inMotion; angle = turn;
-        const same = started && index === formula && values.every((v, i) => v === letters[i]);
+      // The formula (its place in the list), the four letters and the view now. "inMotion": they are still changing.
+      set(index, values, inMotion, view = FRONT) {
+        moving = inMotion;
+        const same = started && index === formula && values.every((v, i) => v === letters[i]) && view.every((v, i) => v === look[i]);
         if (same && !(inMotion && mode === 'still')) return;
         const first = !started;
         if (!same) {
           const other = index !== formula;
-          formula = index; letters = values.slice(); changedAt = performance.now();
+          formula = index; letters = values.slice(); look = view.slice(); changedAt = performance.now();
           // Points arriving from another formula would all enter a flow by the same path and take long to spread.
           if (other) { collapsed = null; if (W && !first && formulas[index].flow) scatter(); }
         }
@@ -388,8 +425,10 @@
           if (!moving && performance.now() - changedAt > REST_MS) rest();
         } else if (!done) {
           let folded = false;
-          for (let left = Math.max(1, Math.round(rate)); left > 0 && !done; left--) {
-            if (warm > 0) { run(1, null, 0, 0); if (--warm === 0) census(); continue; }
+          // (Warming a flow draws nothing, so several steps fit in a frame.)
+          const flow = !!formulas[formula].flow;
+          for (let left = Math.max(flow && warm > 0 ? 4 : 1, Math.round(rate)); left > 0 && !done; left--) {
+            if (warm > 0) { run(1, null, 0, 0); if (--warm === 0 && !flow) census(); continue; }
             draw(1, work);
             nStill += BATCH; pending += BATCH; added += BATCH;
             if (pending >= side * side || nStill >= cap) { fold(); folded = true; }
@@ -407,6 +446,7 @@
       get mode() { return mode; },
       get cap() { return cap; },
       get size() { return [W, H]; },
+      get quality() { return quality; },
       get rate() { return rate; },
       get lost() { return gl.isContextLost(); },
     };

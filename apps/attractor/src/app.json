@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "7456c5e9-8856-4134-90a5-c036a8d8b199",
   "name": "Attractor",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -26,12 +26,12 @@
             "action": "The four knobs are a, b, c and d in the formula. Turn one and the whole figure bends; let go and it sharpens as the points gather."
           },
           {
-            "control": "K2 · Press",
-            "action": "Glide to the next preset of this formula."
+            "control": "Picture · Drag",
+            "action": "Turn the figure in space. Let go while moving and it keeps spinning."
           },
           {
-            "control": "K4 · Press",
-            "action": "Next formula. There are nine, from De Jong to the slowly turning Lorenz."
+          "control": "K4 · Hold",
+          "action": "Listen: the figure moves with whatever the audio input hears. Hold again for off."
           }
         ]
       },
@@ -76,7 +76,7 @@
           },
           {
             "control": "K3 · Hold",
-            "action": "Drift on or off: the four letters sway slowly and the figure keeps changing."
+            "action": "Next motion: spin, drift (the letters sway slowly), both, or none."
           },
           {
             "control": "K4 · Press",
@@ -84,7 +84,7 @@
           },
           {
             "control": "K4 · Hold",
-            "action": "Listen on or off: the figure follows the audio input."
+          "action": "Listen on or off: the figure follows the audio input."
           }
         ]
       },
@@ -94,20 +94,28 @@
           {
             "control": "Picture · Tap",
             "action": "Show or hide the formula, the letters and the number of points."
+          },
+          {
+            "control": "Picture · Drag",
+            "action": "Turn and tilt the figure."
+          },
+          {
+            "control": "Picture · Flick",
+            "action": "Set it spinning. Tap or drag to stop."
           }
         ]
       },
       {
         "title": "The picture",
-        "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. While a knob turns the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Lorenz, Aizawa and Thomas live in three dimensions and turn slowly, so their picture keeps moving. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text."
+        "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. Every figure has depth: for a two-line formula it is where each point was one step before. While anything moves the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text."
       },
       {
         "title": "Sound",
-        "text": "Both are off until you hold their key. Listen opens the audio input only while it is on, and never plays it back or keeps it: bass pushes a, and each beat nudges b, c or d, which then return. Sound plays one point moving through the formula, x on the left and y on the right: mostly a textured noise that changes with every knob, and a tone where the figure closes into a loop. Choose inputs and outputs and set levels in Menu."
+      "text": "Both are off until you hold their key. Listen opens the audio input only while it is on, and never plays it back or keeps it: the low, middle and high parts of what it hears sway a, b and c, and sudden swells nudge d; the letters return when it stops. Sound (K2) plays one point moving through the formula, x on the left and y on the right. Choose inputs and outputs and set levels in Menu."
       },
       {
         "title": "Saved settings",
-        "text": "The formula, a, b, c and d, the colours, drift and whether the text shows save automatically. Sound and Listen start off each time. A shared link opens the same figure."
+      "text": "The formula, a, b, c and d, the colours, the view, spin, drift and whether the text shows save automatically. Sound and Listen start off each time. A shared link opens the same figure from the same side."
       }
     ]
   }

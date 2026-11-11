@@ -1,5 +1,13 @@
 # Attractor
 
+## 0.3.0
+
+- Every figure can be turned in space: drag the picture, flick it to keep it spinning, or hold K3.
+- Listen follows quiet, beatless sound too: low, middle and high parts each move a letter.
+- Lorenz, Aizawa and Thomas now rest and sharpen like the others when nothing moves.
+- The formula on the device screen sits on a small label.
+- Smoother motion on the device: it draws fewer pixels when frames come late.
+
 ## 0.2.0
 
 - Five more formulas: Gumowski-Mira and Ikeda, and Lorenz, Aizawa and Thomas, which turn slowly in three dimensions.

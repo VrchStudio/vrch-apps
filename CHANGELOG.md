@@ -4,6 +4,7 @@
 
 ### Added
 
+- Attractor: turn every figure in space by dragging or let it spin, on the device and on a large output.
 - Attractor: five more formulas, three of them turning in three dimensions, a figure that can follow the audio input, and the formula played as sound.
 - Add Attractor: four two-line formulas drawn as silk from millions of points, with the four knobs as the letters a, b, c and d, on the device and on a large output.
 - Add XY Scope, an oscilloscope synthesizer: the left and right channels draw the figure you hear, on the device and on a large output, and an input mode shows any incoming sound as a wave, XY figure or spectrum with a tuner.

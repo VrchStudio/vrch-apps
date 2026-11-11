@@ -60,10 +60,23 @@ const status = app => app.evaluate(() => document.getElementById('status').hidde
     for (let i = 0; i < 3; i++) { await v.key(3); await v.page.waitForTimeout(250); }
     assert.equal((await state(app)).formula, 'dejong');
 
-    /* ---- K4 held: the figure follows the audio input ---- */
+    /* ---- K4 held: the App's music plays and the figure moves with it (when this copy of the App carries music) ---- */
     await stopped(app);
     const base = await state(app);
     await v.key(3, 900);
+    await app.waitForFunction(() => __attractor.state().listening || (__attractor.state().source === 'music' && document.getElementById('status').innerText === 'music'), null, {timeout: 20000});
+    if ((await state(app)).source === 'music') {
+      await v.page.waitForTimeout(2500);
+      const swayed = [];
+      for (let i = 0; i < 40; i++) { swayed.push(await state(app)); await v.page.waitForTimeout(75); }
+      result.music = {heard: await heard(v.page, 800), sway: ['a', 'b', 'c', 'd'].map(k => Math.round(Math.max(...swayed.map(s => Math.abs(s[k] - base[k]))) * 1000) / 1000), mode: (await stats(app)).mode};
+      assert(result.music.heard.left > 0.005 && result.music.heard.right > 0.005 && result.music.heard.left <= 1, 'the music is heard: ' + JSON.stringify(result.music));
+      assert(Math.max(...result.music.sway) >= 0.02 && Math.max(...result.music.sway) <= 0.1201 && result.music.mode === 'live', 'the letters sway with the music, a little: ' + JSON.stringify(result.music));
+      assert.deepEqual(await everyFrame(v.page, () => window.__asked || []), [], 'music asks for no input');
+      await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-music.png')});
+      // Held again: the audio input instead.
+      await v.key(3, 900);
+    } else result.music = 'this copy has no music';
     await app.waitForFunction(() => __attractor.state().listening, null, {timeout: 5000});
     const out = await v.output();
     const seen = [];
@@ -75,7 +88,7 @@ const status = app => app.evaluate(() => document.getElementById('status').hidde
       kick: Math.max(...seen.map(s => Math.max(Math.abs(s[0].b - base.b), Math.abs(s[0].c - base.c), Math.abs(s[0].d - base.d)))),
       outputPush: Math.max(...seen.map(s => s[1].a - base.a)), apart: Math.max(...seen.map(s => Math.abs(s[0].a - s[1].a))), mode: (await stats(app)).mode,
     };
-    assert(result.listening.push >= 0.05 && result.listening.push <= 0.1201 && result.listening.least >= -1e-9, 'bass pushes a up, by 0.12 at most: ' + JSON.stringify(result.listening));
+    assert(result.listening.push >= 0.05 && result.listening.push <= 0.1201 && result.listening.least >= -0.1201, 'bass sways a, by 0.12 at most: ' + JSON.stringify(result.listening));
     assert(result.listening.kick >= 0.02 && result.listening.kick <= 0.13, 'a beat nudges b, c or d a little: ' + JSON.stringify(result.listening));
     assert(result.listening.outputPush >= 0.04 && result.listening.apart <= 0.12, 'the output follows: ' + JSON.stringify(result.listening));
     assert.equal(result.listening.mode, 'live');
@@ -96,6 +109,8 @@ const status = app => app.evaluate(() => document.getElementById('status').hidde
   try {
     const v = await t.visit(''), app = await v.find('control');
     await v.key(3, 900);
+    await v.page.waitForTimeout(1200);
+    if ((await t.state(app)).source === 'music') await v.key(3, 900);
     await app.waitForFunction(() => /not allowed|No audio input/.test(document.getElementById('status').innerText), null, {timeout: 8000});
     result.refused = await status(app);
     assert.equal(result.refused, 'Audio input is not allowed.');
