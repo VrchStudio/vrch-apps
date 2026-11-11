@@ -4704,7 +4704,7 @@
     },
     "7456c5e9-8856-4134-90a5-c036a8d8b199": {
       "slug": "attractor",
-      "latest": "0.6.0",
+      "latest": "0.7.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4857,6 +4857,25 @@
             "updateApi": 1
           },
           "notes": "- No key needs holding any more. K2 is the next figure, K3 opens Figures (formula, preset, colours, text), K4 or a tap on the picture opens Player.\n- The show has three settings in Player: Auto, Hold and Still. Turning a knob or choosing a figure during Auto holds the show, so it never changes what you have just set.\n- Figures and Player look and work like the panels in Visuals Player.\n- A Still figure rests and sharpens even while the music plays."
+        },
+        "0.7.0": {
+          "version": "0.7.0",
+          "name": "Attractor",
+          "tag": "attractor-v0.7.0",
+          "sourceCommit": "47f209daad4a22ce0272174094a7d0d36c3c4c9a",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/attractor-v0.7.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/attractor-v0.7.0/attractor-0.7.0.vrchapp",
+          "size": 6307983,
+          "sha256": "caff3804838db33caf04dd2e99529607fbc0e341e0b90da871d7575054bf1fbe",
+          "packageDigest": "caff3804838db33caf04dd2e99529607fbc0e341e0b90da871d7575054bf1fbe",
+          "revision": "8e65c61c289e724579fe2abfe262162453b8828ebfc2ce434a27c617881e849a",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- A large output can show the figure in four ways, chosen under Output in Figures: Whole, Three (the same figure from two other sides beside it), Mirror (the figure and its mirror image) or Close (filling the screen from edge to edge)."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+RmlndXJlIHRyYWNlZCBieSBhIGZvcm11bGE8L3RpdGxlPgogIDxwYXRoIGQ9Ik0zMyA4QzE3IDggNyAyMSA4IDM2YzEgMTIgMTEgMjAgMjEgMTYgOC0zIDYtMTIgMy0yMCIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMyA4YzEzIDAgMjMgMTAgMjMgMjQgMCA5LTMgMTctOCAyNC0zLTktOC0xNy0xNi0yNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMiAzMmMtNC02LTExLTctMTQtM3MwIDExIDYgMTEgOS01IDgtOCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgo8L3N2Zz4K",
@@ -4913,7 +4932,7 @@
               },
               {
                 "control": "K3 · Press",
-                "action": "Figures: formula, preset, colours and the text on the picture. E1 moves through the choices, a press of E1 takes one, K3 closes."
+                "action": "Figures: formula, preset, colours, how a large output shows the figure, and the text on the picture. E1 moves through the choices, a press of E1 takes one, K3 closes."
               },
               {
                 "control": "K4 · Press",
@@ -4948,7 +4967,7 @@
           },
           {
             "title": "The picture",
-            "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. Every figure has depth: for a two-line formula it is where each point was one step before. A three-line formula moves smoothly through space and is drawn as one long line wound into its figure. While anything moves the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text."
+            "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. Every figure has depth: for a two-line formula it is where each point was one step before. A three-line formula moves smoothly through space and is drawn as one long line wound into its figure. While anything moves the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text. Output in Figures chooses how: Whole, the one figure; Three, with the same figure seen from two other sides beside it; Mirror, the figure and its mirror image side by side; or Close, so near that it fills the screen from edge to edge. The device screen always shows the one whole figure."
           },
           {
             "title": "Sound",
