@@ -4704,7 +4704,7 @@
     },
     "7456c5e9-8856-4134-90a5-c036a8d8b199": {
       "slug": "attractor",
-      "latest": "0.4.0",
+      "latest": "0.4.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4800,6 +4800,25 @@
             "updateApi": 1
           },
           "notes": "- Two pieces of music come with the App, Strange Loop and Sacred Orbit: hold K4 and the figure moves with the one playing. Hold again for the next piece, then the audio input, then off.\n- The soft light around a figure no longer shows as steps.\n- On the device a figure at rest is drawn at full sharpness again, however coarsely it was drawn while it moved."
+        },
+        "0.4.1": {
+          "version": "0.4.1",
+          "name": "Attractor",
+          "tag": "attractor-v0.4.1",
+          "sourceCommit": "3f0f853ecef31f79bda393918f7fd860b0d197b9",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/attractor-v0.4.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/attractor-v0.4.1/attractor-0.4.1.vrchapp",
+          "size": 4870699,
+          "sha256": "dbe38243120a5e7160461721aa842e5dbf162ed7279efb1d555ff8aa975f8987",
+          "packageDigest": "dbe38243120a5e7160461721aa842e5dbf162ed7279efb1d555ff8aa975f8987",
+          "revision": "7b2be5dc3698004875b89880d3f58f8cca814baf751b44d639e544d364cef26a",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- The soft light around a figure ends evenly, without a faint blocky fringe."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+RmlndXJlIHRyYWNlZCBieSBhIGZvcm11bGE8L3RpdGxlPgogIDxwYXRoIGQ9Ik0zMyA4QzE3IDggNyAyMSA4IDM2YzEgMTIgMTEgMjAgMjEgMTYgOC0zIDYtMTIgMy0yMCIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMyA4YzEzIDAgMjMgMTAgMjMgMjQgMCA5LTMgMTctOCAyNC0zLTktOC0xNy0xNi0yNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMiAzMmMtNC02LTExLTctMTQtM3MwIDExIDYgMTEgOS01IDgtOCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgo8L3N2Zz4K",
