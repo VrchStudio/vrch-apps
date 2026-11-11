@@ -4704,7 +4704,7 @@
     },
     "7456c5e9-8856-4134-90a5-c036a8d8b199": {
       "slug": "attractor",
-      "latest": "0.5.0",
+      "latest": "0.6.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4838,6 +4838,25 @@
             "updateApi": 1
           },
           "notes": "- The App opens in a show: the figure turns, tilts and sways by itself, moves with the music, and goes on to new figures, formulas and colours where the music changes. Hold K3 to stop it and rest.\n- K4 opens Player: music, microphone or line in, or silence; the piece; the show. A speaker on the picture mutes the music and brings it back.\n- The figure follows the music from the first moment, also while muted.\n- Lorenz, Aizawa and Thomas are drawn as one long line wound into the figure.\n- A large output fills its height, and in the show the figure grows past the edges and comes back.\n- K2 held is now the next formula. The formula is no longer played as sound."
+        },
+        "0.6.0": {
+          "version": "0.6.0",
+          "name": "Attractor",
+          "tag": "attractor-v0.6.0",
+          "sourceCommit": "09b0dcf27b5b2f12f435a828cda18fdd71ada2f1",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/attractor-v0.6.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/attractor-v0.6.0/attractor-0.6.0.vrchapp",
+          "size": 6300662,
+          "sha256": "1cf6411221897c997bbfd29e8632b7c46c710f615428ad56a3247f0f2e33de87",
+          "packageDigest": "1cf6411221897c997bbfd29e8632b7c46c710f615428ad56a3247f0f2e33de87",
+          "revision": "216e6b16e2f9193983e33cd87f1f5923ca50b5be349c19440441853a880ce081",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- No key needs holding any more. K2 is the next figure, K3 opens Figures (formula, preset, colours, text), K4 or a tap on the picture opens Player.\n- The show has three settings in Player: Auto, Hold and Still. Turning a knob or choosing a figure during Auto holds the show, so it never changes what you have just set.\n- Figures and Player look and work like the panels in Visuals Player.\n- A Still figure rests and sharpens even while the music plays."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+RmlndXJlIHRyYWNlZCBieSBhIGZvcm11bGE8L3RpdGxlPgogIDxwYXRoIGQ9Ik0zMyA4QzE3IDggNyAyMSA4IDM2YzEgMTIgMTEgMjAgMjEgMTYgOC0zIDYtMTIgMy0yMCIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMyA4YzEzIDAgMjMgMTAgMjMgMjQgMCA5LTMgMTctOCAyNC0zLTktOC0xNy0xNi0yNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMiAzMmMtNC02LTExLTctMTQtM3MwIDExIDYgMTEgOS01IDgtOCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgo8L3N2Zz4K",
@@ -4852,12 +4871,12 @@
                 "action": "The four knobs are a, b, c and d in the formula. Turn one and the whole figure bends."
               },
               {
-                "control": "K3 · Hold",
-                "action": "The show on or off. On, the figure performs by itself with the music. Off, it rests where you leave it and sharpens as the points gather."
+                "control": "K3 · Press",
+                "action": "Figures: choose the formula, one of its presets and the colours."
               },
               {
                 "control": "K4 · Press",
-                "action": "Player: music, microphone or line in, or silence; the piece; the show."
+                "action": "Player: the sound, the piece, and the show (Auto, Hold or Still). A tap on the picture opens it too."
               }
             ]
           },
@@ -4890,23 +4909,15 @@
               },
               {
                 "control": "K2 · Press",
-                "action": "Next preset. The letters glide there, so you see the figure change."
-              },
-              {
-                "control": "K2 · Hold",
-                "action": "Next formula, at its first preset."
+                "action": "Next figure: the next preset of the formula, and after its last the next formula."
               },
               {
                 "control": "K3 · Press",
-                "action": "Next colours."
-              },
-              {
-                "control": "K3 · Hold",
-                "action": "The show on or off."
+                "action": "Figures: formula, preset, colours and the text on the picture. E1 moves through the choices, a press of E1 takes one, K3 closes."
               },
               {
                 "control": "K4 · Press",
-                "action": "Player. E1 moves through the choices, a press of E1 takes one, K4 closes."
+                "action": "Player: sound, piece and show. E1 moves through the choices, a press of E1 takes one, K4 closes."
               }
             ]
           },
@@ -4915,7 +4926,7 @@
             "controls": [
               {
                 "control": "Picture · Tap",
-                "action": "Show or hide the formula, the letters and the number of points."
+                "action": "Open Player."
               },
               {
                 "control": "Picture · Drag",
@@ -4933,7 +4944,7 @@
           },
           {
             "title": "The show",
-            "text": "The App opens in the show. The figure turns and tilts, its letters sway, and the sound moves them. Where the music changes, the letters slide to the next figure of the formula; after three figures the show moves on to the next formula and colours. Turn a knob and the show leaves the figure to you for a while. On a large output the figure slowly grows past the edges and comes back. Hold K3 to stop: the figure stays as it is, rests and sharpens. A shared link opens its one figure at rest."
+            "text": "Player sets how the figure behaves. Auto: it performs by itself. It turns and tilts, its letters sway, the sound moves them, and where the music changes it slides to the next figure; after three figures it moves on to the next formula and colours. Hold: it performs in the same way and stays on this figure. Still: it rests, and sharpens as the points gather. The App opens in Auto. Turn a knob or choose a figure and Auto becomes Hold, so the show never changes what you have just set; choose Auto again to let it go on. On a large output a performing figure slowly grows past the edges and comes back. A shared link opens its one figure Still."
           },
           {
             "title": "The picture",
@@ -4941,7 +4952,7 @@
           },
           {
             "title": "Sound",
-            "text": "Music plays the two pieces that come with the App, Strange Loop and Sacred Orbit, in turn. The figure follows them from the first moment; where a browser allows sound only after a touch or a key, the sound joins then. Muted, the music plays on unheard and the figure keeps time. Mic / Line in follows the audio input instead, which is never played back or kept. Silent leaves the figure alone. The low, middle and high parts of the sound sway a, b and c, and sudden swells nudge d. Choose inputs and outputs and set levels in Menu."
+            "text": "Music plays the two pieces that come with the App, Strange Loop and Sacred Orbit, in turn. A performing figure follows them from the first moment; where a browser allows sound only after a touch or a key, the sound joins then. Muted, the music plays on unheard and the figure keeps time. Mic / Line in follows the audio input instead, which is never played back or kept. Silent plays and follows nothing. The low, middle and high parts of the sound sway a, b and c, and sudden swells nudge d. A Still figure follows no sound. Choose inputs and outputs and set levels in Menu."
           },
           {
             "title": "Saved settings",
