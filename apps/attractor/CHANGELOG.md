@@ -1,5 +1,12 @@
 # Attractor
 
+## 0.6.0
+
+- No key needs holding any more. K2 is the next figure, K3 opens Figures (formula, preset, colours, text), K4 or a tap on the picture opens Player.
+- The show has three settings in Player: Auto, Hold and Still. Turning a knob or choosing a figure during Auto holds the show, so it never changes what you have just set.
+- Figures and Player look and work like the panels in Visuals Player.
+- A Still figure rests and sharpens even while the music plays.
+
 ## 0.5.0
 
 - The App opens in a show: the figure turns, tilts and sways by itself, moves with the music, and goes on to new figures, formulas and colours where the music changes. Hold K3 to stop it and rest.

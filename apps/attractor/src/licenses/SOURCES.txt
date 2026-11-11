@@ -1,0 +1,11 @@
+Bundled resources and their notices:
+
+css/, scripts/, webfonts/: the shared VRCH interface styles, the dialog header and their fonts, copied from VRCH Pages
+by tools/pages_sync.py in the Apps repository.
+Fonts: webfonts/*-LICENSE.txt (SIL Open Font License 1.1); Font Awesome Free icons: css/fontawesome-local.css header.
+
+music/: original pieces made for this App with Suno on a Pro plan (commercial use permitted), kept whole with a
+short fade at the end and encoded as MP3 (128 kbit/s, 48 kHz). tracks.js holds their loudness and section times,
+worked out from the same files by the music tool in the Apps repository.
+  strange-loop.mp3: Strange Loop (Suno 7559b52e-0f05-4072-875f-4c3666d408c4)
+  sacred-orbit.mp3: Sacred Orbit (Suno f5f4eacd-6585-430f-acde-2dec34a99d41)

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Refresh, in an App's source, the files it takes from VRCH Pages.
 
-Visuals Player and Shader Editor run the Pages visuals engine. These files in apps/<app>/src are copies of a Pages
+Visuals Player and Shader Editor run the Pages visuals engine, and Attractor uses the shared panel styles. These
+files in apps/<app>/src are copies of a Pages
 checkout: the scripts/ and css/ files that index.html loads (and the fonts those styles use), the scene catalog with
 its definitions and thumbnails, MediaPipe tracking, and, in Visuals Player, the Visual Settings dialog inside
 index.html. Every other file is the App's own and is edited here. To use another shared script, add its tag to
@@ -35,6 +36,8 @@ APPS = {
                   'models/mediapipe/pose_landmarker-lite-float16-v1.task', 'models/mediapipe/README.md') + FONT_LICENSES,
         'mediapipe': False, 'scenes': 'curated', 'visual_settings': True,
     },
+    # Attractor takes only the look of its Player panel: the shared styles, their fonts and the dialog header.
+    'attractor': {'files': FONT_LICENSES, 'mediapipe': False, 'scenes': None, 'visual_settings': False},
     'shader-editor': {
         'files': ('scripts/vrch_pages_landmark_worker.js', 'models/mediapipe/hand_landmarker-lite-v1.task',
                   'models/mediapipe/face_landmarker-float16-v1.task', 'models/mediapipe/pose_landmarker-lite-float16-v1.task',
@@ -120,6 +123,8 @@ def expected(app, pages, source):
         if PAGES_WASM not in text:
             raise ValueError('The MediaPipe vendor note changed; update APP_WASM in tools/pages_sync.py.')
         files[note] = text.replace(PAGES_WASM, APP_WASM).encode()
+    if not spec['scenes']:
+        return files
     catalog = json.loads((static / 'scenes/v1/catalog.json').read_text())
     chosen = selection(static)['items']
     if spec['scenes'] == 'curated':

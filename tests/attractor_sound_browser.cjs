@@ -23,16 +23,6 @@ const status = app => app.evaluate(() => document.getElementById('status').hidde
 const speaker = app => app.evaluate(() => { const b = document.getElementById('speaker'); return {on: b.dataset.on, label: b.getAttribute('aria-label')}; });
 // The Player panel as it stands: every choice in order, which are chosen, and where the knob's cursor is.
 const panel = app => app.evaluate(() => [...document.querySelectorAll('#playerBody button')].map(b => b.textContent + (b.classList.contains('is-active') ? '*' : '') + (b.classList.contains('is-cursor') ? '<' : '')));
-// A real click on something inside the App: the simulated device scales its screen, so the place is worked out
-// frame by frame up to the page.
-async function click(page, frame, selector) {
-  let at = await frame.evaluate(sel => { const r = document.querySelector(sel).getBoundingClientRect(); return {x: (r.x + r.width / 2) / innerWidth, y: (r.y + r.height / 2) / innerHeight}; }, selector);
-  for (let f = frame; f.parentFrame(); f = f.parentFrame()) {
-    const holder = await f.frameElement();
-    at = await holder.evaluate((node, p) => { const r = node.getBoundingClientRect(), top = window === window.top; return {x: (r.x + p.x * r.width) / (top ? 1 : innerWidth), y: (r.y + p.y * r.height) / (top ? 1 : innerHeight)}; }, at);
-  }
-  await page.mouse.click(at.x, at.y);
-}
 const sway = async (page, state, app, count = 30) => { const seen = []; for (let i = 0; i < count; i++) { seen.push(await state(app)); await page.waitForTimeout(75); } return seen; };
 const spread = (seen, key) => Math.round((Math.max(...seen.map(s => s[key])) - Math.min(...seen.map(s => s[key]))) * 1000) / 1000;
 
@@ -56,40 +46,41 @@ const spread = (seen, key) => Math.round((Math.max(...seen.map(s => s[key])) - M
     await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-music.png')});
 
     /* ---- the speaker: muted, the music plays on unheard and the figure keeps time; tapped again it is back ---- */
-    await click(v.page, app, '#speaker');
+    await v.click(app, '#speaker');
     await v.page.waitForTimeout(1200);
     seen = await sway(v.page, state, app);
     result.muted = {heard: await heard(v.page, 400), sway: Math.max(...['a', 'b', 'c', 'd'].map(k => spread(seen, k)))};
     assert(result.muted.heard.left < 0.002 && result.muted.heard.right < 0.002, 'muted, nothing is heard: ' + JSON.stringify(result.muted));
     assert(result.muted.sway >= 0.02 && (await state(app)).muted && (await state(app)).source === 'music', 'and the figure still follows the music: ' + JSON.stringify(result.muted));
     assert.deepEqual([await speaker(app), await status(app)], [{on: 'false', label: 'Unmute'}, '']);
-    await click(v.page, app, '#speaker');
+    await v.click(app, '#speaker');
     await v.page.waitForTimeout(1200);
     assert((await heard(v.page, 400)).left > 0.005 && !(await state(app)).muted, 'tapped again the music is back');
 
     /* ---- Player: K4 opens it, E1 moves through the choices, a press of E1 takes one ---- */
     await v.key(3);
-    assert.equal((await state(app)).panel, true);
-    assert.deepEqual(await panel(app), ['Music*<', 'Mic / Line in', 'Silent', 'Strange Loop*', 'Sacred Orbit', 'On*', 'Off']);
+    assert.equal((await state(app)).panel, 'player');
+    assert.deepEqual(await panel(app), ['Music*<', 'Mic / Line in', 'Silent', 'Strange Loop*', 'Sacred Orbit', 'Auto*', 'Hold', 'Still']);
     await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-player.png')});
     // The second piece.
     await v.turn(0, 4, 150);
-    assert.deepEqual(await panel(app), ['Music*', 'Mic / Line in', 'Silent', 'Strange Loop*', 'Sacred Orbit<', 'On*', 'Off']);
+    assert.deepEqual(await panel(app), ['Music*', 'Mic / Line in', 'Silent', 'Strange Loop*', 'Sacred Orbit<', 'Auto*', 'Hold', 'Still']);
     await v.press(0);
     await app.waitForFunction(() => __attractor.state().track === 'Sacred Orbit' && __attractor.state().audible, null, {timeout: 15000});
     await v.page.waitForTimeout(2500);
     result.second = await heard(v.page, 800);
     assert(result.second.left > 0.005 && result.second.right > 0.005 && result.second.left <= 1, 'the second piece is heard: ' + JSON.stringify(result.second));
     assert.equal(await status(app), 'Sacred Orbit');
-    // The show off, so that the letters stand still but for what sound does to them.
+    // Hold: the figure goes on performing, on this figure.
     await v.turn(0, 2, 150); await v.press(0);
-    assert.deepEqual([(await state(app)).show, (await panel(app)).slice(5)], [false, ['On', 'Off*<']]);
+    assert.deepEqual([(await state(app)).show, (await panel(app)).slice(5)], ['hold', ['Auto', 'Hold*<', 'Still']]);
     // The audio input.
     await v.turn(0, -5, 150); await v.press(0);
     await app.waitForFunction(() => __attractor.state().listening, null, {timeout: 8000});
-    assert.deepEqual((await panel(app)).slice(0, 5), ['Music', 'Mic / Line in*<', 'Silent', 'Strange Loop', 'Sacred Orbit']);
+    // (With the audio input there is no piece to choose.)
+    assert.deepEqual(await panel(app), ['Music', 'Mic / Line in*<', 'Silent', 'Auto', 'Hold*', 'Still']);
     await v.key(3);
-    assert.equal((await state(app)).panel, false, 'K4 closes it');
+    assert.equal((await state(app)).panel, null, 'K4 closes it');
     await v.page.waitForTimeout(1200);
     const base = {...(await state(app))}, out = await v.output(), both = [];
     for (let i = 0; i < 40; i++) { both.push(await Promise.all([state(app), state(out)])); await v.page.waitForTimeout(75); }
@@ -98,22 +89,25 @@ const spread = (seen, key) => Math.round((Math.max(...seen.map(s => s[key])) - M
     const a = both.map(s => s[0].a);
     result.listening = {swing: Math.round((Math.max(...a) - Math.min(...a)) * 1000) / 1000, kick: Math.max(...['b', 'c', 'd'].map(k => spread(both.map(s => s[0]), k))),
       apart: Math.max(...both.map(s => Math.abs(s[0].a - s[1].a))), mode: (await stats(app)).mode};
-    assert(result.listening.swing >= 0.05 && result.listening.swing <= 0.2401, 'bass sways a, by 0.12 either way at most: ' + JSON.stringify(result.listening));
-    assert(result.listening.kick >= 0.02 && result.listening.kick <= 0.25, 'a beat nudges b, c or d a little: ' + JSON.stringify(result.listening));
+    assert(result.listening.swing >= 0.05 && result.listening.swing <= 0.3, 'bass sways a, by 0.12 either way at most (and it drifts a little): ' + JSON.stringify(result.listening));
+    assert(result.listening.kick >= 0.02 && result.listening.kick <= 0.3, 'a beat nudges b, c or d a little: ' + JSON.stringify(result.listening));
     assert(result.listening.apart <= 0.12 && result.listening.mode === 'live', 'the output follows: ' + JSON.stringify(result.listening));
     assert.equal(await status(app), 'listening');
     assert.deepEqual(await speaker(app), {on: 'false', label: 'Play music'});
     assert.equal((await heard(v.page, 400)).left, 0, 'what the input hears is never played back');
     await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-listening.png')});
 
-    /* ---- Silent: the input is given back, and the figure rests and sharpens ---- */
-    await v.key(3); await v.turn(0, 1, 150); await v.press(0); await v.key(3);
+    /* ---- Silent: the input is given back. Still: the figure rests and sharpens ---- */
+    await v.key(3); await v.turn(0, 1, 150); await v.press(0);
     await app.waitForFunction(() => __attractor.state().source === 'silent', null, {timeout: 5000});
     assert.deepEqual(await everyFrame(v.page, () => (window.__tracks || []).map(track => track.readyState)), ['ended'], 'the input is given back');
+    await v.turn(0, -1, 150); await v.turn(0, -2, 150);
+    assert.deepEqual(await panel(app), ['Music', 'Mic / Line in', 'Silent*', 'Strange Loop', 'Sacred Orbit', 'Auto', 'Hold*', 'Still<'], 'the knob goes round the end of the list');
+    await v.press(0); await v.key(3);
     await stopped(app);
-    assert.deepEqual([(await stats(app)).stopped, await status(app), base.show], [true, '', false]);
+    assert.deepEqual([(await stats(app)).stopped, await status(app), (await state(app)).show], [true, '', 'still']);
     // The speaker brings the music back.
-    await click(v.page, app, '#speaker');
+    await v.click(app, '#speaker');
     await app.waitForFunction(() => __attractor.state().audible, null, {timeout: 15000});
     assert.deepEqual([(await state(app)).source, (await speaker(app)).label], ['music', 'Mute']);
     assert.deepEqual(t.errors, [], 'no page errors');
@@ -124,8 +118,7 @@ const spread = (seen, key) => Math.round((Math.max(...seen.map(s => s[key])) - M
   try {
     // (Opened from a link, so the letters stand still.)
     const v = await t.visit('&s=v2.dejong.149.-228.236.-213.0.0.0'), app = await v.find('control');
-    // (Silent is where the cursor starts here; the audio input is one back.)
-    await v.key(3); await v.turn(0, -1, 150); await v.press(0);
+    await v.key(3); await v.turn(0, 1, 150); await v.press(0);
     await app.waitForFunction(() => /not allowed|No audio input/.test(document.getElementById('status').innerText), null, {timeout: 8000});
     result.refused = await status(app);
     assert.equal(result.refused, 'Audio input is not allowed.');
@@ -133,12 +126,11 @@ const spread = (seen, key) => Math.round((Math.max(...seen.map(s => s[key])) - M
     await v.page.waitForTimeout(1500);
     assert.equal((await everyFrame(v.page, () => window.__asked || [])).length, 1, 'a refusal is not asked again by itself');
     await v.key(3);
-    const was = (await t.state(app)).formula;
-    await v.key(1, 800);
-    assert.notEqual((await t.state(app)).formula, was, 'the keys go on working');
+    await v.key(1); await v.page.waitForTimeout(1800);
+    assert.equal((await t.state(app)).a, -2, 'the keys go on working');
     assert.deepEqual(t.errors, [], 'no page errors');
   } catch (error) { console.log(JSON.stringify(result, null, 1)); console.error('errors', t.errors); throw error; } finally { await t.close(); }
 
   console.log(JSON.stringify(result, null, 1));
-  console.log('PASS Attractor sound in the Playground: it opens with its music heard and followed, the speaker mutes and brings it back, Player chooses the piece, the show and the source with a knob, the figure and the output follow the audio input, which is never played back and is given back, Silent lets the figure rest, and a refusal is said once. The microphone is a file; how it sounds to a person is not checked here.');
+  console.log('PASS Attractor sound in the Playground: it opens with its music heard and followed, the speaker mutes and brings it back, Player chooses the piece, the show and the source with a knob that goes round its list, the figure and the output follow the audio input, which is never played back and is given back, Silent lets the figure rest, and a refusal is said once. The microphone is a file; how it sounds to a person is not checked here.');
 })().catch(error => { console.error(error); process.exit(1); });

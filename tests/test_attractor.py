@@ -12,6 +12,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SLUG = 'attractor'
 SRC = ROOT / 'apps' / SLUG / 'src'
+SHARED = ('css', 'scripts', 'webfonts')
 spec = importlib.util.spec_from_file_location('apps', ROOT / 'tools/apps.py')
 apps = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(apps)
@@ -56,16 +57,18 @@ def advance(formula, f, p, k):
 class Attractor(unittest.TestCase):
     def setUp(self):
         self.manifest = json.loads((SRC / 'app.json').read_text())
-        self.text = {path.relative_to(SRC).as_posix(): path.read_text() for path in SRC.rglob('*') if path.is_file() and path.suffix != '.mp3'}
+        # The App's own text files. (css/, scripts/ and webfonts/ are the shared VRCH interface files, copied from Pages.)
+        self.own = [path for path in SRC.rglob('*') if path.is_file() and path.suffix != '.mp3' and path.relative_to(SRC).parts[0] not in SHARED]
+        self.text = {path.relative_to(SRC).as_posix(): path.read_text() for path in self.own}
 
-    def test_the_code_is_at_most_0_3_megabytes_and_the_package_6(self):
-        # The music is the only large part (two pieces); everything else stays small.
-        self.assertLessEqual(sum(path.stat().st_size for path in SRC.rglob('*') if path.is_file() and path.suffix != '.mp3'), int(0.3 * 1024 * 1024))
+    def test_the_code_is_at_most_0_3_megabytes_and_the_package_8(self):
+        # The music (two pieces) and the shared interface files are the large parts; the App's own code stays small.
+        self.assertLessEqual(sum(path.stat().st_size for path in self.own), int(0.3 * 1024 * 1024))
         self.assertLessEqual(len([path for path in SRC.rglob('*.mp3')]), 2)
         self.assertEqual(sorted(path.relative_to(SRC).as_posix() for path in SRC.rglob('*.mp3')), sorted(track['file'] for track in tracks()))
         with tempfile.TemporaryDirectory() as temporary:
             package, release = apps.build(SLUG, output=Path(temporary), source_commit='0' * 40)
-            self.assertLessEqual(package.stat().st_size, 6 * 1024 * 1024)
+            self.assertLessEqual(package.stat().st_size, 8 * 1024 * 1024)
             self.assertEqual(release['size'], package.stat().st_size)
 
     def test_declares_controls_sound_and_the_output_picture(self):
@@ -89,7 +92,7 @@ class Attractor(unittest.TestCase):
             links = [link for link in re.findall(r'(?:https?:)?//[\w.-]+\.\w+[^\s"\']*', text) if not link.startswith('http://www.w3.org/')]
             self.assertEqual(links, [], path)
             self.assertNotIn('Math.random', text, path)
-        self.assertEqual(re.findall(r'<script[^>]*src="([^"]+)"', self.text['index.html']), ['/apps/sdk/apps-v1.js', 'formulas.js', 'thread.js', 'picture.js', 'tracks.js', 'music.js', 'app.js'])
+        self.assertEqual(re.findall(r'<script[^>]*src="([^"]+)"', self.text['index.html']), ['/apps/sdk/apps-v1.js', 'scripts/vrch_pages_dialogs.js', 'formulas.js', 'thread.js', 'picture.js', 'tracks.js', 'music.js', 'app.js'])
 
     def test_the_source_is_not_packed(self):
         # (tracks.js is data written by the music tool.)

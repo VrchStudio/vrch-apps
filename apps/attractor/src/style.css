@@ -1,39 +1,40 @@
-*{box-sizing:border-box}
+/* The shared VRCH styles (css/) give the panels and the speaker their look, as in Visuals Player. What follows is the
+   App's own: the picture, the text over it, and where the shared pieces sit. */
 html,body{margin:0;height:100%;overflow:hidden;background:#000}
-body{-webkit-user-select:none;user-select:none;touch-action:none;font:11px/1.55 ui-monospace,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;color:#c4c6c2}
-main{position:relative;height:100%;margin-left:var(--inset-left,0px);touch-action:none}
+body{-webkit-user-select:none;user-select:none;touch-action:none}
+main{position:relative;height:100%;margin-left:var(--inset-left,0px);touch-action:none;background:#000}
 #picture{position:absolute;inset:0;width:100%;height:100%;display:block}
-#corner{position:absolute;left:8px;top:8px;max-width:calc(100% - 64px);padding:7px 10px 8px;border-radius:7px;background:rgba(12,13,16,.62);border:1px solid rgba(255,255,255,.09);pointer-events:none}
-pre{margin:0;font:inherit;white-space:pre-wrap}
-#letters,#count{font-size:10px;color:#8b8e8a}
-#letters{margin-top:5px}
+#corner{position:absolute;left:8px;top:8px;max-width:calc(100% - 72px);padding:7px 10px 8px;border-radius:7px;background:rgba(12,13,16,.62);border:1px solid rgba(255,255,255,.09);pointer-events:none;font:11px/1.55 ui-monospace,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;color:#c4c6c2}
+#corner pre{margin:0;padding:0;border:0;background:none;font:inherit;color:inherit;white-space:pre-wrap}
+#corner #letters,#corner #count{font-size:10px;color:#8b8e8a}
+#corner #letters{margin-top:5px}
 #flag,#status{margin:5px 0 0;font-size:10px;color:#c39a62}
 #status{color:#8b8e8a}
-#text+#status,#text+#flag{margin-top:5px}
 #text[hidden]+#status,#text[hidden]+#flag{margin-top:0}
-#notice{position:absolute;inset:0;margin:auto;height:2em;text-align:center;color:#787b77}
+#notice{position:absolute;inset:0;margin:auto;height:2em;text-align:center;font:11px/1.55 ui-monospace,Menlo,Consolas,monospace;color:#787b77}
 [hidden]{display:none!important}
-/* The speaker: the one control on the picture. Pink while the music is heard; white and crossed out when it is not. */
-#speaker{position:absolute;top:8px;right:8px;z-index:2;display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid rgba(255,255,255,.16);border-radius:50%;background:rgba(0,0,0,.45);color:rgba(255,255,255,.85);cursor:pointer;transition:color .2s,border-color .2s,opacity .2s}
-#speaker svg{width:20px;height:20px;fill:currentColor}
-#speaker .off{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
-#speaker[data-on=true]{border-color:#c70f73;color:#ff6bbd}
-#speaker:is([data-on=true],[data-waiting=true]) .off,#speaker:not([data-on=true],[data-waiting=true]) .on{display:none}
-#speaker[data-waiting=true]{animation:wait 1.2s ease-in-out infinite}
-@keyframes wait{50%{opacity:.45}}
-@media(prefers-reduced-motion:reduce){#speaker[data-waiting=true]{animation:none;opacity:.6}}
-:root[data-panel=open] #speaker{display:none}
-/* Player: a sheet down the right side. */
-#player{position:absolute;top:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;width:min(300px,84vw);background:rgba(14,15,18,.95);border-left:1px solid #383838;color:#e8e8e6;font:13px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-#player header{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 14px;border-bottom:1px solid #383838;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
-#playerClose{width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;font-size:22px;line-height:1;cursor:pointer}
-#playerBody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
-.row{padding:10px 12px 12px;border-bottom:1px solid #383838}
-.row__title{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#9a9c98}
-.row__choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;margin-top:8px}
-.row button{min-height:44px;padding:6px 4px;border:1px solid #505050;border-radius:6px;background:#1b1c1f;color:#e8e8e6;font:inherit;font-size:12px;cursor:pointer}
-.row button.is-cursor{border-color:#c70f73;background:#242424}
-.row button.is-active{border-color:#c70f73;background:#c70f73;color:#fff}
-.row button.is-active.is-cursor{outline:2px solid #ff6bbd;outline-offset:1px}
-:root[data-role=output] :is(#corner,#notice,#speaker,#player){display:none}
+/* Panels are the shared sheet down the right side, full height, as in Visuals Player. */
+.player-panel{padding:0;background:transparent;align-items:stretch;justify-content:flex-end}
+.player-panel .scene-picker-dialog{width:min(320px,82vw);max-width:none;height:100%;max-height:none;border-radius:0;box-shadow:none}
+.player-panel__body{flex:1;min-height:0;padding:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin}
+.player-row{padding:8px 10px 10px;border-bottom:1px solid var(--vrch-line)}
+.player-row .scene-param-row__heading{min-height:22px}
+.player-row .scene-param-row__value{color:var(--vrch-text-muted)}
+.player-row .ui-grid-btn-group{margin-top:6px}
+.player-row .ui-grid-btn{min-height:44px}
+/* The E1 cursor, shown with the control chrome that hover uses. */
+.player-row .ui-grid-btn.is-cursor:not(.is-active){border-color:var(--vrch-theme-border);background:var(--vrch-surface-hover)}
+@media(max-width:380px){.player-panel .scene-picker-dialog{width:90vw}}
+/* The only control on the picture: the speaker, in the corner, out of the way while a panel is open. Pink means the
+   music is heard; off is white with a cross (muted, Silent or Mic / Line in). The bar owns the whole corner, padding
+   included: a finger lands lower than it aims. */
+.player__quick{position:fixed;top:0;right:0;z-index:2;display:flex;gap:8px;padding:10px 10px 24px 12px}
+.player__quick-btn{position:relative;display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid rgba(255,255,255,.16);border-radius:50%;background:rgba(0,0,0,.45);color:rgba(255,255,255,.85);font-size:16px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:background-color .2s,color .2s,border-color .2s,opacity .2s}
+.player__quick-btn:hover{background:rgba(0,0,0,.65);color:#fff}
+.player__quick-btn[data-on=true]{border-color:var(--vrch-theme-border);color:var(--vrch-theme-text)}
+.player__quick-btn[data-state=starting]{cursor:progress;animation:player-quick-wait 1.2s ease-in-out infinite}
+@keyframes player-quick-wait{50%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){.player__quick-btn[data-state=starting]{animation:none;opacity:.6}}
+body[data-open]:not([data-open='']) .player__quick{display:none}
+:root[data-role=output] :is(#corner,#notice,.player__quick,.player-panel){display:none!important}
 :root[data-role=output] main{margin:0}

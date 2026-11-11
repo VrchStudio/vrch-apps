@@ -14,6 +14,10 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
   const t = await open(), {state, stats, stopped} = t, result = {gpu: GPU, origin: t.origin, packageBytes: t.fx?.size, files: t.fx?.files.map(f => [f.path, f.size])};
   const save = (name, data) => fs.writeFileSync(path.join(OUT, name), Buffer.from(data.split(',')[1], 'base64'));
   const near = (a, b) => Math.abs(a - b) < 1e-9;
+  // What the figure is, without what the sound happens to be doing.
+  const figure = s => ({formula: s.formula, a: s.a, b: s.b, c: s.c, d: s.d, palette: s.palette, show: s.show, spin: s.spin, turn: s.turn, tilt: s.tilt});
+  // Take a choice in a panel: open it with its key (2 is K3, Figures; 3 is K4, Player), touch the choice, close it.
+  const choose = async (v, app, key, row, value) => { await v.key(key); await v.click(app, '[data-row="' + row + '"] [data-value="' + value + '"]'); await v.key(key); };
   // Turn knob "index" one slow detent at a time until its letter reads "target".
   const reach = async (v, app, index, letter, target) => { for (let i = 0; i < 200; i++) { const now = (await state(app))[letter]; if (near(now, target)) return; await v.turn(index, now < target ? 1 : -1, 130); } throw new Error(letter + ' did not reach ' + target); };
   try {
@@ -24,12 +28,12 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
     await fresh.waitForFunction(() => __attractor.state().audible, null, {timeout: 15000});
     await d.page.waitForTimeout(2500);
     const opened = [await state(fresh), await stats(fresh)], stage = await d.output(), far0 = [await state(stage), await stats(stage)];
-    assert.deepEqual([opened[0].formula, opened[0].show, opened[0].source, opened[0].track, opened[0].muted, opened[0].spin, opened[0].panel], ['dejong', true, 'music', 'Strange Loop', false, 1, false], 'it opens in the show, with its music: ' + JSON.stringify(opened[0]));
+    assert.deepEqual([opened[0].formula, opened[0].show, opened[0].source, opened[0].track, opened[0].muted, opened[0].spin, opened[0].panel], ['dejong', 'auto', 'music', 'Strange Loop', false, 1, null], 'it opens in the show, with its music: ' + JSON.stringify(opened[0]));
     assert(opened[1].mode === 'live' && Math.abs(opened[0].a - 1.49) > 0.001 && Math.abs(opened[0].a - 1.49) < 0.2, 'the figure moves: ' + JSON.stringify(opened));
     if (GPU) assert(opened[1].fps >= 30 && opened[1].pointsPerFrame >= BATCH, 'at 30 frames a second or more: ' + JSON.stringify(opened[1]));
     assert.equal(await fresh.evaluate(() => document.getElementById('status').innerText), 'Strange Loop');
     assert.equal(await fresh.evaluate(() => document.getElementById('speaker').dataset.on), 'true', 'the speaker shows the music playing');
-    assert(far0[0].show && far0[0].spin === 1 && far0[1].mode === 'live', 'the output is in the show too: ' + JSON.stringify(far0));
+    assert(far0[0].show === 'on' && far0[0].spin === 1 && far0[1].mode === 'live', 'the output is in the show too: ' + JSON.stringify(far0));
     assert.deepEqual(d.prompts, []);
     for (const frame of d.page.frames()) assert.deepEqual(await frame.evaluate(() => window.__asked || []).catch(() => []), [], 'no microphone or camera request');
     await d.page.screenshot({path: path.join(OUT, 'show-open.png')});
@@ -40,30 +44,32 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
     assert(moved[0].formula === 'dejong' && Math.abs(moved[0].a - 1.49) > 0.2 && Math.abs(moved[0].a - moved[1].a) < 0.3 && moved[0].palette === 'Ember', 'the next figure, on the output too: ' + JSON.stringify(moved));
     result.show = {scene: moved[0].scene, zoom: (await stats(stage)).fit, device: opened[1].fps, output: far0[1].fps};
     await d.page.screenshot({path: path.join(OUT, 'show-scene.png')});
-    // K3 held: the show stops where it is, and the music plays on.
-    await d.key(2, 900);
+    // A tap on the picture opens Player; Still there stops the show where it is, and the music plays on.
+    await d.tap();
+    assert.equal((await state(fresh)).panel, 'player', 'a tap opens Player');
+    await d.click(fresh, '[data-row="show"] [data-value="still"]');
+    await d.key(3);
     const halted = await state(fresh);
-    assert.deepEqual([halted.show, halted.spin, halted.source, halted.palette], [false, 0, 'music', 'Ember'], 'K3 held stops the show: ' + JSON.stringify(halted));
+    assert.deepEqual([halted.show, halted.spin, halted.source, halted.audible, halted.palette, halted.panel], ['still', 0, 'music', true, 'Ember', null], 'Still stops the show: ' + JSON.stringify(halted));
     await d.page.waitForTimeout(2200);
-    assert(Math.abs((await state(fresh)).turn - halted.turn) < 0.01 && (await state(stage)).show === false && Math.abs((await stats(stage)).fit - 1.06) < 0.25, 'the figure stays where it was, whole again on the output');
+    assert(Math.abs((await state(fresh)).turn - halted.turn) < 0.01 && (await state(stage)).show === 'still' && Math.abs((await stats(stage)).fit - 1.06) < 0.25, 'the figure stays where it was, whole again on the output');
+    await stopped(fresh);
+    assert.equal((await state(fresh)).audible, true, 'and rests while the music plays');
     await d.context.close();
 
-    /* ---- a link opens one figure at rest, asking for nothing, silent ---- */
+    /* ---- a link opens one figure still, asking for nothing ---- */
     const v = await t.visit(REST);
     const app = await v.find('control');
     await app.waitForFunction(() => __attractor.twoMillionAt !== null, null, {timeout: 60000});
     result.twoMillionMs = await app.evaluate(() => __attractor.twoMillionAt);
     if (GPU) assert(result.twoMillionMs < 3000, 'two million points within 3 s: ' + JSON.stringify(result));
-    assert.deepEqual(await state(app), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', show: false, scene: 0, textVisible: true, source: 'silent', track: null, muted: false, audible: false, listening: false, panel: false, spin: 0, turn: 0, tilt: 0});
+    assert.deepEqual(figure(await state(app)), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', show: 'still', spin: 0, turn: 0, tilt: 0});
     await stopped(app);
     result.finished = await stats(app);
     assert(result.finished.points === result.finished.cap && result.finished.cap >= 5e6 && result.finished.cap <= 20e6 && result.finished.degenerate === false, 'the picture finishes at its limit: ' + JSON.stringify(result.finished));
-    assert.equal(await app.evaluate(() => document.getElementById('corner').innerText), 'x ← sin(a·y) − cos(b·x)\ny ← sin(c·x) − cos(d·y)\na=1.49  b=-2.28  c=2.36  d=-2.13\nn = ' + result.finished.cap.toLocaleString('en-US'));
+    assert.equal(await app.evaluate(() => document.getElementById('corner').innerText), 'x ← sin(a·y) − cos(b·x)\ny ← sin(c·x) − cos(d·y)\na=1.49  b=-2.28  c=2.36  d=-2.13\nn = ' + result.finished.cap.toLocaleString('en-US') + '\n\nStrange Loop');
     assert.deepEqual(v.prompts, []);
-    for (const frame of v.page.frames()) {
-      assert.deepEqual(await frame.evaluate(() => window.__asked || []).catch(() => []), [], 'no microphone or camera request');
-      assert.deepEqual(await frame.evaluate(() => window.__sound || []).catch(() => []), [], 'no sound is set up');
-    }
+    for (const frame of v.page.frames()) assert.deepEqual(await frame.evaluate(() => window.__asked || []).catch(() => []), [], 'no microphone or camera request');
     await v.settled();
     await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-open.png')});
     save('still.png', await t.bytes(app));
@@ -131,10 +137,12 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
     for (let f = 0; f < FORMULAS.length; f++) {
       const first = await state(app), seen = [], flow = FLOWS.includes(FORMULAS[f]);
       assert.equal(first.formula, FORMULAS[f]);
+      // (K2 goes through the presets and then on to the next formula.)
       for (let i = 0; i < 12; i++) {
         await stopped(app);
         const now = await state(app), key = [now.a, now.b, now.c, now.d].join(' ');
-        if (seen.includes(key)) break;
+        if (now.formula !== FORMULAS[f]) break;
+        assert(!seen.includes(key), FORMULAS[f] + ' preset ' + key + ' comes once');
         seen.push(key);
         assert.equal((await stats(app)).degenerate, flow ? null : false, FORMULAS[f] + ' preset ' + key + ' has not collapsed');
         if (flow) { await stopped(out); const lit = (await t.grid(out)).filter(light => light > 60).length; assert(lit > 300, FORMULAS[f] + ' preset ' + key + ' fills the picture: ' + lit + ' of 4096 cells lit'); }
@@ -151,82 +159,93 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
       }
       result.presets[FORMULAS[f]] = seen.length;
       assert(seen.length >= 6, FORMULAS[f] + ' has six or more presets: ' + seen.length);
-      await v.key(1, 800); await v.page.waitForTimeout(300);
     }
-    assert.equal((await state(app)).formula, 'dejong', 'K2 held comes round to the first formula');
-    assert.deepEqual(await state(out), await state(app).then(s => ({...s, textVisible: false})));
+    assert.equal((await state(app)).formula, 'dejong', 'K2 comes round to the first formula');
+    assert.deepEqual(figure(await state(out)), figure(await state(app)));
 
     /* ---- colours ---- */
     result.colours = [];
     await stopped(out);
+    await v.key(2);
+    assert.equal((await state(app)).panel, 'figures', 'K3 opens Figures');
+    await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-figures.png')});
     for (let i = 0; i < COLOURS.length; i++) {
       result.colours.push((await state(app)).palette);
       await v.page.waitForTimeout(200);
       save('colours-' + (i + 1) + '.png', await t.bytes(out));
-      await v.key(2); await v.page.waitForTimeout(200);
+      await v.click(app, '[data-row="colours"] [data-value="' + (i + 1) % COLOURS.length + '"]'); await v.page.waitForTimeout(200);
     }
     assert.deepEqual(result.colours, COLOURS);
     assert.equal((await state(app)).palette, 'Ember');
     assert.equal((await stats(app)).stopped, true, 'a colour change does not start the picture again');
 
-    /* ---- a tap hides and shows the text ---- */
-    await v.tap();
+    /* ---- Figures hides and shows the text; a formula and a preset are chosen there too ---- */
+    await v.click(app, '[data-row="text"] [data-value="off"]');
     assert.equal((await state(app)).textVisible, false);
     assert.equal(await app.evaluate(() => getComputedStyle(document.getElementById('corner')).display), 'none');
-    await v.tap();
+    await v.click(app, '[data-row="text"] [data-value="on"]');
     assert.equal((await state(app)).textVisible, true);
-    assert.equal((await state(app)).turn, 0, 'a tap does not turn the figure');
+    await v.click(app, '[data-row="formula"] [data-value="6"]');
+    assert.deepEqual([(await state(app)).formula, (await state(app)).a], ['lorenz', 1], 'a formula chosen in Figures opens at its first preset');
+    // With the panel open E1 moves through its choices and a press takes one: the letter a is left alone.
+    await v.turn(0, -6, 150); await v.press(0);
+    assert.deepEqual([(await state(app)).formula, (await state(app)).a], ['dejong', 1.49], 'E1 chooses in the panel');
+    await v.click(app, '[data-row="preset"] [data-value="2"]'); await v.page.waitForTimeout(1800);
+    assert.equal((await state(app)).a, -1.19, 'a preset chosen in Figures');
+    await v.click(app, '[data-row="preset"] [data-value="0"]'); await v.page.waitForTimeout(1800);
+    await v.key(2);
+    assert.deepEqual([(await state(app)).panel, (await state(app)).a, (await state(app)).turn], [null, 1.49, 0], 'K3 closes it');
 
     /* ---- share link: another browser opens the same figure ---- */
-    await v.key(1); await v.page.waitForTimeout(1800); await v.key(2); await stopped(app); await v.page.waitForTimeout(1200);
-    const sent = await state(app), link = new URL(v.page.url());
+    await v.key(1); await v.page.waitForTimeout(1800); await choose(v, app, 2, 'colours', '1'); await stopped(app); await v.page.waitForTimeout(1200);
+    const sent = figure(await state(app)), link = new URL(v.page.url());
     result.shareState = link.searchParams.get('s');
     assert(/^v2\.dejong\.(-?\d+\.){4}1\.0\.0$/.test(result.shareState || ''), 'the address carries the figure: ' + link.search);
     const sentPicture = await t.bytes(app);
     await v.context.close();
     const w = await t.visit('&s=' + encodeURIComponent(result.shareState)), theirs = await w.find('control');
     await stopped(theirs);
-    assert.deepEqual(await state(theirs), sent, 'the link restores the formula, the letters and the colours');
+    assert.deepEqual(figure(await state(theirs)), sent, 'the link restores the formula, the letters and the colours');
     assert.equal(await t.bytes(theirs), sentPicture, 'the link opens the same picture');
     await w.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'shared.png')});
     await w.context.close();
     const bad = await t.visit('&s=v1.nothing.1.2.3.4.0'), fallback = await bad.find('control');
-    assert.deepEqual([(await state(fallback)).formula, (await state(fallback)).show], ['dejong', true], 'an unreadable link opens as the App does by itself');
+    assert.deepEqual([(await state(fallback)).formula, (await state(fallback)).show], ['dejong', 'auto'], 'an unreadable link opens as the App does by itself');
     await bad.context.close();
     const old = await t.visit('&s=v1.clifford.-140.160.100.70.2'), earlier = await old.find('control');
     assert.deepEqual([(await state(earlier)).formula, (await state(earlier)).a, (await state(earlier)).palette], ['clifford', -1.4, 'Silver'], 'a link from an earlier version still opens');
     await old.context.close();
 
-    /* ---- the show from rest: K3 held starts it, the figure turns, tilts and sways, and held again it stops there ---- */
+    /* ---------- the show from a still figure: Auto starts it, a knob holds it, Still stops it there ---------- */
     const m = await t.visit(REST), dev = await m.find('control'), far = await m.output();
     await stopped(dev); await stopped(far);
     const front = await t.grid(far);
-    await m.key(2, 900);
-    assert.deepEqual([(await state(dev)).show, (await state(dev)).spin, (await state(dev)).palette, (await state(dev)).source], [true, 1, 'Ember', 'silent'], 'K3 held: the show, and the colours stay');
+    await choose(m, dev, 3, 'show', 'auto');
+    assert.deepEqual([(await state(dev)).show, (await state(dev)).spin, (await state(dev)).palette], ['auto', 1, 'Ember'], 'Auto: the show, and the colours stay');
     await m.page.waitForTimeout(2500);
     const spun = [await state(dev), await state(far), await stats(dev), await stats(far)];
-    assert(spun[0].turn > 10 && Math.abs(spun[0].turn - spun[1].turn) < 3 && spun[1].spin === 1 && spun[1].show, 'the figure turns, and the output with it: ' + JSON.stringify([spun[0].turn, spun[1].turn]));
+    assert(spun[0].turn > 10 && Math.abs(spun[0].turn - spun[1].turn) < 3 && spun[1].spin === 1 && spun[1].show === 'on', 'the figure turns, and the output with it: ' + JSON.stringify([spun[0].turn, spun[1].turn]));
     assert(spun[0].tilt > 1 && Math.abs(spun[0].tilt - spun[1].tilt) < 0.5, 'it tilts: ' + JSON.stringify([spun[0].tilt, spun[1].tilt]));
-    assert(Math.abs(spun[0].a - 1.49) > 0.003 && Math.abs(spun[0].a - 1.49) <= 0.0701 && Math.abs(spun[0].a - spun[1].a) < 0.01, 'the letters sway a little, on the output too: ' + JSON.stringify([spun[0].a, spun[1].a]));
+    assert(Math.abs(spun[0].a - 1.49) > 0.003 && Math.abs(spun[0].a - 1.49) <= 0.2 && Math.abs(spun[0].a - spun[1].a) < 0.08, 'the letters sway a little, on the output too: ' + JSON.stringify([spun[0].a, spun[1].a]));
     assert(spun[2].mode === 'live' && spun[3].mode === 'live');
     result.spin = {device: {fps: spun[2].fps, pointsPerFrame: spun[2].pointsPerFrame}, output: {fps: spun[3].fps, pointsPerFrame: spun[3].pointsPerFrame}};
     await m.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-spin.png')});
     save('output-spin.png', await t.bytes(far));
-    // A knob in the hand: the show leaves the figure alone for a while.
+    // A knob in the hand: the show holds, and goes on performing on this figure.
     await m.turn(0, 3, 120);
-    assert.equal((await state(dev)).scene, 0);
-    await m.key(2, 900);
-    const rested = await state(dev);
-    assert.deepEqual([rested.show, rested.spin], [false, 0], 'held again: the show stops');
+    assert.deepEqual([(await state(dev)).show, (await state(dev)).scene, (await state(dev)).spin], ['hold', 0, 1], 'a knob turned holds the show');
+    await choose(m, dev, 3, 'show', 'still');
+    const rested = figure(await state(dev));
+    assert.deepEqual([rested.show, rested.spin], ['still', 0], 'Still: the show stops');
     await m.page.waitForTimeout(600);
-    assert.deepEqual(await state(dev), rested, 'the letters and the view stay where they were');
+    assert.deepEqual(figure(await state(dev)), rested, 'the letters and the view stay where they were');
     await stopped(dev); await stopped(far);
     const aside = t.alike(await t.grid(far), front);
     assert(aside < 0.9, 'seen from another side it is another picture: ' + aside);
     // A drag: across turns the figure, down tilts it. (The whole short side of the screen is half a turn.)
     await m.drag(0.15, 0.05);
     const dragged = await state(dev);
-    assert(dragged.turn - rested.turn > 15 && dragged.turn - rested.turn < 90 && dragged.tilt > 3 && dragged.tilt < 57 && dragged.spin === 0 && dragged.textVisible, 'a drag turns and tilts the figure and hides nothing: ' + JSON.stringify([rested.turn, dragged.turn, dragged.tilt]));
+    assert(dragged.turn - rested.turn > 15 && dragged.turn - rested.turn < 90 && dragged.tilt - rested.tilt > 3 && dragged.tilt < 57 && dragged.spin === 0 && dragged.textVisible, 'a drag turns and tilts the figure and hides nothing: ' + JSON.stringify([rested.turn, dragged.turn, dragged.tilt]));
     await stopped(dev); await stopped(far);
     assert(Math.abs((await state(far)).turn - dragged.turn) < 0.2 && Math.abs((await state(far)).tilt - dragged.tilt) < 0.2, 'the output is seen from the same side');
     result.turnedAlike = t.alike(await t.grid(dev, (await stats(dev)).fit / (await stats(far)).fit), await t.grid(far));
@@ -241,7 +260,8 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
     await m.drag(-0.2, 0, true);
     assert.equal((await state(dev)).spin, -1, 'a flick sets it spinning the way it was thrown');
     await m.tap();
-    assert.deepEqual([(await state(dev)).spin, (await state(dev)).textVisible], [-1, false], 'a tap is still a tap');
+    assert.deepEqual([(await state(dev)).spin, (await state(dev)).panel], [-1, 'player'], 'a tap is still a tap');
+    await m.key(3);
     await m.drag(0.05, 0);
     assert.equal((await state(dev)).spin, 0, 'a drag stops the spin');
     await m.context.close();

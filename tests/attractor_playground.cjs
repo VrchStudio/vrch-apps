@@ -17,7 +17,7 @@ function fixture() {
   const catalog = JSON.parse(fs.readFileSync(path.join(APPS, 'catalog/playground.json'), 'utf8')), served = new Map();
   const meta = JSON.parse(execFileSync('python3', ['-c', PACK, APPS, SLUG], {maxBuffer: 64 << 20}).toString()), bytes = Buffer.from(meta.zip, 'base64'), digest = sha(bytes), version = meta.manifest.version;
   assert.deepEqual(meta.manifest.roles, ['output']);
-  assert(bytes.length <= 6 * 1024 * 1024, 'the package is at most 6 MB: ' + bytes.length);
+  assert(bytes.length <= 8 * 1024 * 1024, 'the package is at most 8 MB: ' + bytes.length);
   // As in the published catalog, the Playground may start the App before its music has arrived.
   const later = meta.files.map(file => file.path).filter(name => name.startsWith('music/')).sort();
   const listing = Buffer.from(JSON.stringify({schemaVersion: 1, appId: meta.manifest.id, version, revision: meta.revision, packageDigest: digest, base: RAW + ZERO + '/apps/' + SLUG + '/src/', files: meta.files}));
@@ -149,7 +149,17 @@ async function open({args = [], permissions = []} = {}) {
       await page.mouse.up(); await page.waitForTimeout(150);
     };
     const output = async () => { await page.keyboard.press('Shift'); await page.waitForFunction(() => document.body.dataset.output === 'panel', null, {timeout: 30000}); await settled(); return find('output'); };
-    return {context, page, find, control, settled, turn, press, key, tap, drag, output, prompts};
+    // A real click on something inside the App: the simulated device scales its screen, so the place is worked out
+    // frame by frame up to the page.
+    const click = async (frame, selector) => {
+      let at = await frame.evaluate(sel => { const node = document.querySelector(sel); node.scrollIntoView({block: 'nearest'}); const r = node.getBoundingClientRect(); return {x: (r.x + r.width / 2) / innerWidth, y: (r.y + r.height / 2) / innerHeight}; }, selector);
+      for (let f = frame; f.parentFrame(); f = f.parentFrame()) {
+        const holder = await f.frameElement();
+        at = await holder.evaluate((node, p) => { const r = node.getBoundingClientRect(), top = window === window.top; return {x: (r.x + p.x * r.width) / (top ? 1 : innerWidth), y: (r.y + p.y * r.height) / (top ? 1 : innerHeight)}; }, at);
+      }
+      await page.mouse.click(at.x, at.y); await page.waitForTimeout(150);
+    };
+    return {context, page, find, control, settled, turn, press, key, tap, drag, click, output, prompts};
   }
   const state = frame => frame.evaluate(() => __attractor.state()), stats = frame => frame.evaluate(() => __attractor.stats());
   const stopped = (frame, timeout = 60000) => frame.waitForFunction(() => __attractor.stats().stopped, null, {timeout});

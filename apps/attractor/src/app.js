@@ -1,5 +1,5 @@
-// app.js: the App around the picture. Knobs and keys, touch, the text on the device screen, the Player panel and the
-// speaker, the show, saved settings, the share link and the large output live here. The formulas are in formulas.js;
+// app.js: the App around the picture. Knobs and keys, touch, the text on the device screen, the Figures and Player
+// panels and the speaker, the show, saved settings, the share link and the large output live here. The formulas are in formulas.js;
 // how they are drawn is in picture.js (and thread.js for a flow's line); the music is in music.js and tracks.js.
 (() => {
   'use strict';
@@ -43,7 +43,6 @@
   const SHOW_SHORTEST_MS = 9000;          // a scene lasts at least this long;
   const SHOW_BEATS = 48;                  // with music it ends where the piece changes, or after this many beats;
   const SHOW_SCENE_MS = 20000;            // without music it lasts this long
-  const SHOW_HANDS_MS = 12000;            // a knob turned: the show leaves the figure alone this long
   const SWAY = 0.3;                       // in the show the view tilts this far up and down (radians),
   const SWAY_SECONDS = 67;                // once in this time
   const ZOOM = 1.5;                       // on an output the show draws the figure up to this much larger, past the edges,
@@ -74,7 +73,7 @@
   }
   const gliding = at => !!motion.glide && at < motion.glide.at + (motion.glide.ms || GLIDE_MS);
   const swayed = (list, at) => { const [lo, hi] = limits(), seconds = (at - motion.drift) / 1000; return list.map((v, i) => clamp(v + DRIFT * Math.sin(2 * Math.PI * seconds / DRIFT_SECONDS[i]), lo, hi)); };
-  const hearing = at => at < heardUntil && heard.some(v => v !== 0);
+  const hearing = at => at < heardUntil && heard.some(v => v !== 0);   // (a still figure follows no sound)
   function lettersAt(at) {
     const [lo, hi] = limits();
     let list = settled(at);
@@ -191,7 +190,8 @@
   }
   function write(letters) {
     const flagged = !!picture && picture.collapsed === true && picture.mode === 'still';
-    const status = [player && player.source === 'music' && !player.muted ? player.title : '', player && player.source === 'input' && player.listening ? 'listening' : '', said].filter(Boolean).join(' · ');
+    // (With the text hidden only a message shows: the picture is left clear.)
+    const status = [textShown && player && player.source === 'music' && !player.muted ? player.title : '', textShown && player && player.source === 'input' && player.listening ? 'listening' : '', said].filter(Boolean).join(' · ');
     const next = [motion.formula, textShown, flagged, status, letters.map(two).join(' '), picture ? picture.points : 0].join('|');
     if (next === wrote) return;
     wrote = next;
@@ -211,19 +211,19 @@
       const formula = FORMULAS[motion.formula], on = presetNow(), values = {};
       'abcd'.split('').forEach((name, i) => { values['E' + (i + 1)] = {label: name, value: two(motion.p[i] / 100) + (coarse[i] ? ' ×10' : '')}; });
       if (panel) values.E1 = {label: 'Choose', value: ''};
-      values.K2 = {label: formula.name, value: (on < 0 ? '–' : on + 1) + '/' + formula.presets.length};
-      values.K3 = {label: show.on ? 'Show' : 'Colour', value: PALETTES[palette].name, pressed: show.on};
-      values.K4 = {label: panel ? 'Close' : 'Player', value: '', pressed: panel};
+      values.K2 = {label: 'Next', value: (on < 0 ? '–' : on + 1) + '/' + formula.presets.length};
+      values.K3 = {label: panel === 'figures' ? 'Close' : 'Figures', value: '', pressed: panel === 'figures'};
+      values.K4 = {label: panel === 'player' ? 'Close' : 'Player', value: '', pressed: panel === 'player'};
       try { void sdk.monitor.set(values).catch(() => {}); } catch (_) { /* unavailable */ }
     }, 40);
   }
 
   /* ---------- saved settings, the share link and the output ---------- */
   let version, saveTimer = 0, shareTimer = 0, publishTimer = 0, shared = '', sent = '', sentLine = '';
-  // What sound and the show were set to when the App last closed. A share link opens one figure at rest without
-  // changing these, unless they are then changed by hand.
-  const kept = {show: true, source: TRACKS.length ? 'music' : 'silent', track: 0, muted: false};
-  const lent = {show: false, source: false};
+  // What the show and the sound were set to when the App last closed. A share link opens its one figure still
+  // without changing how the App opens by itself, unless the show is then set by hand.
+  const kept = {show: 'auto', source: TRACKS.length ? 'music' : 'silent', track: 0, muted: false};
+  const lent = {show: false};
   function restore(value) {
     if (!value || value.v !== 1) return;
     const index = FORMULAS.findIndex(f => f.id === value.formula);
@@ -235,7 +235,7 @@
     if (Number.isFinite(value.yaw) && Number.isFinite(value.pitch)) { motion.view.yaw = value.yaw; motion.view.pitch = clamp(value.pitch, -TILT, TILT); }
     if (value.spin === 1 || value.spin === -1) motion.view.spin = {at: epoch(), dir: value.spin};
     textShown = value.text !== false;
-    if (typeof value.show === 'boolean') kept.show = value.show;
+    if (['auto', 'hold', 'still'].includes(value.show)) kept.show = value.show;
     if (['music', 'input', 'silent'].includes(value.source) && (value.source !== 'music' || TRACKS.length)) kept.source = value.source;
     if (Number.isInteger(value.track) && TRACKS[value.track]) kept.track = value.track;
     kept.muted = value.muted === true;
@@ -244,7 +244,7 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       const value = {v: 1, formula: FORMULAS[motion.formula].id, p: motion.p, palette, text: textShown, yaw: yawAt(epoch()) % (2 * Math.PI), pitch: motion.view.pitch, spin: motion.view.spin ? motion.view.spin.dir : 0,
-        show: lent.show ? kept.show : show.on, source: lent.source || !player ? kept.source : player.source, track: player ? player.index : kept.track, muted: player ? player.muted : kept.muted};
+        show: lent.show ? kept.show : show.mode, source: player ? player.source : kept.source, track: player ? player.index : kept.track, muted: player ? player.muted : kept.muted};
       try { version = (await sdk.data.set('state', value, version === undefined ? {} : {expectedVersion: version})).version; }
       catch (_) { try { version = (await sdk.data.get('state')).version; } catch (__) { /* best effort */ } }
     }, 800);
@@ -263,7 +263,7 @@
       try { sdk.share.report({state: value}); } catch (_) { /* this host has no links */ }
     }, 400);
   }
-  // A link shows one figure: it opens at rest, seen as it was shared, with no show and no sound moving it.
+  // A link shows one figure: it opens still, seen as it was shared.
   function applyShare(share) {
     const m = SHARE.exec(typeof share?.state === 'string' ? share.state : '');
     if (!m) return false;
@@ -333,6 +333,7 @@
   let ears = fresh();
   const tidy = v => Math.abs(v) < 0.05 ? 0 : Math.round(v * 10) / 10;
   function hear(loud) {
+    if (show.mode === 'still') return;
     let rise = 0;
     for (let i = 0; i < 3; i++) {
       const band = ears.bands[i];
@@ -358,25 +359,31 @@
     renderSpeaker(); renderPanel(); label();
   }
   function setSource(next) {
-    lent.source = false;
     void player.setSource(next);
     saveSoon();
   }
 
   /* ---------- the show ---------- */
-  // scene: how many figures it has shown. changedAt: when the last one began. handsAt: when a knob was last turned.
-  // due: the music has moved on, so the next figure may come. next: where each formula was left.
-  const show = {on: true, scene: 0, changedAt: 0, handsAt: 0, due: false, next: {}};
+  // Three ways to be. auto: the figure performs by itself (it turns and tilts, its letters sway, sound moves them)
+  // and goes on to new figures. hold: it performs, and stays on this figure. still: it rests, and sharpens.
+  // A knob turned or a figure chosen during auto holds: the show never changes what a hand has just set.
+  // scene: how many figures the show has shown. changedAt: when the last one began. due: the music has moved on,
+  // so the next figure may come. next: where each formula was left.
+  const show = {mode: 'still', scene: 0, changedAt: 0, due: false, next: {}};
   const ORDER = [...SHOW_ORDER.map(id => FORMULAS.findIndex(f => f.id === id)).filter(i => i >= 0), ...FORMULAS.map((f, i) => i).filter(i => !SHOW_ORDER.includes(FORMULAS[i].id))];
-  function setShow(on) {
-    const at = epoch();
-    show.on = on;
-    if (on) { motion.show = at; motion.zoom = null; setDrift(true); setSpin(motion.view.spin?.dir || 1); show.changedAt = at; show.due = false; }
-    else { motion.view.pitch = pitchAt(at); motion.zoom = {from: zoomAt(at), at}; motion.show = 0; setDrift(false); setSpin(0); }
+  function setMode(next) {
+    const at = epoch(), was = show.mode !== 'still', will = next !== 'still';
+    show.mode = next;
+    if (will && !was) { motion.show = at; motion.zoom = null; setDrift(true); setSpin(motion.view.spin?.dir || 1); }
+    if (!will && was) { motion.view.pitch = pitchAt(at); motion.zoom = {from: zoomAt(at), at}; motion.show = 0; setDrift(false); setSpin(0); deaf(); }
+    if (next === 'auto') { show.changedAt = at; show.due = false; }
   }
+  function chooseMode(next) { lent.show = false; if (next !== show.mode) setMode(next); renderPanel(); changed(); }
+  // A hand has set something: the show leaves it be.
+  function hold() { if (show.mode === 'auto') { lent.show = false; setMode('hold'); renderPanel(); } }
   // Each frame: is it time for the next figure?
   function direct(at) {
-    if (!show.on || dragging || at - show.handsAt < SHOW_HANDS_MS) return;
+    if (show.mode !== 'auto' || dragging) return;
     const since = at - show.changedAt, longest = player && player.source === 'music' ? SHOW_BEATS * player.beat() * 1000 : SHOW_SCENE_MS;
     if (!(since >= longest || (show.due && since >= SHOW_SHORTEST_MS))) return;
     show.scene++; show.changedAt = at; show.due = false;
@@ -388,11 +395,11 @@
       palette = (palette + 1) % PALETTES.length;
       if (picture) picture.colours(PALETTES[palette].stops);
     } else glideTo(((on < 0 ? preset : on) + 1) % formula.presets.length, SHOW_GLIDE_MS);
-    label(); shareSoon(); publish();
+    renderPanel(); label(); shareSoon(); publish();
   }
 
   /* ---------- controls ---------- */
-  const held = {}, timers = {}, turnedAt = [0, 0, 0, 0], twirl = [0, 0, 0, 0];
+  const held = {}, turnedAt = [0, 0, 0, 0], twirl = [0, 0, 0, 0];
   // One detent is 0.01, or 0.10 after a press. A sustained fast spin (several detents under 40 ms apart) covers more
   // ground; a slow turn is always one step.
   function turn(knob, detents) {
@@ -403,8 +410,8 @@
     if (motion.glide) { motion.p = settled(epoch()).map(Math.round); motion.glide = null; }
     motion.p = motion.p.slice();
     motion.p[knob] = clamp(motion.p[knob] + detents * size, lo, hi);
-    show.handsAt = handsAt = epoch();
-    changed();
+    handsAt = epoch();
+    hold(); renderPanel(); changed();
   }
   function glideTo(index, ms) {
     const formula = FORMULAS[motion.formula], at = epoch();
@@ -416,21 +423,18 @@
     motion.formula = index; preset = first % FORMULAS[index].presets.length;
     motion.p = hundredths(FORMULAS[index].presets[preset]); motion.glide = null;
   }
-  function nextPreset() {
-    const on = presetNow();
-    glideTo(((on < 0 ? preset : on) + 1) % FORMULAS[motion.formula].presets.length, GLIDE_MS);
-    show.changedAt = epoch(); show.handsAt = 0;
-    changed();
+  // Chosen by hand: a preset of this formula (the letters glide there), or another formula at its first preset.
+  function choosePreset(index) { hold(); glideTo(index, GLIDE_MS); renderPanel(); changed(); }
+  function chooseFormula(index) { hold(); if (index !== motion.formula) goFormula(index, 0); renderPanel(); changed(); }
+  // K2: the next figure. After a formula's last preset comes the next formula's first.
+  function nextFigure() {
+    const formula = FORMULAS[motion.formula], on = presetNow(), next = (on < 0 ? preset : on) + 1;
+    if (next < formula.presets.length) choosePreset(next); else chooseFormula((motion.formula + 1) % FORMULAS.length);
   }
-  function nextFormula() {
-    goFormula((motion.formula + 1) % FORMULAS.length, 0);
-    show.changedAt = epoch(); show.handsAt = 0;
-    changed();
-  }
-  function nextColours() {
-    palette = (palette + 1) % PALETTES.length;
+  function chooseColours(index) {
+    palette = index;
     if (picture) picture.colours(PALETTES[palette].stops);
-    changed();
+    renderPanel(); changed();
   }
   // Spin: the figure keeps turning. Drift: each letter sways a little around where it stands. Turning either off
   // leaves things where they are.
@@ -444,10 +448,8 @@
     if (!on && motion.drift) { motion.p = swayed(settled(at), at).map(Math.round); motion.glide = null; }
     motion.drift = on ? motion.drift || at : 0;
   }
-  function toggleShow() { lent.show = false; setShow(!show.on); renderPanel(); changed(); }
-  // A key acts when it is let go; held for half a second it does its second job instead.
-  const TAPS = {K2: nextPreset, K3: nextColours, K4: () => openPanel(!panel)};
-  const HOLDS = {K2: nextFormula, K3: toggleShow};
+  // Keys act when they are let go. With a panel open, E1 moves through its choices and a press of E1 takes one.
+  const KEYS = {K2: nextFigure, K3: () => openPanel(panel === 'figures' ? null : 'figures'), K4: () => openPanel(panel === 'player' ? null : 'player')};
   function onControl(event) {
     const control = event.control, knob = ['E1', 'E2', 'E3', 'E4'].indexOf(control);
     if (player) player.wake();
@@ -458,17 +460,15 @@
     } else if (event.type === 'down') {
       if (held[control]) return;
       held[control] = true;
-      if (knob >= 0) { if (panel && knob === 0) panelPress(); else { coarse[knob] = !coarse[knob]; label(); } }
-      else if (HOLDS[control]) timers[control] = setTimeout(() => { timers[control] = 0; HOLDS[control](); }, HOLD_MS);
+      if (knob < 0) return;
+      if (panel && knob === 0) panelPress(); else { coarse[knob] = !coarse[knob]; label(); }
     } else if (event.type === 'up' || event.type === 'cancel') {
       if (!held[control]) return;
       held[control] = false;
-      const short = !HOLDS[control] || !!timers[control];
-      if (timers[control]) { clearTimeout(timers[control]); timers[control] = 0; }
-      if (event.type === 'up' && short && TAPS[control]) TAPS[control]();
+      if (event.type === 'up' && KEYS[control]) KEYS[control]();
     }
   }
-  // Touch: a tap shows or hides the text; a drag turns the figure; letting go while still moving sets it spinning.
+  // Touch: a tap opens Player; a drag turns the figure; letting go while still moving sets it spinning.
   function touch() {
     const stage = $('stage');
     let finger = null;
@@ -494,83 +494,102 @@
       if (!finger || event.pointerId !== finger.id) return;
       const was = finger, now = performance.now();
       finger = null;
-      if (!dragging) {
-        if (event.type === 'pointerup' && now - was.at < 500) { if (panel) openPanel(false); else { textShown = !textShown; saveSoon(); } }
-        return;
-      }
+      if (!dragging) { if (event.type === 'pointerup' && now - was.at < 500 && !panel) openPanel('player'); return; }
       dragging = false;
-      // Thrown, it spins the way it was thrown; in the show it goes on turning as it was.
+      // Thrown, it spins the way it was thrown; while it performs it goes on turning as it was.
       if (event.type === 'pointerup' && now - was.movedAt < 150 && Math.abs(was.speed) > 0.3) setSpin(Math.sign(was.speed));
-      else if (show.on) setSpin(was.spun || 1);
+      else if (show.mode !== 'still') setSpin(was.spun || 1);
       changed();
     };
     addEventListener('pointerup', lift); addEventListener('pointercancel', lift);
   }
 
-  /* ---------- the Player panel and the speaker ---------- */
-  // K4 opens the panel: what the figure follows, which piece plays, and the show. E1 moves through the choices and
-  // a press of E1 takes one; a touch does the same.
-  let panel = false, cursor = null, drawn = '';
-  const rows = () => [
-    {row: 'sound', title: 'Sound', choices: [...(TRACKS.length ? [['music', 'Music']] : []), ['input', 'Mic / Line in'], ['silent', 'Silent']], current: player.source},
-    ...(TRACKS.length ? [{row: 'track', title: 'Track', choices: TRACKS.map((track, i) => [String(i), track.title]), current: player.source === 'music' ? String(player.index) : ''}] : []),
-    {row: 'show', title: 'Show', choices: [['on', 'On'], ['off', 'Off']], current: show.on ? 'on' : 'off'},
-  ];
-  function take(row, value) {
-    if (row === 'sound') setSource(value);
-    else if (row === 'track') { player.choose(Number(value)); setSource('music'); }
-    else if (row === 'show' && (value === 'on') !== show.on) toggleShow();
+  /* ---------- the panels and the speaker ---------- */
+  // Two panels, built from the shared VRCH styles like the ones in Visuals Player. K3 opens Figures (the formula,
+  // its presets, the colours, the text on the picture); K4 or a tap on the picture opens Player (what the figure
+  // follows, the piece, the show). E1 moves through the choices and a press of E1 takes one; a touch does the same.
+  let panel = null, cursor = null;
+  function rows(name) {
+    if (name === 'figures') {
+      const formula = FORMULAS[motion.formula], on = presetNow();
+      return [
+        {row: 'formula', label: 'Formula', note: '', options: FORMULAS.map((f, i) => ({id: String(i), label: f.name, current: i === motion.formula})), pick: id => chooseFormula(Number(id))},
+        {row: 'preset', label: 'Preset', note: formula.name, options: formula.presets.map((set, i) => ({id: String(i), label: String(i + 1), current: i === on})), pick: id => choosePreset(Number(id))},
+        {row: 'colours', label: 'Colours', note: '', options: PALETTES.map((p, i) => ({id: String(i), label: p.name, current: i === palette})), pick: id => chooseColours(Number(id))},
+        {row: 'text', label: 'Formula Text', note: '', options: [{id: 'on', label: 'Show', current: textShown}, {id: 'off', label: 'Hide', current: !textShown}], pick: id => { textShown = id === 'on'; renderPanel(); saveSoon(); }},
+      ];
+    }
+    const source = player.source, note = source === 'music' ? (player.audible || player.muted ? '' : 'Starts when you play') : source === 'input' ? (player.listening ? '' : 'Connecting') : '';
+    return [
+      {row: 'sound', label: 'Sound', note, options: [...(TRACKS.length ? [{id: 'music', label: 'Music', current: source === 'music'}] : []), {id: 'input', label: 'Mic / Line in', current: source === 'input'}, {id: 'silent', label: 'Silent', current: source === 'silent'}], pick: id => setSource(id)},
+      ...(TRACKS.length && source !== 'input' ? [{row: 'track', label: 'Track', note: '', options: TRACKS.map((track, i) => ({id: String(i), label: track.title, current: source === 'music' && i === player.index})), pick: id => { player.choose(Number(id)); setSource('music'); }}] : []),
+      {row: 'show', label: 'Show', note: '', options: [{id: 'auto', label: 'Auto', current: show.mode === 'auto'}, {id: 'hold', label: 'Hold', current: show.mode === 'hold'}, {id: 'still', label: 'Still', current: show.mode === 'still'}], pick: id => chooseMode(id)},
+    ];
   }
+  const panelBody = () => $(panel === 'figures' ? 'figuresBody' : 'playerBody');
+  const cursorButton = () => cursor ? panelBody().querySelector('[data-row="' + cursor.row + '"] [data-value="' + cursor.value + '"]') : null;
+  // The device keeps input focus on the host, so the cursor is drawn with a class as well as focused.
+  function showCursor(scroll = false) {
+    const current = cursorButton();
+    for (const button of panelBody().querySelectorAll('.is-cursor')) if (button !== current) button.classList.remove('is-cursor');
+    if (!current) return;
+    current.classList.add('is-cursor'); current.focus({preventScroll: true});
+    if (scroll) current.scrollIntoView({block: 'nearest'});
+  }
+  // The open panel: rows of shared grid buttons, built from the state as it is each time it changes.
   function renderPanel() {
     if (isOutput || !player || !panel) return;
-    const list = rows();
-    if (!cursor || !list.some(r => r.row === cursor.row && r.choices.some(c => c[0] === cursor.value))) cursor = {row: list[0].row, value: list[0].current || list[0].choices[0][0]};
-    const next = JSON.stringify([list, cursor]);
-    if (next === drawn) return;
-    drawn = next;
-    const body = $('playerBody');
-    body.textContent = '';
-    for (const r of list) {
-      const wrap = document.createElement('div'), title = document.createElement('div'), group = document.createElement('div');
-      wrap.className = 'row'; title.className = 'row__title'; title.textContent = r.title; group.className = 'row__choices';
-      for (const [value, text] of r.choices) {
+    const built = rows(panel).map(r => {
+      const wrap = document.createElement('div'), head = document.createElement('div'), name = document.createElement('span'), note = document.createElement('span'), group = document.createElement('div');
+      wrap.className = 'scene-param-row player-row'; wrap.dataset.row = r.row;
+      head.className = 'scene-param-row__heading'; name.className = 'scene-param-row__label'; name.textContent = r.label;
+      note.className = 'scene-param-row__value'; note.textContent = r.note;
+      head.append(name, note);
+      group.className = 'ui-grid-btn-group ui-grid-btn-group--settings'; group.setAttribute('role', 'group');
+      for (const option of r.options) {
         const button = document.createElement('button');
-        button.type = 'button'; button.textContent = text; button.dataset.row = r.row; button.dataset.value = value;
-        if (value === r.current) button.classList.add('is-active');
-        if (cursor.row === r.row && cursor.value === value) button.classList.add('is-cursor');
-        button.setAttribute('aria-pressed', String(value === r.current));
-        button.addEventListener('click', () => { if (player) player.wake(); cursor = {row: r.row, value}; take(r.row, value); renderPanel(); });
-        group.appendChild(button);
+        button.type = 'button'; button.className = 'ui-grid-btn'; button.textContent = option.label; button.dataset.value = option.id;
+        button.classList.toggle('is-active', !!option.current); button.setAttribute('aria-pressed', String(!!option.current));
+        button.addEventListener('click', () => { if (player) player.wake(); cursor = {row: r.row, value: option.id}; r.pick(option.id); renderPanel(); });
+        group.append(button);
       }
-      wrap.append(title, group); body.appendChild(wrap);
-    }
+      wrap.append(head, group);
+      return wrap;
+    });
+    panelBody().replaceChildren(...built);
+    if (!cursorButton()) { const first = panelBody().querySelector('.is-active') || panelBody().querySelector('button'); cursor = first ? {row: first.closest('.player-row').dataset.row, value: first.dataset.value} : null; }
+    showCursor();
   }
-  function openPanel(open) {
+  function openPanel(name) {
     if (isOutput || !player) return;
-    panel = open; cursor = null; drawn = '';
-    $('player').hidden = !open;
-    document.documentElement.dataset.panel = open ? 'open' : '';
+    panel = name; cursor = null;
+    for (const id of ['figures', 'player']) { const dialog = $(id); dialog.hidden = id !== name; dialog.classList.toggle('is-visible', id === name); }
+    document.body.dataset.open = name || '';
     renderPanel(); label();
   }
   function panelStep(detents) {
-    const all = rows().flatMap(r => r.choices.map(c => ({row: r.row, value: c[0]})));
-    const at = Math.max(0, all.findIndex(c => cursor && c.row === cursor.row && c.value === cursor.value));
-    cursor = all[clamp(at + Math.sign(detents), 0, all.length - 1)];
-    renderPanel();
+    const items = [...panelBody().querySelectorAll('button:not(:disabled)')];
+    if (!items.length) return;
+    const at = items.indexOf(cursorButton()), next = items[((at < 0 ? 0 : at + Math.sign(detents)) + items.length) % items.length];
+    cursor = {row: next.closest('.player-row').dataset.row, value: next.dataset.value};
+    showCursor(true);
   }
-  function panelPress() { if (cursor) { take(cursor.row, cursor.value); renderPanel(); } }
-  // The speaker: pink while the music is heard. A tap mutes it or brings it back, with a short fade; with the audio
-  // input or Silent it shows as off, and a tap plays the music.
+  function panelPress() { cursorButton()?.click(); }
+  // The speaker is always there. With Music it mutes and unmutes with a fade; with Silent or Mic / Line in (nothing
+  // is played back) it shows as muted, and a tap brings the music back. Until sound is allowed it waits, and a tap
+  // starts it.
   function renderSpeaker() {
     const button = $('speaker');
     if (isOutput || !player || !TRACKS.length) { button.hidden = true; return; }
     const wanted = player.source === 'music' && !player.muted;
     button.hidden = false;
-    button.dataset.on = String(wanted && player.audible); button.dataset.waiting = String(wanted && !player.audible);
+    button.dataset.on = String(wanted && player.audible); button.dataset.state = wanted && !player.audible ? 'starting' : '';
     button.setAttribute('aria-pressed', String(!wanted));
     button.setAttribute('aria-label', player.source !== 'music' ? 'Play music' : player.muted ? 'Unmute' : 'Mute');
+    button.firstElementChild.className = 'fas ' + (wanted ? 'fa-volume-high' : 'fa-volume-xmark');
   }
-  function speakerTapped() {
+  function speakerTapped(event) {
+    event.stopPropagation();
     if (!player) return;
     if (player.source !== 'music') { player.setMuted(false); setSource('music'); }
     else if (!player.muted && !player.audible) { player.retryAt = 0; player.wake(); }
@@ -585,7 +604,7 @@
     state: () => {
       const at = epoch(), letters = lettersAt(at);
       return {formula: FORMULAS[motion.formula].id, a: letters[0] / 100, b: letters[1] / 100, c: letters[2] / 100, d: letters[3] / 100, palette: PALETTES[palette].name,
-        show: isOutput ? !!motion.show : show.on, scene: show.scene, textVisible: !isOutput && textShown,
+        show: isOutput ? (motion.show ? 'on' : 'still') : show.mode, scene: show.scene, textVisible: !isOutput && textShown,
         source: player ? player.source : 'silent', track: player && player.source === 'music' ? player.title : null, muted: player ? player.muted : false, audible: player ? player.audible : false,
         listening: player ? player.source === 'input' && player.listening : false, panel,
         spin: motion.view.spin ? motion.view.spin.dir : 0, turn: Math.round(yawAt(at) * 1800 / Math.PI) / 10, tilt: Math.round(pitchAt(at) * 1800 / Math.PI) / 10};
@@ -603,7 +622,6 @@
     new ResizeObserver(layout).observe($('stage'));
     setInterval(report, 5000);
     if (isOutput) {
-      show.on = false;
       build();
       await sdk.ready();
       relay?.onMessage(follow);
@@ -612,21 +630,24 @@
     }
     try { const saved = await sdk.data.get('state'); version = saved.version; restore(saved.value); } catch (_) { /* first run */ }
     const linked = applyShare(context.share);
-    if (linked) lent.show = lent.source = true;
+    if (linked) lent.show = true;
     player = new window.MusicPlayer({sdk, tracks: TRACKS, onLevels: hear, onSection: () => { show.due = true; }, onChange: soundChanged});
     player.index = kept.track; player.muted = kept.muted;
-    show.on = false;
-    if (kept.show && !linked) setShow(true);
+    setMode(linked ? 'still' : kept.show);
     build(); label();
     // The first points at once, before the first animation frame: a host may keep the App hidden until it is ready.
     step(performance.now());
     touch();
     $('speaker').addEventListener('click', speakerTapped);
-    $('playerClose').addEventListener('click', () => openPanel(false));
+    for (const id of ['figures', 'player']) {
+      $(id + 'Close').addEventListener('click', () => openPanel(null));
+      // A touch beside the sheet closes it.
+      $(id).addEventListener('click', event => { if (event.target === $(id)) openPanel(null); });
+    }
     document.addEventListener('visibilitychange', () => player.pause(document.hidden));
     sdk.controls.onEvent(onControl);
     await sdk.ready();
-    void player.setSource(linked ? 'silent' : kept.source);
+    void player.setSource(kept.source);
     soundChanged();
     requestAnimationFrame(frame);
     setInterval(publish, 1000); publish(); shareSoon();

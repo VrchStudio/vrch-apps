@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "7456c5e9-8856-4134-90a5-c036a8d8b199",
   "name": "Attractor",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -26,12 +26,12 @@
             "action": "The four knobs are a, b, c and d in the formula. Turn one and the whole figure bends."
           },
           {
-            "control": "K3 · Hold",
-            "action": "The show on or off. On, the figure performs by itself with the music. Off, it rests where you leave it and sharpens as the points gather."
+            "control": "K3 · Press",
+            "action": "Figures: choose the formula, one of its presets and the colours."
           },
           {
             "control": "K4 · Press",
-            "action": "Player: music, microphone or line in, or silence; the piece; the show."
+            "action": "Player: the sound, the piece, and the show (Auto, Hold or Still). A tap on the picture opens it too."
           }
         ]
       },
@@ -64,23 +64,15 @@
           },
           {
             "control": "K2 · Press",
-            "action": "Next preset. The letters glide there, so you see the figure change."
-          },
-          {
-            "control": "K2 · Hold",
-            "action": "Next formula, at its first preset."
+            "action": "Next figure: the next preset of the formula, and after its last the next formula."
           },
           {
             "control": "K3 · Press",
-            "action": "Next colours."
-          },
-          {
-            "control": "K3 · Hold",
-            "action": "The show on or off."
+            "action": "Figures: formula, preset, colours and the text on the picture. E1 moves through the choices, a press of E1 takes one, K3 closes."
           },
           {
             "control": "K4 · Press",
-            "action": "Player. E1 moves through the choices, a press of E1 takes one, K4 closes."
+            "action": "Player: sound, piece and show. E1 moves through the choices, a press of E1 takes one, K4 closes."
           }
         ]
       },
@@ -89,7 +81,7 @@
         "controls": [
           {
             "control": "Picture · Tap",
-            "action": "Show or hide the formula, the letters and the number of points."
+            "action": "Open Player."
           },
           {
             "control": "Picture · Drag",
@@ -107,7 +99,7 @@
       },
       {
         "title": "The show",
-        "text": "The App opens in the show. The figure turns and tilts, its letters sway, and the sound moves them. Where the music changes, the letters slide to the next figure of the formula; after three figures the show moves on to the next formula and colours. Turn a knob and the show leaves the figure to you for a while. On a large output the figure slowly grows past the edges and comes back. Hold K3 to stop: the figure stays as it is, rests and sharpens. A shared link opens its one figure at rest."
+        "text": "Player sets how the figure behaves. Auto: it performs by itself. It turns and tilts, its letters sway, the sound moves them, and where the music changes it slides to the next figure; after three figures it moves on to the next formula and colours. Hold: it performs in the same way and stays on this figure. Still: it rests, and sharpens as the points gather. The App opens in Auto. Turn a knob or choose a figure and Auto becomes Hold, so the show never changes what you have just set; choose Auto again to let it go on. On a large output a performing figure slowly grows past the edges and comes back. A shared link opens its one figure Still."
       },
       {
         "title": "The picture",
@@ -115,7 +107,7 @@
       },
       {
         "title": "Sound",
-        "text": "Music plays the two pieces that come with the App, Strange Loop and Sacred Orbit, in turn. The figure follows them from the first moment; where a browser allows sound only after a touch or a key, the sound joins then. Muted, the music plays on unheard and the figure keeps time. Mic / Line in follows the audio input instead, which is never played back or kept. Silent leaves the figure alone. The low, middle and high parts of the sound sway a, b and c, and sudden swells nudge d. Choose inputs and outputs and set levels in Menu."
+        "text": "Music plays the two pieces that come with the App, Strange Loop and Sacred Orbit, in turn. A performing figure follows them from the first moment; where a browser allows sound only after a touch or a key, the sound joins then. Muted, the music plays on unheard and the figure keeps time. Mic / Line in follows the audio input instead, which is never played back or kept. Silent plays and follows nothing. The low, middle and high parts of the sound sway a, b and c, and sudden swells nudge d. A Still figure follows no sound. Choose inputs and outputs and set levels in Menu."
       },
       {
         "title": "Saved settings",
