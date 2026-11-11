@@ -110,6 +110,9 @@
     "shader-editor": {
       "category": "visuals"
     },
+    "attractor": {
+      "category": "visuals"
+    },
     "body-vibes": {
       "category": "audiovisual"
     },
