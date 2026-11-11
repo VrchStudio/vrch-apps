@@ -4704,7 +4704,7 @@
     },
     "7456c5e9-8856-4134-90a5-c036a8d8b199": {
       "slug": "attractor",
-      "latest": "0.4.1",
+      "latest": "0.5.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -4819,6 +4819,25 @@
             "updateApi": 1
           },
           "notes": "- The soft light around a figure ends evenly, without a faint blocky fringe."
+        },
+        "0.5.0": {
+          "version": "0.5.0",
+          "name": "Attractor",
+          "tag": "attractor-v0.5.0",
+          "sourceCommit": "1d9046d8c8749aa9e8fa2d8ba2fb66dfc7ca7f58",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/attractor-v0.5.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/attractor-v0.5.0/attractor-0.5.0.vrchapp",
+          "size": 4956741,
+          "sha256": "763293a9f888807b143b6b8af29dd505de625b9c80a5943c885704d135dd235b",
+          "packageDigest": "763293a9f888807b143b6b8af29dd505de625b9c80a5943c885704d135dd235b",
+          "revision": "a68c2e79c4cdf05d1a746d2db202544dc818eae57f8a085939c69dfd83b1730f",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- The App opens in a show: the figure turns, tilts and sways by itself, moves with the music, and goes on to new figures, formulas and colours where the music changes. Hold K3 to stop it and rest.\n- K4 opens Player: music, microphone or line in, or silence; the piece; the show. A speaker on the picture mutes the music and brings it back.\n- The figure follows the music from the first moment, also while muted.\n- Lorenz, Aizawa and Thomas are drawn as one long line wound into the figure.\n- A large output fills its height, and in the show the figure grows past the edges and comes back.\n- K2 held is now the next formula. The formula is no longer played as sound."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+RmlndXJlIHRyYWNlZCBieSBhIGZvcm11bGE8L3RpdGxlPgogIDxwYXRoIGQ9Ik0zMyA4QzE3IDggNyAyMSA4IDM2YzEgMTIgMTEgMjAgMjEgMTYgOC0zIDYtMTIgMy0yMCIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMyA4YzEzIDAgMjMgMTAgMjMgMjQgMCA5LTMgMTctOCAyNC0zLTktOC0xNy0xNi0yNCIgc3Ryb2tlPSIjYWFhOWE1IiBzdHJva2Utd2lkdGg9IjMuNSIvPgogIDxwYXRoIGQ9Ik0zMiAzMmMtNC02LTExLTctMTQtM3MwIDExIDYgMTEgOS01IDgtOCIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMuNSIvPgo8L3N2Zz4K",
@@ -4830,15 +4849,15 @@
             "controls": [
               {
                 "control": "E1 · Turn",
-                "action": "The four knobs are a, b, c and d in the formula. Turn one and the whole figure bends; let go and it sharpens as the points gather."
+                "action": "The four knobs are a, b, c and d in the formula. Turn one and the whole figure bends."
               },
               {
-                "control": "Picture · Drag",
-                "action": "Turn the figure in space. Let go while moving and it keeps spinning."
+                "control": "K3 · Hold",
+                "action": "The show on or off. On, the figure performs by itself with the music. Off, it rests where you leave it and sharpens as the points gather."
               },
               {
-                "control": "K4 · Hold",
-                "action": "Music: the App plays one of its own pieces and the figure moves with it. Hold again for the next piece, then the audio input, then off."
+                "control": "K4 · Press",
+                "action": "Player: music, microphone or line in, or silence; the piece; the show."
               }
             ]
           },
@@ -4875,7 +4894,7 @@
               },
               {
                 "control": "K2 · Hold",
-                "action": "Sound on or off: hear the formula."
+                "action": "Next formula, at its first preset."
               },
               {
                 "control": "K3 · Press",
@@ -4883,15 +4902,11 @@
               },
               {
                 "control": "K3 · Hold",
-                "action": "Next motion: spin, drift (the letters sway slowly), both, or none."
+                "action": "The show on or off."
               },
               {
                 "control": "K4 · Press",
-                "action": "Next formula, at its first preset."
-              },
-              {
-                "control": "K4 · Hold",
-                "action": "Next thing to follow: Strange Loop, Sacred Orbit, the audio input, or nothing."
+                "action": "Player. E1 moves through the choices, a press of E1 takes one, K4 closes."
               }
             ]
           },
@@ -4909,20 +4924,28 @@
               {
                 "control": "Picture · Flick",
                 "action": "Set it spinning. Drag to stop."
+              },
+              {
+                "control": "Speaker · Tap",
+                "action": "Mute or unmute the music, with a short fade. With the microphone or Silent, play the music."
               }
             ]
           },
           {
+            "title": "The show",
+            "text": "The App opens in the show. The figure turns and tilts, its letters sway, and the sound moves them. Where the music changes, the letters slide to the next figure of the formula; after three figures the show moves on to the next formula and colours. Turn a knob and the show leaves the figure to you for a while. On a large output the figure slowly grows past the edges and comes back. Hold K3 to stop: the figure stays as it is, rests and sharpens. A shared link opens its one figure at rest."
+          },
+          {
             "title": "The picture",
-            "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. Every figure has depth: for a two-line formula it is where each point was one step before. While anything moves the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text."
+            "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. Every figure has depth: for a two-line formula it is where each point was one step before. A three-line formula moves smoothly through space and is drawn as one long line wound into its figure. While anything moves the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text."
           },
           {
             "title": "Sound",
-            "text": "Everything is silent until you hold a key. K4 chooses what the figure follows: one of the App's own two pieces of music, which it plays round and round, or the audio input, which opens only while it is chosen and is never played back or kept. The low, middle and high parts of the sound sway a, b and c, and sudden swells nudge d; the letters return when it stops. Sound (K2) plays one point moving through the formula, x on the left and y on the right. Choose inputs and outputs and set levels in Menu."
+            "text": "Music plays the two pieces that come with the App, Strange Loop and Sacred Orbit, in turn. The figure follows them from the first moment; where a browser allows sound only after a touch or a key, the sound joins then. Muted, the music plays on unheard and the figure keeps time. Mic / Line in follows the audio input instead, which is never played back or kept. Silent leaves the figure alone. The low, middle and high parts of the sound sway a, b and c, and sudden swells nudge d. Choose inputs and outputs and set levels in Menu."
           },
           {
             "title": "Saved settings",
-            "text": "The formula, a, b, c and d, the colours, the view, spin, drift and whether the text shows save automatically. Sound, music and the audio input start off each time. A shared link opens the same figure from the same side."
+            "text": "The formula, a, b, c and d, the colours, the view, the show, the sound, the piece, whether it is muted and whether the text shows save automatically. A shared link opens the same figure from the same side."
           }
         ]
       }
