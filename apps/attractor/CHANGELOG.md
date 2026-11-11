@@ -1,5 +1,9 @@
 # Attractor
 
+## 0.4.1
+
+- The soft light around a figure ends evenly, without a faint blocky fringe.
+
 ## 0.4.0
 
 - Two pieces of music come with the App, Strange Loop and Sacred Orbit: hold K4 and the figure moves with the one playing. Hold again for the next piece, then the audio input, then off.

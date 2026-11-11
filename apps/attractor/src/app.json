@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "7456c5e9-8856-4134-90a5-c036a8d8b199",
   "name": "Attractor",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
