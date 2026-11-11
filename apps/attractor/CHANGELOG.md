@@ -1,5 +1,9 @@
 # Attractor
 
+## 0.7.0
+
+- A large output can show the figure in four ways, chosen under Output in Figures: Whole, Three (the same figure from two other sides beside it), Mirror (the figure and its mirror image) or Close (filling the screen from edge to edge).
+
 ## 0.6.0
 
 - No key needs holding any more. K2 is the next figure, K3 opens Figures (formula, preset, colours, text), K4 or a tap on the picture opens Player.

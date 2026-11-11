@@ -75,6 +75,7 @@
       'uniform vec4 start;  // for a first step from the seeds: the size of the box they fill, and 1',
       'uniform vec3 ax, ay, az;  // the view: which way is across, down and away',
       'uniform vec2 space;  // how deep a map is drawn, and the square of how far is lost',
+      'uniform vec2 shift;  // where on the screen the figure is drawn, from the middle',
       ...(flow ? ['uniform vec2 pace;   // a flow: how much of its time one step covers, and how many steps'] : []),
       'uniform uint tick;',
       'out vec3 q;',
@@ -115,7 +116,44 @@
       ]),
       '  side = clamp(side * frame.z + 0.5, 0.0, 1.0);',
       '  count = vec2(1.0, floor(side * 2.0 + float(h >> 20) / 4096.0) * 0.5);',
-      '  gl_Position = vec4(spot.x * frame.x, spot.y * frame.y, 0.0, 1.0);',
+      ...(flow ? [] : ['  q.z = home.x + was.x;   // a map keeps where the point was: a copy of the figure is drawn from it']),
+      '  gl_Position = vec4(spot.x * frame.x + shift.x, spot.y * frame.y + shift.y, 0.0, 1.0);',
+      '  gl_PointSize = 1.0;',
+      '}'].join('\n');
+  }
+  // A further copy of the figure on the screen (an output can show it from other sides, or mirrored): the points
+  // where they stand, drawn again from another side, at another size and place, each counting for less than one.
+  function copyShader(formula) {
+    const flow = !!formula.flow;
+    return [
+      '#version 300 es',
+      'precision highp float;',
+      'precision highp int;',
+      'layout(location = 0) in vec3 point;',
+      'uniform vec4 frame;  // x scale, y scale, colour scale, how much each point counts',
+      'uniform vec4 home;   // the middle of the view, and how deep a map is drawn',
+      'uniform vec3 ax, ay; // this copy: which way is across and down',
+      'uniform vec3 mx, mz; // the figure itself: across and away, which give a flow its colours',
+      'uniform vec2 shift;',
+      'uniform uint tick;',
+      'out vec2 count;',
+      'void main() {',
+      '  uint h = uint(gl_VertexID) * 747796405u + tick * 2891336453u + 12345u;',
+      '  h = (h ^ (h >> 16)) * 2246822519u;',
+      '  h = (h ^ (h >> 13)) * 3266489917u;',
+      '  h ^= h >> 16;',
+      '  vec3 r = point - home.xyz;',
+      ...(flow ? [
+        '  vec3 at = vec3(r.x, -r.z, r.y);',
+        '  float side = 0.6 * dot(at, mx) + 0.4 * dot(at, mz);',
+      ] : [
+        '  float was = point.z - home.x;',
+        '  vec3 at = vec3(r.xy, was * home.w);',
+        '  float side = 0.75 * r.x + 0.25 * was;',
+      ]),
+      '  side = clamp(side * frame.z + 0.5, 0.0, 1.0);',
+      '  count = vec2(1.0, floor(side * 2.0 + float(h >> 20) / 4096.0) * 0.5) * frame.w;',
+      '  gl_Position = vec4(dot(at, ax) * frame.x + shift.x, dot(at, ay) * frame.y + shift.y, 0.0, 1.0);',
       '  gl_PointSize = 1.0;',
       '}'].join('\n');
   }
@@ -250,9 +288,17 @@
     function stepper(index) {
       if (!steppers[index]) {
         const program = link(stepShader(formulas[index]), STEP_FS, ['q']);
-        steppers[index] = {program, ...at(program, ['k', 'frame', 'home', 'start', 'ax', 'ay', 'az', 'space', 'pace', 'tick'])};
+        steppers[index] = {program, ...at(program, ['k', 'frame', 'home', 'start', 'ax', 'ay', 'az', 'space', 'shift', 'pace', 'tick'])};
       }
       return steppers[index];
+    }
+    const copiers = [];
+    function copier(index) {
+      if (!copiers[index]) {
+        const program = link(copyShader(formulas[index]), STEP_FS);
+        copiers[index] = {program, ...at(program, ['frame', 'home', 'ax', 'ay', 'mx', 'mz', 'shift', 'tick'])};
+      }
+      return copiers[index];
     }
     const middle = formula => [0, 1, 2].map(i => (formula.centre || [])[i] || 0);
 
@@ -277,8 +323,10 @@
     // which the still picture always does (it is in no hurry, and it is the one that is looked at).
     let W = 0, H = 0, side = 0, cap = CAP_MIN, liveMost = 0, asked = null, quality = 1, fine = false, late = 0, drew = 0, slow = 16.7;
     let live = null, sum = null, work = null;
-    // look: the view as nine numbers (across, down, away), then how much smaller the turned figure is drawn, then
-    // how deep a map is.
+    // look: the view as nine numbers (across, down, away), then how large the figure is drawn, then how deep a map
+    // is. An output may add: where the figure is drawn from the middle (x, y), how much brighter it is shown, how
+    // many further copies of it there are, and for each copy ten numbers: across (3), down (3), its size against the
+    // figure's, its place (x, y) and how much each of its points counts.
     const FRONT = [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0];
     let formula = 0, letters = [0, 0, 0, 0], look = FRONT, moving = false, changedAt = 0, started = false;
     // afresh: the next step starts from the seeds (1) or from the flow's line (2) instead of where the points are.
@@ -301,6 +349,7 @@
       gl.uniform4f(s.home, centre[0], centre[1], centre[2], 2 * SEED * view);
       gl.uniform3f(s.ax, from[0], from[1], from[2]); gl.uniform3f(s.ay, from[3], from[4], from[5]); gl.uniform3f(s.az, from[6], from[7], from[8]);
       gl.uniform2f(s.space, from[10], (FAR * view) ** 2);
+      gl.uniform2f(s.shift, into ? from[11] || 0 : 0, into ? from[12] || 0 : 0);
       // Points on the line creep along it; points on their own take the formula's full steps.
       if (flow) { if (onLine) gl.uniform2f(s.pace, THREAD_STEP * gap(formulas[formula]), 1); else gl.uniform2f(s.pace, formulas[formula].dt, Math.max(1, Math.round(formulas[formula].steps || 1))); }
       if (into) { gl.bindFramebuffer(gl.FRAMEBUFFER, into.fbo); gl.viewport(0, 0, into.w, into.h); } else gl.enable(gl.RASTERIZER_DISCARD);
@@ -313,6 +362,24 @@
         gl.beginTransformFeedback(gl.POINTS); gl.drawArrays(gl.POINTS, 0, BATCH); gl.endTransformFeedback();
         gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
         current = 1 - current;
+        // The copies an output asked for, from where the points now stand.
+        const copies = into ? Math.min(4, from[14] || 0) : 0;
+        if (copies) {
+          const c = copier(formula);
+          gl.useProgram(c.program);
+          gl.uniform4f(c.home, centre[0], centre[1], centre[2], from[10]);
+          gl.uniform3f(c.mx, from[0], from[1], from[2]); gl.uniform3f(c.mz, from[6], from[7], from[8]);
+          gl.uniform1ui(c.tick, tick + 7919);
+          gl.bindVertexArray(arrays[current]);
+          for (let j = 0; j < copies; j++) {
+            const o = 15 + 10 * j;
+            gl.uniform3f(c.ax, from[o], from[o + 1], from[o + 2]); gl.uniform3f(c.ay, from[o + 3], from[o + 4], from[o + 5]);
+            gl.uniform4f(c.frame, scaleX * from[o + 6], scaleY * from[o + 6], 0.6 / view, from[o + 9]);
+            gl.uniform2f(c.shift, from[o + 7], from[o + 8]);
+            gl.drawArrays(gl.POINTS, 0, BATCH);
+          }
+          gl.useProgram(s.program);
+        }
       }
       if (!into) gl.disable(gl.RASTERIZER_DISCARD);
     }
@@ -437,8 +504,10 @@
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H); gl.disable(gl.BLEND);
       gl.useProgram(showProgram); bind(0, live); bind(1, sum); bind(2, work);
       gl.uniform1i(showAt.live, 0); gl.uniform1i(showAt.sum, 1); gl.uniform1i(showAt.work, 2);
-      gl.uniform4f(showAt.gains, nLive > 0 ? square / nLive : 0, nStill > 0 ? cap / nStill : 0, nStill > 0 ? square / nStill : 0, part);
-      gl.uniform3f(showAt.halo, blurs && nLive > 0 ? HALO * square / nLive : 0, blurs && summed > 0 ? HALO * cap / summed : 0, Math.max(0, Math.log2(side / 64)));
+      // (A figure drawn larger than the picture spreads its points thinner: an output says how much brighter to show it.)
+      const more = look[13] || 1;
+      gl.uniform4f(showAt.gains, nLive > 0 ? more * square / nLive : 0, nStill > 0 ? more * cap / nStill : 0, nStill > 0 ? more * square / nStill : 0, part);
+      gl.uniform3f(showAt.halo, blurs && nLive > 0 ? more * HALO * square / nLive : 0, blurs && summed > 0 ? more * HALO * cap / summed : 0, Math.max(0, Math.log2(side / 64)));
       gl.uniform2f(showAt.px, 1 / W, 1 / H);
       gl.uniform3fv(showAt.stops, stops);
       quad();
@@ -454,7 +523,7 @@
       // The formula (its place in the list), the four letters and the view now. "inMotion": they are still changing.
       set(index, values, inMotion, view = FRONT) {
         moving = inMotion;
-        const same = started && index === formula && values.every((v, i) => v === letters[i]) && view.every((v, i) => v === look[i]);
+        const same = started && index === formula && values.every((v, i) => v === letters[i]) && view.length === look.length && view.every((v, i) => v === look[i]);
         if (same && !(inMotion && mode === 'still')) return;
         const first = !started;
         if (!same) {
@@ -519,5 +588,5 @@
       get lost() { return gl.isContextLost(); },
     };
   }
-  window.Picture = {create, BATCH};
+  window.Picture = {create, BATCH, FIT};
 })();

@@ -14,6 +14,8 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
   const t = await open(), {state, stats, stopped} = t, result = {gpu: GPU, origin: t.origin, packageBytes: t.fx?.size, files: t.fx?.files.map(f => [f.path, f.size])};
   const save = (name, data) => fs.writeFileSync(path.join(OUT, name), Buffer.from(data.split(',')[1], 'base64'));
   const near = (a, b) => Math.abs(a - b) < 1e-9;
+  // The open panel as it stands: every choice in order, with * on the ones chosen.
+  const app0 = frame => frame.evaluate(() => [...document.querySelectorAll('.ui-modal.is-visible .ui-grid-btn')].map(b => b.textContent + (b.classList.contains('is-active') ? '*' : '')));
   // What the figure is, without what the sound happens to be doing.
   const figure = s => ({formula: s.formula, a: s.a, b: s.b, c: s.c, d: s.d, palette: s.palette, show: s.show, spin: s.spin, turn: s.turn, tilt: s.tilt});
   // Take a choice in a panel: open it with its key (2 is K3, Figures; 3 is K4, Player), touch the choice, close it.
@@ -309,6 +311,36 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
       await o.context.close();
     }
 
+    /* ---- how an output shows the figure: whole, three, mirrored or close; the device keeps the one whole figure ---- */
+    const y = await t.visit(REST, {ratio: '16:9', size: 0}), hand = await y.find('control'), screen = await y.output();
+    await stopped(screen);
+    // Where the light is across the picture, and how alike its left half is to its right half turned over.
+    const spread = frame => frame.evaluate(() => {
+      const source = document.getElementById('picture'), copy = document.createElement('canvas'); copy.width = 96; copy.height = 54;
+      const g = copy.getContext('2d', {willReadFrequently: true}); g.drawImage(source, 0, 0, 96, 54);
+      const d = g.getImageData(0, 0, 96, 54).data, light = (x, y) => d[4 * (y * 96 + x)] + d[4 * (y * 96 + x) + 1] + d[4 * (y * 96 + x) + 2];
+      let left = 96, right = 0, ab = 0, aa = 0, bb = 0;
+      for (let y = 0; y < 54; y++) for (let x = 0; x < 96; x++) { if (light(x, y) > 90) { left = Math.min(left, x); right = Math.max(right, x); } if (x < 48) { const a = light(x, y), b = light(95 - x, y); ab += a * b; aa += a * a; bb += b * b; } }
+      return {wide: Math.max(0, right - left + 1) / 96, left: left / 96, right: (95 - right) / 96, mirrored: ab / Math.sqrt(aa * bb || 1)};
+    });
+    await y.key(2);
+    assert.deepEqual((await app0(hand)).slice(-6), ['Whole*', 'Three', 'Mirror', 'Close', 'Show*', 'Hide'], 'Figures offers the four ways');
+    result.layouts = {};
+    for (const [i, name] of ['Whole', 'Three', 'Mirror', 'Close'].entries()) {
+      await y.click(hand, '[data-row="output"] [data-value="' + i + '"]');
+      await y.page.waitForTimeout(400); await stopped(screen); await stopped(hand);
+      result.layouts[name] = {...(await spread(screen)), fit: (await stats(screen)).fit, copies: (await stats(screen)).copies};
+      assert.deepEqual([(await state(screen)).layout, (await stats(hand)).copies, (await stats(hand)).fit], [name, 0, 1], 'the output is told; the device keeps its one whole figure');
+      await y.page.locator('#outputScreen').screenshot({path: path.join(OUT, 'output-layout-' + name.toLowerCase() + '.png')});
+    }
+    const {Whole, Three, Mirror, Close} = result.layouts;
+    assert(Whole.copies === 0 && Whole.wide < 0.6 && Whole.mirrored < 0.9, 'whole: one figure in the middle: ' + JSON.stringify(Whole));
+    assert(Three.copies === 2 && Three.wide > 1.4 * Whole.wide, 'three: the figure with one more at each side: ' + JSON.stringify(Three));
+    assert(Mirror.copies >= 1 && Mirror.mirrored > 0.97 && Mirror.wide > 1.4 * Whole.wide, 'mirror: the two halves answer each other: ' + JSON.stringify(Mirror));
+    assert(Close.fit > 1.5 * Whole.fit && Close.left < 0.03 && Close.right < 0.03, 'close: the figure runs from edge to edge: ' + JSON.stringify(Close));
+    await y.click(hand, '[data-row="output"] [data-value="0"]');
+    await y.context.close();
+
     /* ---- a 1080p output while a knob keeps turning ---- */
     const big = await t.visit(REST, {ratio: '16:9', size: 1080}), small = await big.find('control'), wall = await big.output();
     await stopped(wall);
@@ -324,7 +356,7 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
 
     assert.deepEqual(t.errors, [], 'no page errors');
     console.log(JSON.stringify(result, null, 1));
-    console.log('PASS Attractor in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening in the show, a link at rest, turning without flashes, the same picture again, output, steps, all presets, colours, the show, text, share link, collapsed setting, formats and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
+    console.log('PASS Attractor in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening in the show, a link at rest, turning without flashes, the same picture again, output, steps, all presets, colours, the show, text, share link, collapsed setting, formats, the four ways an output shows the figure and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
   } catch (error) {
     console.log(JSON.stringify(result, null, 1));
     console.error('errors', t.errors);

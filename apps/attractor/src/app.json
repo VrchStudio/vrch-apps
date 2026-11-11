@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "7456c5e9-8856-4134-90a5-c036a8d8b199",
   "name": "Attractor",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -68,7 +68,7 @@
           },
           {
             "control": "K3 · Press",
-            "action": "Figures: formula, preset, colours and the text on the picture. E1 moves through the choices, a press of E1 takes one, K3 closes."
+            "action": "Figures: formula, preset, colours, how a large output shows the figure, and the text on the picture. E1 moves through the choices, a press of E1 takes one, K3 closes."
           },
           {
             "control": "K4 · Press",
@@ -103,7 +103,7 @@
       },
       {
         "title": "The picture",
-        "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. Every figure has depth: for a two-line formula it is where each point was one step before. A three-line formula moves smoothly through space and is drawn as one long line wound into its figure. While anything moves the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text."
+        "text": "Each formula takes a point and gives the next one. The App follows many points at once and counts where they land: the more often a place is hit, the brighter it is. Every figure has depth: for a two-line formula it is where each point was one step before. A three-line formula moves smoothly through space and is drawn as one long line wound into its figure. While anything moves the figure is a little grainy; at rest the points gather to several million and the picture becomes smooth, then stops. Some settings collapse to a few points, which the device screen says; K2 always leads back to a preset. A large output shows the figure only, with no text. Output in Figures chooses how: Whole, the one figure; Three, with the same figure seen from two other sides beside it; Mirror, the figure and its mirror image side by side; or Close, so near that it fills the screen from edge to edge. The device screen always shows the one whole figure."
       },
       {
         "title": "Sound",

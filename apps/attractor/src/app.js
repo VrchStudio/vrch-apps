@@ -106,13 +106,47 @@
     const z = motion.zoom, u = z ? clamp((at - z.at) / ZOOM_EASE_MS, 0, 1) : 1;
     return z ? z.from + (1 - z.from) * u * u * (3 - 2 * u) : 1;
   }
+  // How an output shows the figure. Whole: the one figure. Three: it and, at its sides, the same figure seen from
+  // two other sides, smaller and fainter. Mirror: it and its mirror image side by side, overlapping, and again
+  // where there is room. Close: so near that it fills the longer side and runs past the shorter one.
+  // The device's own screen always shows the one whole figure.
+  const LAYOUTS = ['Whole', 'Three', 'Mirror', 'Close'];
+  let arrange = 0;
   let room = null;   // an output: how much wider and taller the stage is than its shorter side, and how much larger the figure may be
   function lookAt(at) {
-    const formula = FORMULAS[motion.formula], yaw = yawAt(at), pitch = pitchAt(at), c = Math.cos(yaw), s = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const formula = FORMULAS[motion.formula], yaw = yawAt(at), pitch = pitchAt(at), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const deep = formula.flow ? 1 : formula.deep ?? DEPTH;
+    const from = angle => { const c = Math.cos(angle), s = Math.sin(angle); return [c, 0, s, sp * s, cp, -sp * c, -cp * s, sp, cp * c]; };
+    const c = Math.cos(yaw), s = Math.sin(yaw), main = from(yaw);
     const wide = formula.flow ? 1 : Math.abs(c) + deep * Math.abs(s), tall = formula.flow ? Math.abs(sp) + Math.abs(cp) : Math.abs(sp * s) + Math.abs(cp) + deep * Math.abs(sp * c);
-    const fit = room ? Math.min(room[0] * room[2] / wide, room[1] * room[2] / tall) * zoomAt(at) : 1 / Math.max(1, wide, tall);
-    return [c, 0, s, sp * s, cp, -sp * c, -cp * s, sp, cp * c, fit, deep];
+    if (!room) return [...main, 1 / Math.max(1, wide, tall), deep];
+    const whole = Math.min(room[0] * room[2] / wide, room[1] * room[2] / tall), zoom = zoomAt(at);
+    // Along the longer side of the screen, which runs from -1 to 1, a figure drawn at size 1 reaches "unit" each way.
+    const across = room[0] >= room[1], unit = Picture.FIT / Math.max(room[0], room[1]), place = v => across ? [v, 0] : [0, v];
+    if (arrange === 1) {
+      // The figure in the middle, as large as leaves room for two at its sides.
+      let size = whole, small = (0.98 / (unit * size) - 0.92) / 1.92;
+      if (small < 0.55) { small = 0.55; size = 0.98 / (unit * (0.92 * 1.55 + 0.55)); }
+      small = Math.min(small, 0.85); size *= 1 + 0.3 * (zoom - 1);
+      const reach = unit * size, off = 0.92 * reach * (1 + small), count = small < 0.72 ? 0.25 : 0.5;
+      const sides = [-1, 1].flatMap(way => { const m = from(yaw + way * 2 * Math.PI / 3); return [...m.slice(0, 6), small, ...place(way * off), count]; });
+      return [...main, size, deep, 0, 0, 1, 2, ...sides];
+    }
+    if (arrange === 2) {
+      // Each figure is the mirror image of its neighbours: one pair, or two where the screen is wide enough.
+      let size = whole * (1 + 0.3 * (zoom - 1)), reach = unit * size, step = 0.6 * reach;
+      if (step + reach > 1.02) { size *= 1.02 / (step + reach); reach = unit * size; step = 0.6 * reach; }
+      const flipped = across ? [-main[0], -main[1], -main[2], main[3], main[4], main[5]] : [main[0], main[1], main[2], -main[3], -main[4], -main[5]];
+      const copies = [[...flipped, 1, ...place(step), 1]];
+      if (3 * step + 0.8 * reach <= 1) copies.push([...main.slice(0, 6), 1, ...place(3 * step), 0.5], [...flipped, 1, ...place(-3 * step), 0.5]);
+      return [...main, size, deep, ...place(-step), 1, copies.length, ...copies.flat()];
+    }
+    if (arrange === 3) {
+      // (A figure does not quite fill the square it is given: a little closer still, and it reaches the edges.)
+      const size = Math.max(whole, 1.15 * Math.max(room[0] / wide, room[1] / tall) * (1 + 0.4 * (zoom - 1)));
+      return [...main, size, deep, 0, 0, Math.min(6, (size / whole) ** 2), 0];
+    }
+    return [...main, whole * zoom, deep];
   }
   let dragging = false;
   const inMotion = at => !!motion.drift || gliding(at) || hearing(at) || !!motion.view.spin || dragging || (!!room && !!motion.zoom && at < motion.zoom.at + ZOOM_EASE_MS);
@@ -175,7 +209,7 @@
       degenerate: picture ? picture.collapsed : null,
       mode: picture ? picture.mode : 'none', cap: picture ? picture.cap : 0, size: picture ? picture.size : [0, 0],
       quality: picture ? Math.round(picture.quality * 100) / 100 : 0,
-      lined: picture ? picture.lined : false, fit: Math.round(lookAt(epoch())[9] * 1000) / 1000,
+      lined: picture ? picture.lined : false, fit: Math.round(lookAt(epoch())[9] * 1000) / 1000, copies: lookAt(epoch())[14] || 0,
     };
   }
 
@@ -238,13 +272,14 @@
     if (['auto', 'hold', 'still'].includes(value.show)) kept.show = value.show;
     if (['music', 'input', 'silent'].includes(value.source) && (value.source !== 'music' || TRACKS.length)) kept.source = value.source;
     if (Number.isInteger(value.track) && TRACKS[value.track]) kept.track = value.track;
+    if (Number.isInteger(value.layout) && LAYOUTS[value.layout]) arrange = value.layout;
     kept.muted = value.muted === true;
   }
   function saveSoon() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       const value = {v: 1, formula: FORMULAS[motion.formula].id, p: motion.p, palette, text: textShown, yaw: yawAt(epoch()) % (2 * Math.PI), pitch: motion.view.pitch, spin: motion.view.spin ? motion.view.spin.dir : 0,
-        show: lent.show ? kept.show : show.mode, source: player ? player.source : kept.source, track: player ? player.index : kept.track, muted: player ? player.muted : kept.muted};
+        layout: arrange, show: lent.show ? kept.show : show.mode, source: player ? player.source : kept.source, track: player ? player.index : kept.track, muted: player ? player.muted : kept.muted};
       try { version = (await sdk.data.set('state', value, version === undefined ? {} : {expectedVersion: version})).version; }
       catch (_) { try { version = (await sdk.data.get('state')).version; } catch (__) { /* best effort */ } }
     }, 800);
@@ -278,7 +313,7 @@
   function publish() {
     if (isOutput || !relay) return;
     clearTimeout(publishTimer); publishTimer = 0;
-    try { relay.publish({v: 1, f: FORMULAS[motion.formula].id, p: motion.p, g: motion.glide, drift: motion.drift, s: motion.show, z: motion.zoom, c: palette, w: [motion.view.yaw, motion.view.pitch, motion.view.spin]}); } catch (_) { /* no output */ }
+    try { relay.publish({v: 1, f: FORMULAS[motion.formula].id, p: motion.p, g: motion.glide, drift: motion.drift, s: motion.show, z: motion.zoom, l: arrange, c: palette, w: [motion.view.yaw, motion.view.pitch, motion.view.spin]}); } catch (_) { /* no output */ }
   }
   // What sound adds goes to the output as it changes, frame by frame.
   function send() {
@@ -314,6 +349,7 @@
     motion.glide = data.g && valid(data.g.from, lo, hi) && Number.isFinite(data.g.at) ? {from: data.g.from, at: data.g.at, ms: Number.isFinite(data.g.ms) ? clamp(data.g.ms, 100, 20000) : GLIDE_MS} : null;
     motion.drift = Number.isFinite(data.drift) ? data.drift : 0;
     motion.show = Number.isFinite(data.s) ? data.s : 0;
+    arrange = Number.isInteger(data.l) && LAYOUTS[data.l] ? data.l : 0;
     motion.zoom = data.z && Number.isFinite(data.z.from) && Number.isFinite(data.z.at) ? {from: clamp(data.z.from, 1, ZOOM), at: data.z.at} : null;
     if (Array.isArray(data.w) && Number.isFinite(data.w[0]) && Number.isFinite(data.w[1])) {
       const spin = data.w[2] && Number.isFinite(data.w[2].at) && Math.abs(data.w[2].dir) === 1 ? {at: data.w[2].at, dir: data.w[2].dir} : null, to = {yaw: data.w[0], pitch: clamp(data.w[1], -TILT, TILT)};
@@ -516,6 +552,7 @@
         {row: 'formula', label: 'Formula', note: '', options: FORMULAS.map((f, i) => ({id: String(i), label: f.name, current: i === motion.formula})), pick: id => chooseFormula(Number(id))},
         {row: 'preset', label: 'Preset', note: formula.name, options: formula.presets.map((set, i) => ({id: String(i), label: String(i + 1), current: i === on})), pick: id => choosePreset(Number(id))},
         {row: 'colours', label: 'Colours', note: '', options: PALETTES.map((p, i) => ({id: String(i), label: p.name, current: i === palette})), pick: id => chooseColours(Number(id))},
+        ...(relay ? [{row: 'output', label: 'Output', note: '', options: LAYOUTS.map((name, i) => ({id: String(i), label: name, current: i === arrange})), pick: id => { arrange = Number(id); renderPanel(); changed(); }}] : []),
         {row: 'text', label: 'Formula Text', note: '', options: [{id: 'on', label: 'Show', current: textShown}, {id: 'off', label: 'Hide', current: !textShown}], pick: id => { textShown = id === 'on'; renderPanel(); saveSoon(); }},
       ];
     }
@@ -606,7 +643,7 @@
       return {formula: FORMULAS[motion.formula].id, a: letters[0] / 100, b: letters[1] / 100, c: letters[2] / 100, d: letters[3] / 100, palette: PALETTES[palette].name,
         show: isOutput ? (motion.show ? 'on' : 'still') : show.mode, scene: show.scene, textVisible: !isOutput && textShown,
         source: player ? player.source : 'silent', track: player && player.source === 'music' ? player.title : null, muted: player ? player.muted : false, audible: player ? player.audible : false,
-        listening: player ? player.source === 'input' && player.listening : false, panel,
+        listening: player ? player.source === 'input' && player.listening : false, panel, layout: LAYOUTS[arrange],
         spin: motion.view.spin ? motion.view.spin.dir : 0, turn: Math.round(yawAt(at) * 1800 / Math.PI) / 10, tilt: Math.round(pitchAt(at) * 1800 / Math.PI) / 10};
     },
     stats,
