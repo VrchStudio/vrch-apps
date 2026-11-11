@@ -2,7 +2,7 @@
 //
 // To add a formula, append an entry:
 //   id       short lower-case name (a-z, 0-9, -). Saved settings and share links carry it: never change it later.
-//   name     shown beside K4.
+//   name     shown beside K2.
 //   text     the lines shown on the device screen.
 //   range    lowest and highest value of each of the four letters a, b, c, d.
 //   view     half the width of the square that is always in the picture: (0, 0) is its centre and it reaches from
@@ -11,7 +11,6 @@
 //   step     one step of the formula: a GLSL ES 3.0 expression for the next point (a vec2) from the current point p
 //            (p.x, p.y) and the letters a, b, c, d. Write whole numbers with a decimal point (2.0, not 2).
 //   with     optional helper values, each 'name = expression', worked out in order before step and usable in it.
-//   hear     optional: how fast the formula is followed when it is played as sound (steps a second).
 //   presets  six or more [a, b, c, d] sets with two decimals, inside the range. The first opens with the formula.
 //            Look at each one on the screen: it should stay inside the square and not collapse to a few points.
 //
@@ -20,10 +19,15 @@
 //   dt       how much of its time one step covers.
 //   steps    optional: how many such steps each drawing takes (1 if left out). More makes the figure follow the
 //            knobs sooner; it costs as many times the work.
-// It is drawn turning slowly about the z axis, which points up. For a flow, "hear" is units of its time a second.
+//   thread   how much of its time the line it is drawn as covers: a flow is drawn as one long path wound into its
+//            figure (thread.js follows it). About 150 turns of the figure look right. Left out, the flow is drawn
+//            as a cloud of separate points.
+//   strands  optional, 1 to 6: that many paths, each "thread" long, started in different directions. For a figure
+//            that comes in several alike, where one path would find only one of them.
+// z points up.
 //
-// The expressions are also read by voice.js for the sound: keep to numbers, + - * /, brackets, the letters, p.x p.y
-// p.z, the helper names, and sin cos tan abs sign sqrt exp log floor fract pow mod min max atan.
+// A flow's expressions are also read by thread.js: keep to numbers, + - * /, brackets, the letters, p.x p.y p.z, the
+// helper names, and sin cos tan abs sign sqrt exp log floor fract pow mod min max atan.
 // Then run the repository's unit tests (python3 -m unittest discover -s tests): they step every preset and fail on
 // one that collapses or leaves the square.
 window.Formulas = [
@@ -143,7 +147,7 @@ window.Formulas = [
     flow: 'vec3(10.0 * a * (p.y - p.x), p.x * (28.0 * b - p.z) - d * p.y, p.x * p.y - 2.6666667 * c * p.z)',
     dt: 0.01,
     steps: 4,
-    hear: 120,
+    thread: 110,
     presets: [
       [1.0, 1.0, 1.0, 1.0],
       [1.97, 0.91, 0.66, 0.65],
@@ -163,7 +167,7 @@ window.Formulas = [
     flow: 'vec3((p.z - b) * p.x - 3.5 * d * p.y, 3.5 * d * p.x + (p.z - b) * p.y, c + a * p.z - p.z * p.z * p.z / 3.0 - (p.x * p.x + p.y * p.y) * (1.0 + 0.25 * p.z) + 0.1 * p.z * p.x * p.x * p.x)',
     dt: 0.02,
     steps: 3,
-    hear: 250,
+    thread: 260,
     presets: [
       [0.95, 0.7, 0.6, 1.0],
       [1.08, 0.83, 0.43, 1.1],
@@ -182,7 +186,8 @@ window.Formulas = [
     view: 7.4,
     flow: 'vec3(sin(b * p.y) - 0.2 * a * p.x, sin(c * p.z) - 0.2 * a * p.y, sin(d * p.x) - 0.2 * a * p.z)',
     dt: 0.08,
-    hear: 1500,
+    thread: 420,
+    strands: 6,
     presets: [
       [1.04, 1.0, 1.0, 1.0],
       [0.6, 1.0, 1.0, 1.0],

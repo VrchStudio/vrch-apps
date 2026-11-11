@@ -1,4 +1,4 @@
-// Attractor in the real Playground: the acceptance checks of the implementation brief.
+// Attractor in the real Playground: the acceptance checks of the implementation brief, and the show it opens in.
 //   node tests/attractor_browser.cjs            software drawing: behaviour only, speed is reported
 //   ATTRACTOR_GPU=1 node tests/...              this machine's GPU: speed is checked too
 //   ATTRACTOR_ORIGIN=https://dev-3090.vrch.ai   a deployed Playground and the published App
@@ -7,6 +7,8 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 const {open, OUT, GPU, LIVE} = require('./attractor_playground.cjs');
 const FORMULAS = ['dejong', 'clifford', 'svensson', 'dream', 'mira', 'ikeda', 'lorenz', 'aizawa', 'thomas'], FLOWS = ['lorenz', 'aizawa', 'thomas'];
 const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
+// The reference figure as a link: a link opens one figure at rest, with no show and no sound moving it.
+const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
 
 (async () => {
   const t = await open(), {state, stats, stopped} = t, result = {gpu: GPU, origin: t.origin, packageBytes: t.fx?.size, files: t.fx?.files.map(f => [f.path, f.size])};
@@ -15,14 +17,44 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
   // Turn knob "index" one slow detent at a time until its letter reads "target".
   const reach = async (v, app, index, letter, target) => { for (let i = 0; i < 200; i++) { const now = (await state(app))[letter]; if (near(now, target)) return; await v.turn(index, now < target ? 1 : -1, 130); } throw new Error(letter + ' did not reach ' + target); };
   try {
-    /* ---- opens with the reference figure, asking for nothing, silent ---- */
-    const v = await t.visit('');
+    /* ---- opens performing: the show is on, the music plays and the figure moves with it, asking for nothing ---- */
+    const d = await t.visit(''), fresh = await d.find('control');
+    result.firstFrameMs = await fresh.evaluate(() => __attractor.firstFrameAt);
+    if (GPU) assert(result.firstFrameMs < 1000, 'a first figure within 1 s: ' + result.firstFrameMs);
+    await fresh.waitForFunction(() => __attractor.state().audible, null, {timeout: 15000});
+    await d.page.waitForTimeout(2500);
+    const opened = [await state(fresh), await stats(fresh)], stage = await d.output(), far0 = [await state(stage), await stats(stage)];
+    assert.deepEqual([opened[0].formula, opened[0].show, opened[0].source, opened[0].track, opened[0].muted, opened[0].spin, opened[0].panel], ['dejong', true, 'music', 'Strange Loop', false, 1, false], 'it opens in the show, with its music: ' + JSON.stringify(opened[0]));
+    assert(opened[1].mode === 'live' && Math.abs(opened[0].a - 1.49) > 0.001 && Math.abs(opened[0].a - 1.49) < 0.2, 'the figure moves: ' + JSON.stringify(opened));
+    if (GPU) assert(opened[1].fps >= 30 && opened[1].pointsPerFrame >= BATCH, 'at 30 frames a second or more: ' + JSON.stringify(opened[1]));
+    assert.equal(await fresh.evaluate(() => document.getElementById('status').innerText), 'Strange Loop');
+    assert.equal(await fresh.evaluate(() => document.getElementById('speaker').dataset.on), 'true', 'the speaker shows the music playing');
+    assert(far0[0].show && far0[0].spin === 1 && far0[1].mode === 'live', 'the output is in the show too: ' + JSON.stringify(far0));
+    assert.deepEqual(d.prompts, []);
+    for (const frame of d.page.frames()) assert.deepEqual(await frame.evaluate(() => window.__asked || []).catch(() => []), [], 'no microphone or camera request');
+    await d.page.screenshot({path: path.join(OUT, 'show-open.png')});
+    // The show moves on by itself: within its longest scene the letters slide to another figure of the formula.
+    await fresh.waitForFunction(() => __attractor.state().scene >= 1, null, {timeout: 40000});
+    await d.page.waitForTimeout(1500);
+    const moved = [await state(fresh), await state(stage)];
+    assert(moved[0].formula === 'dejong' && Math.abs(moved[0].a - 1.49) > 0.2 && Math.abs(moved[0].a - moved[1].a) < 0.3 && moved[0].palette === 'Ember', 'the next figure, on the output too: ' + JSON.stringify(moved));
+    result.show = {scene: moved[0].scene, zoom: (await stats(stage)).fit, device: opened[1].fps, output: far0[1].fps};
+    await d.page.screenshot({path: path.join(OUT, 'show-scene.png')});
+    // K3 held: the show stops where it is, and the music plays on.
+    await d.key(2, 900);
+    const halted = await state(fresh);
+    assert.deepEqual([halted.show, halted.spin, halted.source, halted.palette], [false, 0, 'music', 'Ember'], 'K3 held stops the show: ' + JSON.stringify(halted));
+    await d.page.waitForTimeout(2200);
+    assert(Math.abs((await state(fresh)).turn - halted.turn) < 0.01 && (await state(stage)).show === false && Math.abs((await stats(stage)).fit - 1.06) < 0.25, 'the figure stays where it was, whole again on the output');
+    await d.context.close();
+
+    /* ---- a link opens one figure at rest, asking for nothing, silent ---- */
+    const v = await t.visit(REST);
     const app = await v.find('control');
-    result.firstFrameMs = await app.evaluate(() => __attractor.firstFrameAt);
     await app.waitForFunction(() => __attractor.twoMillionAt !== null, null, {timeout: 60000});
     result.twoMillionMs = await app.evaluate(() => __attractor.twoMillionAt);
-    if (GPU) assert(result.firstFrameMs < 1000 && result.twoMillionMs < 3000, 'a first figure within 1 s and two million points within 3 s: ' + JSON.stringify(result));
-    assert.deepEqual(await state(app), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', drift: false, textVisible: true, sound: false, listening: false, source: 'off', piece: null, spin: 0, turn: 0, tilt: 0});
+    if (GPU) assert(result.twoMillionMs < 3000, 'two million points within 3 s: ' + JSON.stringify(result));
+    assert.deepEqual(await state(app), {formula: 'dejong', a: 1.49, b: -2.28, c: 2.36, d: -2.13, palette: 'Ember', show: false, scene: 0, textVisible: true, source: 'silent', track: null, muted: false, audible: false, listening: false, panel: false, spin: 0, turn: 0, tilt: 0});
     await stopped(app);
     result.finished = await stats(app);
     assert(result.finished.points === result.finished.cap && result.finished.cap >= 5e6 && result.finished.cap <= 20e6 && result.finished.degenerate === false, 'the picture finishes at its limit: ' + JSON.stringify(result.finished));
@@ -82,7 +114,9 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     await stopped(out);
     assert.equal(await out.evaluate(() => document.body.innerText.trim()), '', 'the output shows no text');
     assert.equal(await out.evaluate(() => getComputedStyle(document.getElementById('corner')).display), 'none');
-    result.outputAlike = t.alike(await t.grid(app), await t.grid(out));
+    // (The output draws the figure a little larger, to fill its height.)
+    const larger = async () => (await stats(out)).fit / (await stats(app)).fit;
+    result.outputAlike = t.alike(await t.grid(app, 1 / await larger()), await t.grid(out));
     assert(result.outputAlike > 0.9, 'the output shows the device figure: ' + result.outputAlike);
     result.output = await stats(out);
 
@@ -117,9 +151,9 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
       }
       result.presets[FORMULAS[f]] = seen.length;
       assert(seen.length >= 6, FORMULAS[f] + ' has six or more presets: ' + seen.length);
-      await v.key(3); await v.page.waitForTimeout(300);
+      await v.key(1, 800); await v.page.waitForTimeout(300);
     }
-    assert.equal((await state(app)).formula, 'dejong', 'K4 comes round to the first formula');
+    assert.equal((await state(app)).formula, 'dejong', 'K2 held comes round to the first formula');
     assert.deepEqual(await state(out), await state(app).then(s => ({...s, textVisible: false})));
 
     /* ---- colours ---- */
@@ -157,38 +191,33 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     await w.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'shared.png')});
     await w.context.close();
     const bad = await t.visit('&s=v1.nothing.1.2.3.4.0'), fallback = await bad.find('control');
-    assert.equal((await state(fallback)).a, 1.49, 'an unreadable link opens with the defaults');
+    assert.deepEqual([(await state(fallback)).formula, (await state(fallback)).show], ['dejong', true], 'an unreadable link opens as the App does by itself');
     await bad.context.close();
     const old = await t.visit('&s=v1.clifford.-140.160.100.70.2'), earlier = await old.find('control');
     assert.deepEqual([(await state(earlier)).formula, (await state(earlier)).a, (await state(earlier)).palette], ['clifford', -1.4, 'Silver'], 'a link from an earlier version still opens');
     await old.context.close();
 
-    /* ---- motion: K3 held goes through spin, drift, both and none; a drag turns the figure; a flick spins it ---- */
-    const m = await t.visit(''), dev = await m.find('control'), far = await m.output();
+    /* ---- the show from rest: K3 held starts it, the figure turns, tilts and sways, and held again it stops there ---- */
+    const m = await t.visit(REST), dev = await m.find('control'), far = await m.output();
     await stopped(dev); await stopped(far);
     const front = await t.grid(far);
     await m.key(2, 900);
-    assert.deepEqual([(await state(dev)).spin, (await state(dev)).drift, (await state(dev)).palette], [1, false, 'Ember'], 'K3 held once: spin, and the colours stay');
+    assert.deepEqual([(await state(dev)).show, (await state(dev)).spin, (await state(dev)).palette, (await state(dev)).source], [true, 1, 'Ember', 'silent'], 'K3 held: the show, and the colours stay');
     await m.page.waitForTimeout(2500);
     const spun = [await state(dev), await state(far), await stats(dev), await stats(far)];
-    assert(spun[0].turn > 10 && Math.abs(spun[0].turn - spun[1].turn) < 3 && spun[1].spin === 1, 'the figure turns, and the output with it: ' + JSON.stringify([spun[0].turn, spun[1].turn]));
+    assert(spun[0].turn > 10 && Math.abs(spun[0].turn - spun[1].turn) < 3 && spun[1].spin === 1 && spun[1].show, 'the figure turns, and the output with it: ' + JSON.stringify([spun[0].turn, spun[1].turn]));
+    assert(spun[0].tilt > 1 && Math.abs(spun[0].tilt - spun[1].tilt) < 0.5, 'it tilts: ' + JSON.stringify([spun[0].tilt, spun[1].tilt]));
+    assert(Math.abs(spun[0].a - 1.49) > 0.003 && Math.abs(spun[0].a - 1.49) <= 0.0701 && Math.abs(spun[0].a - spun[1].a) < 0.01, 'the letters sway a little, on the output too: ' + JSON.stringify([spun[0].a, spun[1].a]));
     assert(spun[2].mode === 'live' && spun[3].mode === 'live');
     result.spin = {device: {fps: spun[2].fps, pointsPerFrame: spun[2].pointsPerFrame}, output: {fps: spun[3].fps, pointsPerFrame: spun[3].pointsPerFrame}};
     await m.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-spin.png')});
     save('output-spin.png', await t.bytes(far));
-    await m.key(2, 900);
-    assert.deepEqual([(await state(dev)).spin, (await state(dev)).drift], [0, true], 'held again: drift alone');
-    await m.page.waitForTimeout(2500);
-    const adrift = [await state(dev), await state(far), await stats(dev)];
-    assert(Math.abs(adrift[0].a - 1.49) > 0.005 && Math.abs(adrift[0].a - 1.49) <= 0.0701, 'the letters sway a little: ' + adrift[0].a);
-    assert(Math.abs(adrift[0].a - adrift[1].a) < 0.01 && adrift[1].drift, 'the output sways with the device');
-    assert.equal(adrift[2].mode, 'live');
-    result.drift = {fps: adrift[2].fps, pointsPerFrame: adrift[2].pointsPerFrame};
-    await m.key(2, 900);
-    assert.deepEqual([(await state(dev)).spin, (await state(dev)).drift], [1, true], 'held again: both');
+    // A knob in the hand: the show leaves the figure alone for a while.
+    await m.turn(0, 3, 120);
+    assert.equal((await state(dev)).scene, 0);
     await m.key(2, 900);
     const rested = await state(dev);
-    assert.deepEqual([rested.spin, rested.drift], [0, false], 'held again: none');
+    assert.deepEqual([rested.show, rested.spin], [false, 0], 'held again: the show stops');
     await m.page.waitForTimeout(600);
     assert.deepEqual(await state(dev), rested, 'the letters and the view stay where they were');
     await stopped(dev); await stopped(far);
@@ -200,7 +229,7 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     assert(dragged.turn - rested.turn > 15 && dragged.turn - rested.turn < 90 && dragged.tilt > 3 && dragged.tilt < 57 && dragged.spin === 0 && dragged.textVisible, 'a drag turns and tilts the figure and hides nothing: ' + JSON.stringify([rested.turn, dragged.turn, dragged.tilt]));
     await stopped(dev); await stopped(far);
     assert(Math.abs((await state(far)).turn - dragged.turn) < 0.2 && Math.abs((await state(far)).tilt - dragged.tilt) < 0.2, 'the output is seen from the same side');
-    result.turnedAlike = t.alike(await t.grid(dev), await t.grid(far));
+    result.turnedAlike = t.alike(await t.grid(dev, (await stats(dev)).fit / (await stats(far)).fit), await t.grid(far));
     assert(result.turnedAlike > 0.9, 'and shows the same turned figure: ' + result.turnedAlike);
     await m.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-turned.png')});
     save('output-turned.png', await t.bytes(far));
@@ -235,7 +264,7 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
     result.formats = {};
     let reference = null;
     for (const ratio of ['16:9', '9:16', '21:9', '4:3']) {
-      const o = await t.visit('', {ratio, size: 0});
+      const o = await t.visit(REST, {ratio, size: 0});
       await o.find('control');
       const picture = await o.output();
       await stopped(picture);
@@ -255,12 +284,13 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
       // The figure takes the same share of the shorter side, both ways, whatever the format.
       reference ||= [shape.wide / side, shape.tall / side];
       assert(reference[0] > 0.6 && reference[1] > 0.6 && Math.abs(shape.wide / side - reference[0]) < 0.03 && Math.abs(shape.tall / side - reference[1]) < 0.03, ratio + ': the figure keeps its proportions: ' + JSON.stringify(shape));
-      assert(Math.min(shape.left, shape.right, shape.top, shape.bottom) > 0.02 * side, ratio + ': the figure stays inside the picture: ' + JSON.stringify(shape));
+      assert(Math.min(shape.left, shape.right, shape.top, shape.bottom) > 0.004 * side, ratio + ': the figure stays inside the picture: ' + JSON.stringify(shape));
+      assert(shape.tall > 0.9 * side, ratio + ': and fills its height: ' + JSON.stringify(shape));
       await o.context.close();
     }
 
     /* ---- a 1080p output while a knob keeps turning ---- */
-    const big = await t.visit('', {ratio: '16:9', size: 1080}), small = await big.find('control'), wall = await big.output();
+    const big = await t.visit(REST, {ratio: '16:9', size: 1080}), small = await big.find('control'), wall = await big.output();
     await stopped(wall);
     result.large = {size: (await stats(wall)).size, cap: (await stats(wall)).cap};
     assert.deepEqual(result.large.size, [1920, 1080]);
@@ -274,7 +304,7 @@ const COLOURS = ['Ember', 'Neon', 'Silver', 'Iris'], BATCH = 50000;
 
     assert.deepEqual(t.errors, [], 'no page errors');
     console.log(JSON.stringify(result, null, 1));
-    console.log('PASS Attractor in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening, turning without flashes, the same picture again, output, steps, all presets, colours, drift, text, share link, collapsed setting, formats and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
+    console.log('PASS Attractor in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening in the show, a link at rest, turning without flashes, the same picture again, output, steps, all presets, colours, the show, text, share link, collapsed setting, formats and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
   } catch (error) {
     console.log(JSON.stringify(result, null, 1));
     console.error('errors', t.errors);

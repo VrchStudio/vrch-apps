@@ -4,6 +4,7 @@
 
 ### Added
 
+- Attractor: opens in a show that performs by itself with the music; Player and a speaker button choose and mute the sound; Lorenz, Aizawa and Thomas are drawn as one line.
 - Attractor: two pieces of music come with the App and move the figure while they play; an audio input can drive it instead.
 - Attractor: turn every figure in space by dragging or let it spin, on the device and on a large output.
 - Attractor: five more formulas, three of them turning in three dimensions, a figure that can follow the audio input, and the formula played as sound.

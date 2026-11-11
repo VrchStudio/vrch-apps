@@ -19,6 +19,11 @@
 // little along its rate of change). Every figure is seen in space and can be turned: a map's third direction is where
 // the point was one step before. While the view turns the picture is the live one; at rest it gathers and sharpens.
 //
+// A flow is drawn as a line. Its points do not start scattered: thread.js follows one path of the flow and hands
+// over points in order along it, and here they creep along that path a fraction of the gap between them at each
+// drawing, so the gaps fill and the picture shows the path itself. When a letter changes the path is followed
+// again. (Left to run freely, points on a flow drift apart and the picture becomes a cloud.)
+//
 // A slow graphics chip spends most of a frame filling pixels, not stepping points. When frames stay late with the
 // fewest points a frame, the picture is drawn at fewer pixels and scaled up by the browser.
 (() => {
@@ -39,6 +44,9 @@
   const SEED = 0.6;           // fresh points start within this share of the view around its middle
   const FAR = 16;             // a point this many views from the middle is lost and starts again
   const FLOW_WARM = 240;      // steps a fresh point of a flow takes to reach the figure
+  const THREAD_MS = 5;        // a frame spends this long at most on following a flow's line
+  const THREAD_STEP = 0.618;  // points on the line move this share of the gap between them at each drawing, so the gaps fill evenly
+  const THREAD_AGAIN = 15000; // points left on the line this long are put back on it: small errors grow along a flow
   const LATE_MS = 20;         // a frame longer than this is late
   const LATE_FRAMES = 90;     // this many late frames: draw fewer pixels,
   const COARSER = 0.85;       // by this factor each time,
@@ -67,6 +75,7 @@
       'uniform vec4 start;  // for a first step from the seeds: the size of the box they fill, and 1',
       'uniform vec3 ax, ay, az;  // the view: which way is across, down and away',
       'uniform vec2 space;  // how deep a map is drawn, and the square of how far is lost',
+      ...(flow ? ['uniform vec2 pace;   // a flow: how much of its time one step covers, and how many steps'] : []),
       'uniform uint tick;',
       'out vec3 q;',
       'out vec2 count;',
@@ -83,9 +92,9 @@
       '  h ^= h >> 16;',
       '  vec3 nudge = vec3(float(h & 1023u), float((h >> 10) & 1023u), ' + (flow ? 'float((h >> 20) & 1023u)' : '511.5') + ') / 1023.0 - 0.5;',
       ...(flow ? [
-        '  const float dt = ' + Number(formula.dt).toFixed(5) + ';',
+        '  float dt = pace.x;',
         '  vec3 n = p;',
-        '  for (int i = 0; i < ' + Math.max(1, Math.round(formula.steps || 1)) + '; i++) {',
+        '  for (int i = 0; i < int(pace.y); i++) {',
         '    vec3 k1 = rule(n, a, b, c, d), k2 = rule(n + 0.5 * dt * k1, a, b, c, d);',
         '    vec3 k3 = rule(n + 0.5 * dt * k2, a, b, c, d), k4 = rule(n + dt * k3, a, b, c, d);',
         '    n += dt / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);',
@@ -241,7 +250,7 @@
     function stepper(index) {
       if (!steppers[index]) {
         const program = link(stepShader(formulas[index]), STEP_FS, ['q']);
-        steppers[index] = {program, ...at(program, ['k', 'frame', 'home', 'start', 'ax', 'ay', 'az', 'space', 'tick'])};
+        steppers[index] = {program, ...at(program, ['k', 'frame', 'home', 'start', 'ax', 'ay', 'az', 'space', 'pace', 'tick'])};
       }
       return steppers[index];
     }
@@ -257,6 +266,11 @@
       gl.bindVertexArray(arrays[i]); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
     }
     gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    // A flow's line: points in order along one path (thread.js), in a buffer of their own that is only read.
+    const Thread = window.Thread || null, line = gl.createBuffer(), lineArray = gl.createVertexArray(), linePoints = new Float32Array(BATCH * 3);
+    gl.bindBuffer(gl.ARRAY_BUFFER, line); gl.bufferData(gl.ARRAY_BUFFER, linePoints, gl.DYNAMIC_DRAW);
+    gl.bindVertexArray(lineArray); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null);
     const cells = target(gl.RGBA8, 64, 64, 1), seen = new Uint8Array(64 * 64 * 4);
 
     // quality: the share of the full size a moving picture is drawn at. fine: drawing at the full size all the same,
@@ -267,7 +281,9 @@
     // how deep a map is.
     const FRONT = [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0];
     let formula = 0, letters = [0, 0, 0, 0], look = FRONT, moving = false, changedAt = 0, started = false;
-    let mode = 'still', done = false, warm = 0, tick = 0, current = 0, afresh = false;
+    // afresh: the next step starts from the seeds (1) or from the flow's line (2) instead of where the points are.
+    // thread: the line of the flow being drawn. letters: the ones it was followed with. on: the points are on it.
+    let mode = 'still', done = false, warm = 0, tick = 0, current = 0, afresh = 0, thread = null;
     let nLive = 0, nStill = 0, pending = 0, summed = 0, collapsed = null, dirty = true;
     let rate = 2, base = 16.7, last = 0, added = 0;
     const stops = new Float32Array(15).fill(1);
@@ -278,18 +294,21 @@
     // "count" batches take a step. They are drawn into "into", or only stepped when it is null.
     function run(count, into, scaleX, scaleY, from = look) {
       const s = stepper(formula), view = formulas[formula].view, centre = middle(formulas[formula]);
+      const flow = formulas[formula].flow, onLine = !!thread && thread.on && thread.formula === formula;
       gl.useProgram(s.program);
       gl.uniform4f(s.k, letters[0], letters[1], letters[2], letters[3]);
-      gl.uniform4f(s.frame, scaleX, scaleY, 0.6 / view, JITTER * view);
+      gl.uniform4f(s.frame, scaleX, scaleY, 0.6 / view, onLine ? 0 : JITTER * view);
       gl.uniform4f(s.home, centre[0], centre[1], centre[2], 2 * SEED * view);
       gl.uniform3f(s.ax, from[0], from[1], from[2]); gl.uniform3f(s.ay, from[3], from[4], from[5]); gl.uniform3f(s.az, from[6], from[7], from[8]);
       gl.uniform2f(s.space, from[10], (FAR * view) ** 2);
+      // Points on the line creep along it; points on their own take the formula's full steps.
+      if (flow) { if (onLine) gl.uniform2f(s.pace, THREAD_STEP * gap(formulas[formula]), 1); else gl.uniform2f(s.pace, formulas[formula].dt, Math.max(1, Math.round(formulas[formula].steps || 1))); }
       if (into) { gl.bindFramebuffer(gl.FRAMEBUFFER, into.fbo); gl.viewport(0, 0, into.w, into.h); } else gl.enable(gl.RASTERIZER_DISCARD);
       for (let i = 0; i < count; i++) {
         gl.uniform1ui(s.tick, tick++);
-        gl.uniform4f(s.start, 2 * SEED * view, 2 * SEED * view, formulas[formula].flow ? 2 * SEED * view : 0, afresh ? 1 : 0);
-        gl.bindVertexArray(arrays[afresh ? 2 : current]);
-        afresh = false;
+        gl.uniform4f(s.start, 2 * SEED * view, 2 * SEED * view, flow ? 2 * SEED * view : 0, afresh === 1 ? 1 : 0);
+        gl.bindVertexArray(afresh === 2 ? lineArray : arrays[afresh === 1 ? 2 : current]);
+        afresh = 0;
         gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, buffers[1 - current]);
         gl.beginTransformFeedback(gl.POINTS); gl.drawArrays(gl.POINTS, 0, BATCH); gl.endTransformFeedback();
         gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
@@ -328,10 +347,39 @@
       wipe(work); summed += pending; pending = 0;
     }
     // Every point back to its seed, spread around the middle of this formula's view: the next step starts from them.
-    function scatter() { afresh = true; }
+    // (A flow whose line is known starts from the line instead.)
+    function scatter() { afresh = lined() ? 2 : 1; if (thread) thread.on = afresh === 2; }
+    const sameLetters = list => !!list && list.every((v, i) => v === letters[i]);
+    // A flow's line is one path or a few strands, each "thread" of the flow's time long; "gap" is the time between
+    // one point and the next along it.
+    const strands = f => clamp(Math.round(f.strands || 1), 1, 6), gap = f => f.thread * strands(f) / BATCH;
+    const threads = () => !!Thread && !!formulas[formula].flow && formulas[formula].thread > 0 && !!Thread.rule(formulas[formula]);
+    // The line for these very letters has been followed.
+    const lined = () => !!thread && thread.formula === formula && thread.ready && sameLetters(thread.letters);
+    // Nothing more to wait for before a still picture: the line is there, or this flow has none (it runs away).
+    const threadSettled = () => !threads() || (!!thread && thread.formula === formula && !thread.job && sameLetters(thread.letters));
+    // Each frame of a flow: follow its line for the letters as they are now, a little at a time. When one is done
+    // the points go onto it: while the letters move that is every few frames, so the line bends with them.
+    function tend(now) {
+      if (!threads()) { thread = null; return; }
+      if (!thread || thread.formula !== formula) thread = {formula, letters: null, asked: null, job: null, ready: false, on: false, at: 0};
+      if (!thread.job && !sameLetters(thread.letters)) {
+        thread.asked = letters.slice();
+        thread.job = Thread.path(formulas[formula], thread.asked, BATCH, gap(formulas[formula]), linePoints, strands(formulas[formula]));
+      }
+      if (thread.job) {
+        const result = thread.job.run(THREAD_MS);
+        if (result === 'more') return;
+        thread.job = null; thread.letters = thread.asked; thread.ready = result === 'done';
+        if (!thread.ready) { if (thread.on) { thread.on = false; afresh = 1; } return; }
+        gl.bindBuffer(gl.ARRAY_BUFFER, line); gl.bufferData(gl.ARRAY_BUFFER, linePoints, gl.DYNAMIC_DRAW); gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        thread.at = now;
+        if (mode === 'still') { if (sameLetters(thread.letters)) rest(); } else { afresh = 2; thread.on = true; }
+      } else if (thread.ready && thread.on && mode === 'live' && now - thread.at > THREAD_AGAIN) { afresh = 2; thread.at = now; }
+    }
     // The letters rest: begin the still picture from the seeds.
     function rest() {
-      mode = 'still'; done = false; warm = formulas[formula].flow ? FLOW_WARM : WARM; tick = 0; nStill = 0; pending = 0; summed = 0;
+      mode = 'still'; done = false; warm = formulas[formula].flow ? (lined() ? 0 : FLOW_WARM) : WARM; tick = 0; nStill = 0; pending = 0; summed = 0;
       if (formulas[formula].flow) collapsed = null;
       scatter();
       wipe(sum); wipe(work);
@@ -427,6 +475,7 @@
         if (!W || !started) return false;
         const dt = last ? Math.min(100, now - last) : 16.7;
         last = now; pace(dt);
+        tend(now);
         // Moving again after a still picture drawn finer than a moving one is: back to the coarser size.
         if (fine && mode === 'live') { fine = false; size(true); }
         if (mode === 'live') {
@@ -437,7 +486,7 @@
           draw(count, live);
           nLive = nLive * keep + count * BATCH; added = count * BATCH; drew = count;
           blur(live);
-          if (!moving && performance.now() - changedAt > REST_MS) {
+          if (!moving && performance.now() - changedAt > REST_MS && threadSettled()) {
             if (quality < 1) { fine = true; size(true); }
             rest();
           }
@@ -465,6 +514,7 @@
       get cap() { return cap; },
       get size() { return [W, H]; },
       get quality() { return quality; },
+      get lined() { return !!thread && thread.on && thread.formula === formula; },
       get rate() { return rate; },
       get lost() { return gl.isContextLost(); },
     };

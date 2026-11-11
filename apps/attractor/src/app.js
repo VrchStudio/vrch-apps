@@ -1,10 +1,9 @@
-// app.js: the App around the picture. Knobs and keys, touch, the text on the device screen, saved settings, the share
-// link, the large output, and what sound does (the figure following music or the audio input, and the formula
-// played) live here. The formulas are in formulas.js; how they are drawn is in picture.js; how they sound is in
-// voice.js.
+// app.js: the App around the picture. Knobs and keys, touch, the text on the device screen, the Player panel and the
+// speaker, the show, saved settings, the share link and the large output live here. The formulas are in formulas.js;
+// how they are drawn is in picture.js (and thread.js for a flow's line); the music is in music.js and tracks.js.
 (() => {
   'use strict';
-  const sdk = window.VrchApp, FORMULAS = window.Formulas, Picture = window.Picture;
+  const sdk = window.VrchApp, FORMULAS = window.Formulas, Picture = window.Picture, TRACKS = window.Tracks || [];
   let context = {};
   try { context = sdk.context; } catch (_) { /* defaults */ }
   // Output role: a picture-only instance (a large or second screen). It reads no controls, saves nothing, makes and
@@ -33,15 +32,32 @@
   const TILT = 1;                         // the view tilts this far up or down at most (radians)
   const PUSH = 12;                        // sound moves a letter this far at most (hundredths)
   const KICK = 6;                         // and a sudden swell knocks d this far, then lets it come back
-  const MUSIC = [{name: 'Strange Loop', file: 'music/strange-loop.mp3'}, {name: 'Sacred Orbit', file: 'music/sacred-orbit.mp3'}];
+  const ROOM = 1.06;                      // on an output wider than tall the figure is drawn this much larger, to fill the height
+  const STRING_MS = 800;                  // while its letters move, a flow's line is strung again no sooner than this, on a beat if there is one,
+  const STRING_LONGEST_MS = 1500;         // and no later than this
+  // The show: the figure performs by itself. It turns and tilts, the letters sway, sound moves them, and every so
+  // often it slides to the next figure of the formula, or moves on to the next formula and colours.
+  const SHOW_ORDER = ['dejong', 'lorenz', 'clifford', 'aizawa', 'svensson', 'thomas', 'dream', 'mira', 'ikeda'];
+  const SHOW_SCENES = 3;                  // figures of one formula before the show moves to the next formula
+  const SHOW_GLIDE_MS = 4000;             // in the show the letters slide this long to the next figure
+  const SHOW_SHORTEST_MS = 9000;          // a scene lasts at least this long;
+  const SHOW_BEATS = 48;                  // with music it ends where the piece changes, or after this many beats;
+  const SHOW_SCENE_MS = 20000;            // without music it lasts this long
+  const SHOW_HANDS_MS = 12000;            // a knob turned: the show leaves the figure alone this long
+  const SWAY = 0.3;                       // in the show the view tilts this far up and down (radians),
+  const SWAY_SECONDS = 67;                // once in this time
+  const ZOOM = 1.5;                       // on an output the show draws the figure up to this much larger, past the edges,
+  const ZOOM_SECONDS = 53;                // and back to whole once in this time
+  const ZOOM_EASE_MS = 1500;              // when the show stops the figure comes back to whole in this time
 
   /* ---------- settings ---------- */
   // Letters are whole hundredths (149 is 1.49), so a hundred small turns add up exactly.
-  // glide: the letters are sliding from "from" (since "at") to p. drift: when the sway began, or 0.
-  // view: where the figure is seen from. spin: it keeps turning, since "at", one way (1) or the other (-1).
+  // glide: the letters are sliding from "from" (since "at", for "ms") to p. drift: when the sway began, or 0.
+  // show: when the show began, or 0. zoom: the show has stopped, and the figure is coming back from this size since
+  // "at". view: where the figure is seen from. spin: it keeps turning, since "at", one way (1) or the other (-1).
   // Times are on the wall clock, so the output moves with the device.
   const hundredths = list => list.map(v => Math.round(v * 100));
-  const motion = {formula: 0, p: hundredths(FORMULAS[0].presets[0]), glide: null, drift: 0, view: {yaw: 0, pitch: 0, spin: null}};
+  const motion = {formula: 0, p: hundredths(FORMULAS[0].presets[0]), glide: null, drift: 0, show: 0, zoom: null, view: {yaw: 0, pitch: 0, spin: null}};
   let palette = 0, textShown = true, preset = 0;
   const coarse = [false, false, false, false];
   // What sound adds to the letters (hundredths), and until when it counts. The device works it out from what it
@@ -53,9 +69,10 @@
   function settled(at) {
     const g = motion.glide;
     if (!g) return motion.p;
-    const u = clamp((at - g.at) / GLIDE_MS, 0, 1), ease = u * u * (3 - 2 * u);
+    const u = clamp((at - g.at) / (g.ms || GLIDE_MS), 0, 1), ease = u * u * (3 - 2 * u);
     return motion.p.map((v, i) => g.from[i] + (v - g.from[i]) * ease);
   }
+  const gliding = at => !!motion.glide && at < motion.glide.at + (motion.glide.ms || GLIDE_MS);
   const swayed = (list, at) => { const [lo, hi] = limits(), seconds = (at - motion.drift) / 1000; return list.map((v, i) => clamp(v + DRIFT * Math.sin(2 * Math.PI * seconds / DRIFT_SECONDS[i]), lo, hi)); };
   const hearing = at => at < heardUntil && heard.some(v => v !== 0);
   function lettersAt(at) {
@@ -65,17 +82,41 @@
     if (hearing(at)) list = list.map((v, i) => clamp(v + heard[i], lo, hi));
     return list;
   }
-  // The view at a moment, as picture.js takes it: across, down, away, how much smaller the turned figure is drawn
-  // (so it stays inside the picture), and how deep a map is.
+  // The letters the picture is drawn with. A map takes them as they are. A flow is drawn as a line, and the far end
+  // of that line lands somewhere else for the smallest change of a letter: followed frame by frame it would only
+  // blur. So while its letters move by themselves the line is strung again in steps, on the beat, and stands clear
+  // in between. A knob in the hand is followed at once. An output is told the letters the device strung.
+  let strung = null, beat = false, handsAt = 0;
+  function drawnAt(at) {
+    const now = lettersAt(at);
+    if (!FORMULAS[motion.formula].flow) { strung = null; return now; }
+    if (isOutput && strung && strung.formula === motion.formula && at < strung.until) return strung.list;
+    const since = strung && strung.formula === motion.formula && !strung.until ? at - strung.at : Infinity;
+    const byItself = (!!motion.drift || gliding(at) || hearing(at)) && at - handsAt > 300;
+    if (!byItself || since >= STRING_LONGEST_MS || (beat && since >= STRING_MS)) { strung = {formula: motion.formula, list: now, at}; beat = false; }
+    return strung.list;
+  }
+  // The view at a moment, as picture.js takes it: across, down, away, how large the figure is drawn, and how deep a
+  // map is. On the device a turned figure is drawn smaller so that it stays inside the picture. An output is mostly
+  // wider than tall: there the figure fills the height, a turned figure only shrinks for the side that has no room,
+  // and in the show it slowly grows past the edges and comes back.
   const yawAt = at => { const s = motion.view.spin; return motion.view.yaw + (s ? s.dir * 2 * Math.PI * (at - s.at) / 1000 / TURN_SECONDS : 0); };
+  const pitchAt = at => clamp(motion.view.pitch + (motion.show ? SWAY * Math.sin(2 * Math.PI * (at - motion.show) / 1000 / SWAY_SECONDS) : 0), -TILT, TILT);
+  function zoomAt(at) {
+    if (motion.show) return 1 + (ZOOM - 1) * (0.5 - 0.5 * Math.cos(2 * Math.PI * (at - motion.show) / 1000 / ZOOM_SECONDS));
+    const z = motion.zoom, u = z ? clamp((at - z.at) / ZOOM_EASE_MS, 0, 1) : 1;
+    return z ? z.from + (1 - z.from) * u * u * (3 - 2 * u) : 1;
+  }
+  let room = null;   // an output: how much wider and taller the stage is than its shorter side, and how much larger the figure may be
   function lookAt(at) {
-    const formula = FORMULAS[motion.formula], yaw = yawAt(at), c = Math.cos(yaw), s = Math.sin(yaw), cp = Math.cos(motion.view.pitch), sp = Math.sin(motion.view.pitch);
+    const formula = FORMULAS[motion.formula], yaw = yawAt(at), pitch = pitchAt(at), c = Math.cos(yaw), s = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const deep = formula.flow ? 1 : formula.deep ?? DEPTH;
     const wide = formula.flow ? 1 : Math.abs(c) + deep * Math.abs(s), tall = formula.flow ? Math.abs(sp) + Math.abs(cp) : Math.abs(sp * s) + Math.abs(cp) + deep * Math.abs(sp * c);
-    return [c, 0, s, sp * s, cp, -sp * c, -cp * s, sp, cp * c, 1 / Math.max(1, wide, tall), deep];
+    const fit = room ? Math.min(room[0] * room[2] / wide, room[1] * room[2] / tall) * zoomAt(at) : 1 / Math.max(1, wide, tall);
+    return [c, 0, s, sp * s, cp, -sp * c, -cp * s, sp, cp * c, fit, deep];
   }
   let dragging = false;
-  const inMotion = at => !!motion.drift || (!!motion.glide && at < motion.glide.at + GLIDE_MS) || hearing(at) || !!motion.view.spin || dragging;
+  const inMotion = at => !!motion.drift || gliding(at) || hearing(at) || !!motion.view.spin || dragging || (!!room && !!motion.zoom && at < motion.zoom.at + ZOOM_EASE_MS);
   const presetNow = () => FORMULAS[motion.formula].presets.findIndex(set => hundredths(set).every((v, i) => v === motion.p[i]));
   const valid = (list, lo, hi) => Array.isArray(list) && list.length === 4 && list.every(v => Number.isFinite(v) && v >= lo && v <= hi);
   const degrees = radians => Math.round(radians * 180 / Math.PI);
@@ -94,16 +135,17 @@
     let inset = 0;
     try { inset = sdk.context.safeInsets?.left || 0; } catch (_) { /* default */ }
     document.documentElement.style.setProperty('--inset-left', inset + 'px');
-    const box = $('stage');
-    if (picture) picture.resize(box.clientWidth, box.clientHeight, devicePixelRatio || 1);
+    const box = $('stage'), w = box.clientWidth, h = box.clientHeight, side = Math.min(w, h);
+    room = isOutput && side > 0 ? [w / side, h / side, Math.min(ROOM, Math.max(w, h) / side)] : null;
+    if (picture) picture.resize(w, h, devicePixelRatio || 1);
   }
   function step(now) {
     const at = epoch();
-    if (motion.glide && at >= motion.glide.at + GLIDE_MS) motion.glide = null;
+    if (motion.glide && !gliding(at)) motion.glide = null;
     // An output hears of a dragged view some twenty times a second and eases towards it.
     if (aim) { const v = motion.view; v.yaw += (aim.yaw - v.yaw) * 0.35; v.pitch += (aim.pitch - v.pitch) * 0.35; if (Math.abs(aim.yaw - v.yaw) + Math.abs(aim.pitch - v.pitch) < 1e-4) { v.yaw = aim.yaw; v.pitch = aim.pitch; aim = null; } }
-    if (!isOutput) listen();
-    const letters = lettersAt(at).map(v => v / 100);
+    if (!isOutput) { if (player) player.follow(now); direct(at); }
+    const letters = drawnAt(at).map(v => v / 100);
     let added = 0;
     if (picture && told) {
       try { picture.set(motion.formula, letters, inMotion(at) || !!aim, lookAt(at)); picture.frame(now); added = picture.added; }
@@ -114,7 +156,7 @@
     log.push([now, added]);
     while (log.length > 2 && now - log[0][0] > 1000) log.shift();
     if (isOutput) return;
-    write(letters); tell(letters); send();
+    write(letters); send(); sendLine();
   }
   function frame(now) {
     requestAnimationFrame(frame);
@@ -134,6 +176,7 @@
       degenerate: picture ? picture.collapsed : null,
       mode: picture ? picture.mode : 'none', cap: picture ? picture.cap : 0, size: picture ? picture.size : [0, 0],
       quality: picture ? Math.round(picture.quality * 100) / 100 : 0,
+      lined: picture ? picture.lined : false, fit: Math.round(lookAt(epoch())[9] * 1000) / 1000,
     };
   }
 
@@ -148,7 +191,7 @@
   }
   function write(letters) {
     const flagged = !!picture && picture.collapsed === true && picture.mode === 'still';
-    const status = [sounding ? 'sound on' : '', source === 'music' && music.node ? 'music: ' + MUSIC[music.piece].name : '', source === 'input' ? 'listening' : '', said].filter(Boolean).join(' · ');
+    const status = [player && player.source === 'music' && !player.muted ? player.title : '', player && player.source === 'input' && player.listening ? 'listening' : '', said].filter(Boolean).join(' · ');
     const next = [motion.formula, textShown, flagged, status, letters.map(two).join(' '), picture ? picture.points : 0].join('|');
     if (next === wrote) return;
     wrote = next;
@@ -162,21 +205,25 @@
     $('flag').hidden = !flagged;
   }
   let monitorTimer = 0;
-  const moving = () => (motion.view.spin ? 1 : 0) + (motion.drift ? 2 : 0);
   function label() {
     clearTimeout(monitorTimer);
     monitorTimer = setTimeout(() => {
       const formula = FORMULAS[motion.formula], on = presetNow(), values = {};
       'abcd'.split('').forEach((name, i) => { values['E' + (i + 1)] = {label: name, value: two(motion.p[i] / 100) + (coarse[i] ? ' ×10' : '')}; });
-      values.K2 = {label: 'Preset', value: (on < 0 ? '–' : on + 1) + '/' + formula.presets.length, pressed: sounding};
-      values.K3 = {label: ['Colour', 'Spin', 'Drift', 'Spin+Drift'][moving()], value: PALETTES[palette].name, pressed: moving() > 0};
-      values.K4 = {label: formula.name, pressed: source !== 'off'};
+      if (panel) values.E1 = {label: 'Choose', value: ''};
+      values.K2 = {label: formula.name, value: (on < 0 ? '–' : on + 1) + '/' + formula.presets.length};
+      values.K3 = {label: show.on ? 'Show' : 'Colour', value: PALETTES[palette].name, pressed: show.on};
+      values.K4 = {label: panel ? 'Close' : 'Player', value: '', pressed: panel};
       try { void sdk.monitor.set(values).catch(() => {}); } catch (_) { /* unavailable */ }
     }, 40);
   }
 
   /* ---------- saved settings, the share link and the output ---------- */
-  let version, saveTimer = 0, shareTimer = 0, publishTimer = 0, shared = '', sent = '';
+  let version, saveTimer = 0, shareTimer = 0, publishTimer = 0, shared = '', sent = '', sentLine = '';
+  // What sound and the show were set to when the App last closed. A share link opens one figure at rest without
+  // changing these, unless they are then changed by hand.
+  const kept = {show: true, source: TRACKS.length ? 'music' : 'silent', track: 0, muted: false};
+  const lent = {show: false, source: false};
   function restore(value) {
     if (!value || value.v !== 1) return;
     const index = FORMULAS.findIndex(f => f.id === value.formula);
@@ -185,15 +232,19 @@
       if (valid(value.p, lo, hi)) { motion.formula = index; motion.p = value.p.map(Math.round); }
     }
     if (Number.isInteger(value.palette) && value.palette >= 0 && value.palette < PALETTES.length) palette = value.palette;
-    if (value.drift === true) motion.drift = epoch();
     if (Number.isFinite(value.yaw) && Number.isFinite(value.pitch)) { motion.view.yaw = value.yaw; motion.view.pitch = clamp(value.pitch, -TILT, TILT); }
     if (value.spin === 1 || value.spin === -1) motion.view.spin = {at: epoch(), dir: value.spin};
     textShown = value.text !== false;
+    if (typeof value.show === 'boolean') kept.show = value.show;
+    if (['music', 'input', 'silent'].includes(value.source) && (value.source !== 'music' || TRACKS.length)) kept.source = value.source;
+    if (Number.isInteger(value.track) && TRACKS[value.track]) kept.track = value.track;
+    kept.muted = value.muted === true;
   }
   function saveSoon() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
-      const value = {v: 1, formula: FORMULAS[motion.formula].id, p: motion.p, palette, drift: !!motion.drift, text: textShown, yaw: yawAt(epoch()) % (2 * Math.PI), pitch: motion.view.pitch, spin: motion.view.spin ? motion.view.spin.dir : 0};
+      const value = {v: 1, formula: FORMULAS[motion.formula].id, p: motion.p, palette, text: textShown, yaw: yawAt(epoch()) % (2 * Math.PI), pitch: motion.view.pitch, spin: motion.view.spin ? motion.view.spin.dir : 0,
+        show: lent.show ? kept.show : show.on, source: lent.source || !player ? kept.source : player.source, track: player ? player.index : kept.track, muted: player ? player.muted : kept.muted};
       try { version = (await sdk.data.set('state', value, version === undefined ? {} : {expectedVersion: version})).version; }
       catch (_) { try { version = (await sdk.data.get('state')).version; } catch (__) { /* best effort */ } }
     }, 800);
@@ -212,21 +263,22 @@
       try { sdk.share.report({state: value}); } catch (_) { /* this host has no links */ }
     }, 400);
   }
+  // A link shows one figure: it opens at rest, seen as it was shared, with no show and no sound moving it.
   function applyShare(share) {
     const m = SHARE.exec(typeof share?.state === 'string' ? share.state : '');
-    if (!m) return;
+    if (!m) return false;
     const index = FORMULAS.findIndex(f => f.id === m[1]), p = m.slice(2, 6).map(Number), colours = Number(m[6]);
-    if (index < 0 || colours >= PALETTES.length) return;
+    if (index < 0 || colours >= PALETTES.length) return false;
     const [lo, hi] = FORMULAS[index].range.map(v => Math.round(v * 100));
-    if (!valid(p, lo, hi)) return;
-    // A link shows one figure: it opens at rest, seen as it was shared.
+    if (!valid(p, lo, hi)) return false;
     motion.formula = index; motion.p = p; motion.glide = null; motion.drift = 0; palette = colours;
     motion.view = {yaw: (Number(m[7]) || 0) * Math.PI / 180, pitch: clamp((Number(m[8]) || 0) * Math.PI / 180, -TILT, TILT), spin: null};
+    return true;
   }
   function publish() {
     if (isOutput || !relay) return;
     clearTimeout(publishTimer); publishTimer = 0;
-    try { relay.publish({v: 1, f: FORMULAS[motion.formula].id, p: motion.p, g: motion.glide, drift: motion.drift, c: palette, w: [motion.view.yaw, motion.view.pitch, motion.view.spin]}); } catch (_) { /* no output */ }
+    try { relay.publish({v: 1, f: FORMULAS[motion.formula].id, p: motion.p, g: motion.glide, drift: motion.drift, s: motion.show, z: motion.zoom, c: palette, w: [motion.view.yaw, motion.view.pitch, motion.view.spin]}); } catch (_) { /* no output */ }
   }
   // What sound adds goes to the output as it changes, frame by frame.
   function send() {
@@ -236,10 +288,20 @@
     sent = now;
     try { relay.send({v: 1, o: now ? heard.slice() : [0, 0, 0, 0]}); } catch (_) { /* no output */ }
   }
+  // A flow's line: the output strings it with the very letters the device did.
+  function sendLine() {
+    if (!relay) return;
+    const now = strung ? strung.formula + ':' + strung.list.join() : '';
+    if (now === sentLine) return;
+    sentLine = now;
+    if (strung) try { relay.send({v: 1, f: FORMULAS[strung.formula].id, l: strung.list}); } catch (_) { /* no output */ }
+  }
   function follow({kind, data} = {}) {
     if (!data || data.v !== 1) return;
     if (kind === 'event') {
       if (valid(data.o, -100, 100)) { for (let i = 0; i < 4; i++) heard[i] = data.o[i]; heardUntil = epoch() + 400; }
+      const line = FORMULAS.findIndex(f => f.id === data.f);
+      if (line >= 0 && valid(data.l, -1000, 1000)) strung = {formula: line, list: data.l, at: epoch(), until: epoch() + 2500};
       return;
     }
     if (kind !== 'state') return;
@@ -249,8 +311,10 @@
     if (!valid(data.p, lo, hi)) return;
     const first = !told;
     motion.formula = index; motion.p = data.p; told = true;
-    motion.glide = data.g && valid(data.g.from, lo, hi) && Number.isFinite(data.g.at) ? {from: data.g.from, at: data.g.at} : null;
+    motion.glide = data.g && valid(data.g.from, lo, hi) && Number.isFinite(data.g.at) ? {from: data.g.from, at: data.g.at, ms: Number.isFinite(data.g.ms) ? clamp(data.g.ms, 100, 20000) : GLIDE_MS} : null;
     motion.drift = Number.isFinite(data.drift) ? data.drift : 0;
+    motion.show = Number.isFinite(data.s) ? data.s : 0;
+    motion.zoom = data.z && Number.isFinite(data.z.from) && Number.isFinite(data.z.at) ? {from: clamp(data.z.from, 1, ZOOM), at: data.z.at} : null;
     if (Array.isArray(data.w) && Number.isFinite(data.w[0]) && Number.isFinite(data.w[1])) {
       const spin = data.w[2] && Number.isFinite(data.w[2].at) && Math.abs(data.w[2].dir) === 1 ? {at: data.w[2].at, dir: data.w[2].dir} : null, to = {yaw: data.w[0], pitch: clamp(data.w[1], -TILT, TILT)};
       if (spin || first) { motion.view = {...to, spin}; aim = null; } else { motion.view.spin = null; aim = to; }
@@ -260,97 +324,15 @@
   // Something changed: the labels, the saved copy, the share link and the output all follow.
   function changed() { label(); saveSoon(); shareSoon(); publish(); }
 
-  /* ---------- one audio context for everything the App plays ---------- */
-  // The host plays the sound: this context renders to nowhere and hands its samples to the host's output. It opens
-  // when the formula or the music is first played and closes when neither is.
-  let rig = null, rigOpening = null, rigEpoch = 0;
-  function openRig() {
-    if (rig) return Promise.resolve(rig);
-    if (rigOpening) return rigOpening;
-    const mine = ++rigEpoch;
-    rigOpening = (async () => {
-      let ctx = null, output = null;
-      try {
-        ctx = new AudioContext({sampleRate: 48000, latencyHint: 'interactive', sinkId: {type: 'none'}});
-        void ctx.resume().catch(() => {});
-        output = await sdk.audio.openOutput({channels: 2});
-        const destination = await output.createNode(ctx);
-        await ctx.audioWorklet.addModule('voice.js');
-        if (mine !== rigEpoch) throw Object.assign(new Error('stale'), {code: 'stale'});
-        const opened = {ctx, output, destination};
-        output.onError(() => { if (rig === opened) rigLost(); });
-        rig = opened;
-        return opened;
-      } catch (error) {
-        await Promise.allSettled([output?.close(), ctx?.close()]);
-        throw error;
-      } finally { rigOpening = null; }
-    })();
-    return rigOpening;
-  }
-  function closeRig() {
-    const old = rig;
-    rig = null; ++rigEpoch; voice = null; music.node = null;
-    if (!old) return;
-    void Promise.allSettled([old.output.close(), old.ctx.state === 'closed' ? null : old.ctx.close()]);
-  }
-  const closeRigIfIdle = () => { if (rig && !voice && !music.node) closeRig(); };
-  function rigLost() {
-    closeRig(); sounding = false;
-    if (source === 'music') source = 'off';
-    say('Sound stopped. Hold K2 or K4 to try again.'); label();
-  }
-
-  /* ---------- sound: the formula played ---------- */
-  // Off until K2 is held. voice.js follows one point through the formula on the audio thread.
-  let sounding = false, voice = null;
-  // The audio thread hears of the formula and the letters whenever they change.
-  function tell(letters) {
-    if (!voice) return;
-    if (voice.formula !== motion.formula) {
-      const {step: rule, flow, dt, view, centre, hear: speed} = FORMULAS[motion.formula];
-      voice.formula = motion.formula;
-      voice.node.port.postMessage({type: 'formula', formula: {with: FORMULAS[motion.formula].with, step: rule, flow, dt, view, centre, hear: speed}});
-    }
-    const key = letters.join();
-    if (key !== voice.letters) { voice.letters = key; voice.node.port.postMessage({type: 'letters', k: letters}); }
-  }
-  function setSound(on) {
-    sounding = on; say(''); label();
-    if (on) {
-      openRig().then(opened => {
-        if (!sounding || rig !== opened || voice) return;
-        const node = new AudioWorkletNode(opened.ctx, 'voice', {numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2]});
-        node.onprocessorerror = () => { if (rig === opened) rigLost(); };
-        node.connect(opened.destination);
-        voice = {node, formula: -1, letters: ''};
-        tell(lettersAt(epoch()).map(v => v / 100)); node.port.postMessage({type: 'on', on: true});
-      }).catch(error => { if (error?.code !== 'stale' && sounding) { sounding = false; say('Sound could not start. Hold K2 to try again.'); label(); } });
-    } else if (voice) {
-      const old = voice;
-      old.node.port.postMessage({type: 'on', on: false});   // fades out, then lets go
-      setTimeout(() => { if (voice === old && !sounding) { try { old.node.disconnect(); } catch (_) { /* gone */ } voice = null; closeRigIfIdle(); } }, 200);
-    }
-  }
-
   /* ---------- the figure follows sound ---------- */
-  // Off until K4 is held: then the App's own music, piece by piece, then the audio input, then off again. The input opens only
-  // while it is the source; nothing it hears is played back or kept. What is heard is split in three (low, middle,
-  // high). Each part's swell and fall sways a, b and c; a sudden swell in any part knocks d, which then returns.
-  let source = 'off';
-  const fresh = () => ({lo: 0, mid: 0, bands: [0, 1, 2].map(() => ({top: 0, level: 0, mean: 0, last: 0})), since: 99, knocks: 0, kick: 0});
+  // music.js hands over the sound 20 ms at a time, as loudness in three bands (low, middle, high), whether it comes
+  // from the App's music or the audio input. Each band's swell and fall sways a, b and c; a sudden swell in any band
+  // knocks d, which then returns.
+  let player = null;
+  const fresh = () => ({bands: [0, 1, 2].map(() => ({top: 0, level: 0, mean: 0, last: 0})), since: 99, knocks: 0, kick: 0});
   let ears = fresh();
   const tidy = v => Math.abs(v) < 0.05 ? 0 : Math.round(v * 10) / 10;
-  // One block of sound (mono, 48 kHz, about 20 ms).
-  function hear(samples) {
-    let lo = ears.lo, mid = ears.mid, low = 0, middle = 0, high = 0;
-    for (let i = 0; i < samples.length; i++) {
-      const x = samples[i];
-      lo += 0.0258 * (x - lo); mid += 0.2303 * (x - mid);   // below 200 Hz, and below 2 kHz
-      low += lo * lo; middle += (mid - lo) * (mid - lo); high += (x - mid) * (x - mid);
-    }
-    ears.lo = lo; ears.mid = mid;
-    const loud = [low, middle, high].map(sum => Math.sqrt(sum / Math.max(1, samples.length)));
+  function hear(loud) {
     let rise = 0;
     for (let i = 0; i < 3; i++) {
       const band = ears.bands[i];
@@ -362,101 +344,51 @@
       heard[i] = tidy(clamp(2 * PUSH * (band.level - band.mean), -PUSH, PUSH));
     }
     ears.since++;
-    if (rise > 0.5 && ears.since >= 9) { ears.since = 0; ears.knocks++; ears.kick += ears.knocks % 2 ? KICK : -KICK; }
+    if (rise > 0.5 && ears.since >= 9) { ears.since = 0; ears.knocks++; ears.kick += ears.knocks % 2 ? KICK : -KICK; beat = true; }
     ears.kick *= 0.94;
     heard[3] = tidy(ears.kick);
     heardUntil = epoch() + 300;
   }
   function deaf() { ears = fresh(); heardUntil = 0; for (let i = 0; i < 4; i++) heard[i] = 0; }
-
-  // The audio input.
-  const input = {port: null, epoch: 0};
-  function closeInput() {
-    const old = input.port;
-    input.port = null; ++input.epoch;
-    if (old) void Promise.resolve(old.close()).catch(() => {});
-  }
-  async function openInput() {
-    const mine = ++input.epoch;
-    try {
-      const port = await sdk.audio.openInput({channels: 1});
-      if (mine !== input.epoch || source !== 'input') { void Promise.resolve(port.close()).catch(() => {}); return; }
-      input.port = port;
-      port.onData(samples => { if (input.port === port) hear(samples); });
-      port.onError(() => { if (input.port === port) { closeInput(); deaf(); source = 'off'; say('Audio input stopped.'); label(); } });
-    } catch (error) {
-      if (mine !== input.epoch) return;
-      const code = error?.code || error?.name, refused = ['permission_required', 'permission_denied', 'capability_denied', 'io_not_authorized', 'NotAllowedError'].includes(code);
-      // Asked once: holding K4 round to the input again asks again.
-      source = 'off'; say(refused ? 'Audio input is not allowed.' : 'No audio input.'); label();
-    }
-  }
-
-  // The App's own music: a few pieces, one at a time, each played round and round. A piece is read and unpacked
-  // before any sound is opened, played through the host like the formula, and the figure is moved by the very
-  // samples being played. Only the piece last chosen stays unpacked.
-  // (A copy of the App without the pieces goes straight to the audio input.)
-  const music = {piece: 0, samples: null, holds: -1, loading: null, missing: false, node: null, gain: null, began: 0, fed: 0, block: new Float32Array(960), epoch: 0};
-  function loadMusic(piece) {
-    if (music.holds === piece) return Promise.resolve();
-    if (music.loading?.piece === piece) return music.loading.done;
-    music.samples = null; music.holds = -1;
-    const loading = music.loading = {piece, done: null};
-    loading.done = (async () => {
-      const response = await fetch(MUSIC[piece].file);
-      if (!response.ok) throw new Error('no music');
-      const samples = await new OfflineAudioContext(2, 1, 48000).decodeAudioData(await response.arrayBuffer());
-      if (music.loading === loading) { music.samples = samples; music.holds = piece; music.loading = null; }
-    })().catch(error => { if (music.loading === loading) music.loading = null; throw error; });
-    return loading.done;
-  }
-  async function startMusic() {
-    const mine = ++music.epoch, piece = music.piece;
-    try {
-      if (music.holds !== piece) say('Loading music…', true);
-      await loadMusic(piece);
-      if (mine !== music.epoch) return;
-      const opened = await openRig();
-      if (mine !== music.epoch || source !== 'music' || rig !== opened || music.holds !== piece) { closeRigIfIdle(); return; }
-      const node = new AudioBufferSourceNode(opened.ctx, {buffer: music.samples, loop: true}), gain = new GainNode(opened.ctx, {gain: 0});
-      node.connect(gain).connect(opened.destination);
-      gain.gain.linearRampToValueAtTime(0.9, opened.ctx.currentTime + 1.5);
-      node.start();
-      Object.assign(music, {node, gain, began: opened.ctx.currentTime, fed: 0});
-      say(''); label();
-    } catch (error) {
-      if (mine !== music.epoch || error?.code === 'stale') return;
-      if (music.holds !== piece) { music.missing = true; say(''); setSource('input'); return; }
-      source = 'off'; say('Music could not start. Hold K4 to try again.'); label();
-    }
-  }
-  function stopMusic() {
-    ++music.epoch;
-    const {node, gain} = music, at = rig;
-    music.node = null; music.gain = null;
-    if (!node || !at) return;
-    try { gain.gain.cancelScheduledValues(at.ctx.currentTime); gain.gain.setTargetAtTime(0, at.ctx.currentTime, 0.08); } catch (_) { /* closing */ }
-    setTimeout(() => { try { node.stop(); node.disconnect(); gain.disconnect(); } catch (_) { /* gone */ } if (rig === at) closeRigIfIdle(); }, 400);
-  }
-  // Each frame: hear the music played since the last one (about 70 ms ago is what is being heard now).
-  function listen() {
-    if (!music.node || !rig || !music.samples) return;
-    const until = rig.ctx.currentTime - music.began - 0.07, left = music.samples.getChannelData(0), right = music.samples.numberOfChannels > 1 ? music.samples.getChannelData(1) : left;
-    if (until - music.fed > 0.2) music.fed = until - 0.04;   // after a pause, do not catch up on everything missed
-    while (music.fed + 0.02 <= until) {
-      let from = Math.round(music.fed * 48000) % left.length;
-      for (let i = 0; i < 960; i++, from++) { if (from >= left.length) from = 0; music.block[i] = 0.5 * (left[from] + right[from]); }
-      hear(music.block); music.fed += 0.02;
-    }
+  // The sound has changed in some way: the speaker, the panel and the labels follow.
+  let source = 'silent';
+  function soundChanged() {
+    if (player.source !== source) { source = player.source; deaf(); }
+    if (player.said) { say(player.said); player.said = ''; }
+    renderSpeaker(); renderPanel(); label();
   }
   function setSource(next) {
-    if (next === source) return;
-    if (source === 'music') stopMusic();
-    if (source === 'input') closeInput();
-    source = next; deaf(); say('');
-    if (source === 'music') void startMusic();
-    if (source === 'input') void openInput();
-    label();
+    lent.source = false;
+    void player.setSource(next);
+    saveSoon();
+  }
+
+  /* ---------- the show ---------- */
+  // scene: how many figures it has shown. changedAt: when the last one began. handsAt: when a knob was last turned.
+  // due: the music has moved on, so the next figure may come. next: where each formula was left.
+  const show = {on: true, scene: 0, changedAt: 0, handsAt: 0, due: false, next: {}};
+  const ORDER = [...SHOW_ORDER.map(id => FORMULAS.findIndex(f => f.id === id)).filter(i => i >= 0), ...FORMULAS.map((f, i) => i).filter(i => !SHOW_ORDER.includes(FORMULAS[i].id))];
+  function setShow(on) {
+    const at = epoch();
+    show.on = on;
+    if (on) { motion.show = at; motion.zoom = null; setDrift(true); setSpin(motion.view.spin?.dir || 1); show.changedAt = at; show.due = false; }
+    else { motion.view.pitch = pitchAt(at); motion.zoom = {from: zoomAt(at), at}; motion.show = 0; setDrift(false); setSpin(0); }
+  }
+  // Each frame: is it time for the next figure?
+  function direct(at) {
+    if (!show.on || dragging || at - show.handsAt < SHOW_HANDS_MS) return;
+    const since = at - show.changedAt, longest = player && player.source === 'music' ? SHOW_BEATS * player.beat() * 1000 : SHOW_SCENE_MS;
+    if (!(since >= longest || (show.due && since >= SHOW_SHORTEST_MS))) return;
+    show.scene++; show.changedAt = at; show.due = false;
+    const formula = FORMULAS[motion.formula], on = presetNow();
+    if (show.scene % SHOW_SCENES === 0 && ORDER.length > 1) {
+      show.next[motion.formula] = ((on < 0 ? preset : on) + 1) % formula.presets.length;
+      const to = ORDER[(ORDER.indexOf(motion.formula) + 1) % ORDER.length];
+      goFormula(to, show.next[to] || 0);
+      palette = (palette + 1) % PALETTES.length;
+      if (picture) picture.colours(PALETTES[palette].stops);
+    } else glideTo(((on < 0 ? preset : on) + 1) % formula.presets.length, SHOW_GLIDE_MS);
+    label(); shareSoon(); publish();
   }
 
   /* ---------- controls ---------- */
@@ -471,18 +403,28 @@
     if (motion.glide) { motion.p = settled(epoch()).map(Math.round); motion.glide = null; }
     motion.p = motion.p.slice();
     motion.p[knob] = clamp(motion.p[knob] + detents * size, lo, hi);
+    show.handsAt = handsAt = epoch();
     changed();
   }
-  function nextPreset() {
-    const formula = FORMULAS[motion.formula], on = presetNow(), at = epoch();
-    preset = ((on < 0 ? preset : on) + 1) % formula.presets.length;
-    motion.glide = {from: settled(at).slice(), at};
+  function glideTo(index, ms) {
+    const formula = FORMULAS[motion.formula], at = epoch();
+    preset = index;
+    motion.glide = {from: settled(at).slice(), at, ms};
     motion.p = hundredths(formula.presets[preset]);
+  }
+  function goFormula(index, first) {
+    motion.formula = index; preset = first % FORMULAS[index].presets.length;
+    motion.p = hundredths(FORMULAS[index].presets[preset]); motion.glide = null;
+  }
+  function nextPreset() {
+    const on = presetNow();
+    glideTo(((on < 0 ? preset : on) + 1) % FORMULAS[motion.formula].presets.length, GLIDE_MS);
+    show.changedAt = epoch(); show.handsAt = 0;
     changed();
   }
   function nextFormula() {
-    motion.formula = (motion.formula + 1) % FORMULAS.length;
-    motion.p = hundredths(FORMULAS[motion.formula].presets[0]); motion.glide = null; preset = 0;
+    goFormula((motion.formula + 1) % FORMULAS.length, 0);
+    show.changedAt = epoch(); show.handsAt = 0;
     changed();
   }
   function nextColours() {
@@ -502,35 +444,28 @@
     if (!on && motion.drift) { motion.p = swayed(settled(at), at).map(Math.round); motion.glide = null; }
     motion.drift = on ? motion.drift || at : 0;
   }
-  // K3 held: still, spin, drift, both.
-  function nextMoving() {
-    const next = (moving() + 1) % 4;
-    setSpin(next & 1 ? motion.view.spin?.dir || 1 : 0); setDrift(!!(next & 2));
-    changed();
-  }
+  function toggleShow() { lent.show = false; setShow(!show.on); renderPanel(); changed(); }
   // A key acts when it is let go; held for half a second it does its second job instead.
-  const TAPS = {K2: nextPreset, K3: nextColours, K4: nextFormula};
-  // K4 held: each piece of music in turn, then the audio input, then nothing.
-  function nextSource() {
-    if (source === 'off' && !music.missing) { music.piece = 0; setSource('music'); }
-    else if (source === 'music' && music.piece + 1 < MUSIC.length) { stopMusic(); music.piece++; deaf(); say(''); void startMusic(); label(); }
-    else setSource(source === 'input' ? 'off' : 'input');
-  }
-  const HOLDS = {K2: () => setSound(!sounding), K3: nextMoving, K4: nextSource};
+  const TAPS = {K2: nextPreset, K3: nextColours, K4: () => openPanel(!panel)};
+  const HOLDS = {K2: nextFormula, K3: toggleShow};
   function onControl(event) {
     const control = event.control, knob = ['E1', 'E2', 'E3', 'E4'].indexOf(control);
+    if (player) player.wake();
     if (event.type === 'rotate') {
       const detents = Math.trunc(Number(event.delta) || 0);
-      if (detents && knob >= 0) turn(knob, detents);
+      if (!detents || knob < 0) return;
+      if (panel && knob === 0) panelStep(detents); else turn(knob, detents);
     } else if (event.type === 'down') {
       if (held[control]) return;
       held[control] = true;
-      if (knob >= 0) { coarse[knob] = !coarse[knob]; label(); }
+      if (knob >= 0) { if (panel && knob === 0) panelPress(); else { coarse[knob] = !coarse[knob]; label(); } }
       else if (HOLDS[control]) timers[control] = setTimeout(() => { timers[control] = 0; HOLDS[control](); }, HOLD_MS);
     } else if (event.type === 'up' || event.type === 'cancel') {
       if (!held[control]) return;
       held[control] = false;
-      if (timers[control]) { clearTimeout(timers[control]); timers[control] = 0; if (event.type === 'up') TAPS[control](); }
+      const short = !HOLDS[control] || !!timers[control];
+      if (timers[control]) { clearTimeout(timers[control]); timers[control] = 0; }
+      if (event.type === 'up' && short && TAPS[control]) TAPS[control]();
     }
   }
   // Touch: a tap shows or hides the text; a drag turns the figure; letting go while still moving sets it spinning.
@@ -540,14 +475,15 @@
     stage.addEventListener('pointerdown', event => {
       // (A new touch always starts afresh: the end of the one before may never have arrived.)
       dragging = false;
-      finger = {id: event.pointerId, x: event.clientX, y: event.clientY, lastX: event.clientX, lastY: event.clientY, at: performance.now(), movedAt: 0, speed: 0};
+      finger = {id: event.pointerId, x: event.clientX, y: event.clientY, lastX: event.clientX, lastY: event.clientY, at: performance.now(), movedAt: 0, speed: 0, spun: 0};
       try { stage.setPointerCapture(event.pointerId); } catch (_) { /* a pointer sent by the host */ }
+      if (player) player.wake();
     });
     addEventListener('pointermove', event => {
       if (!finger || event.pointerId !== finger.id) return;
       if (!dragging && Math.hypot(event.clientX - finger.x, event.clientY - finger.y) < 6) return;
       const now = performance.now(), perPixel = Math.PI / Math.max(120, Math.min(stage.clientWidth, stage.clientHeight));
-      if (!dragging) { dragging = true; setSpin(0); finger.lastX = event.clientX; finger.lastY = event.clientY; finger.movedAt = now; }
+      if (!dragging) { dragging = true; finger.spun = motion.view.spin?.dir || 0; setSpin(0); finger.lastX = event.clientX; finger.lastY = event.clientY; finger.movedAt = now; }
       const dx = event.clientX - finger.lastX, dy = event.clientY - finger.lastY;
       finger.speed = 0.6 * finger.speed + 0.4 * dx / Math.max(1, now - finger.movedAt);
       finger.lastX = event.clientX; finger.lastY = event.clientY; finger.movedAt = now;
@@ -558,12 +494,87 @@
       if (!finger || event.pointerId !== finger.id) return;
       const was = finger, now = performance.now();
       finger = null;
-      if (!dragging) { if (event.type === 'pointerup' && now - was.at < 500) { textShown = !textShown; saveSoon(); } return; }
+      if (!dragging) {
+        if (event.type === 'pointerup' && now - was.at < 500) { if (panel) openPanel(false); else { textShown = !textShown; saveSoon(); } }
+        return;
+      }
       dragging = false;
+      // Thrown, it spins the way it was thrown; in the show it goes on turning as it was.
       if (event.type === 'pointerup' && now - was.movedAt < 150 && Math.abs(was.speed) > 0.3) setSpin(Math.sign(was.speed));
+      else if (show.on) setSpin(was.spun || 1);
       changed();
     };
     addEventListener('pointerup', lift); addEventListener('pointercancel', lift);
+  }
+
+  /* ---------- the Player panel and the speaker ---------- */
+  // K4 opens the panel: what the figure follows, which piece plays, and the show. E1 moves through the choices and
+  // a press of E1 takes one; a touch does the same.
+  let panel = false, cursor = null, drawn = '';
+  const rows = () => [
+    {row: 'sound', title: 'Sound', choices: [...(TRACKS.length ? [['music', 'Music']] : []), ['input', 'Mic / Line in'], ['silent', 'Silent']], current: player.source},
+    ...(TRACKS.length ? [{row: 'track', title: 'Track', choices: TRACKS.map((track, i) => [String(i), track.title]), current: player.source === 'music' ? String(player.index) : ''}] : []),
+    {row: 'show', title: 'Show', choices: [['on', 'On'], ['off', 'Off']], current: show.on ? 'on' : 'off'},
+  ];
+  function take(row, value) {
+    if (row === 'sound') setSource(value);
+    else if (row === 'track') { player.choose(Number(value)); setSource('music'); }
+    else if (row === 'show' && (value === 'on') !== show.on) toggleShow();
+  }
+  function renderPanel() {
+    if (isOutput || !player || !panel) return;
+    const list = rows();
+    if (!cursor || !list.some(r => r.row === cursor.row && r.choices.some(c => c[0] === cursor.value))) cursor = {row: list[0].row, value: list[0].current || list[0].choices[0][0]};
+    const next = JSON.stringify([list, cursor]);
+    if (next === drawn) return;
+    drawn = next;
+    const body = $('playerBody');
+    body.textContent = '';
+    for (const r of list) {
+      const wrap = document.createElement('div'), title = document.createElement('div'), group = document.createElement('div');
+      wrap.className = 'row'; title.className = 'row__title'; title.textContent = r.title; group.className = 'row__choices';
+      for (const [value, text] of r.choices) {
+        const button = document.createElement('button');
+        button.type = 'button'; button.textContent = text; button.dataset.row = r.row; button.dataset.value = value;
+        if (value === r.current) button.classList.add('is-active');
+        if (cursor.row === r.row && cursor.value === value) button.classList.add('is-cursor');
+        button.setAttribute('aria-pressed', String(value === r.current));
+        button.addEventListener('click', () => { if (player) player.wake(); cursor = {row: r.row, value}; take(r.row, value); renderPanel(); });
+        group.appendChild(button);
+      }
+      wrap.append(title, group); body.appendChild(wrap);
+    }
+  }
+  function openPanel(open) {
+    if (isOutput || !player) return;
+    panel = open; cursor = null; drawn = '';
+    $('player').hidden = !open;
+    document.documentElement.dataset.panel = open ? 'open' : '';
+    renderPanel(); label();
+  }
+  function panelStep(detents) {
+    const all = rows().flatMap(r => r.choices.map(c => ({row: r.row, value: c[0]})));
+    const at = Math.max(0, all.findIndex(c => cursor && c.row === cursor.row && c.value === cursor.value));
+    cursor = all[clamp(at + Math.sign(detents), 0, all.length - 1)];
+    renderPanel();
+  }
+  function panelPress() { if (cursor) { take(cursor.row, cursor.value); renderPanel(); } }
+  // The speaker: pink while the music is heard. A tap mutes it or brings it back, with a short fade; with the audio
+  // input or Silent it shows as off, and a tap plays the music.
+  function renderSpeaker() {
+    const button = $('speaker');
+    if (isOutput || !player || !TRACKS.length) { button.hidden = true; return; }
+    const wanted = player.source === 'music' && !player.muted;
+    button.hidden = false;
+    button.dataset.on = String(wanted && player.audible); button.dataset.waiting = String(wanted && !player.audible);
+    button.setAttribute('aria-pressed', String(!wanted));
+    button.setAttribute('aria-label', player.source !== 'music' ? 'Play music' : player.muted ? 'Unmute' : 'Mute');
+  }
+  function speakerTapped() {
+    if (!player) return;
+    if (player.source !== 'music') { player.setMuted(false); setSource('music'); }
+    else if (!player.muted && !player.audible) { player.retryAt = 0; player.wake(); }
+    else { player.setMuted(!player.muted); saveSoon(); }
   }
 
   /* ---------- checks ---------- */
@@ -574,8 +585,10 @@
     state: () => {
       const at = epoch(), letters = lettersAt(at);
       return {formula: FORMULAS[motion.formula].id, a: letters[0] / 100, b: letters[1] / 100, c: letters[2] / 100, d: letters[3] / 100, palette: PALETTES[palette].name,
-        drift: !!motion.drift, textVisible: !isOutput && textShown, sound: sounding, listening: source === 'input', source, piece: source === 'music' ? MUSIC[music.piece].name : null,
-        spin: motion.view.spin ? motion.view.spin.dir : 0, turn: Math.round(yawAt(at) * 1800 / Math.PI) / 10, tilt: Math.round(motion.view.pitch * 1800 / Math.PI) / 10};
+        show: isOutput ? !!motion.show : show.on, scene: show.scene, textVisible: !isOutput && textShown,
+        source: player ? player.source : 'silent', track: player && player.source === 'music' ? player.title : null, muted: player ? player.muted : false, audible: player ? player.audible : false,
+        listening: player ? player.source === 'input' && player.listening : false, panel,
+        spin: motion.view.spin ? motion.view.spin.dir : 0, turn: Math.round(yawAt(at) * 1800 / Math.PI) / 10, tilt: Math.round(pitchAt(at) * 1800 / Math.PI) / 10};
     },
     stats,
   };
@@ -590,6 +603,7 @@
     new ResizeObserver(layout).observe($('stage'));
     setInterval(report, 5000);
     if (isOutput) {
+      show.on = false;
       build();
       await sdk.ready();
       relay?.onMessage(follow);
@@ -597,16 +611,26 @@
       return;
     }
     try { const saved = await sdk.data.get('state'); version = saved.version; restore(saved.value); } catch (_) { /* first run */ }
-    applyShare(context.share);
+    const linked = applyShare(context.share);
+    if (linked) lent.show = lent.source = true;
+    player = new window.MusicPlayer({sdk, tracks: TRACKS, onLevels: hear, onSection: () => { show.due = true; }, onChange: soundChanged});
+    player.index = kept.track; player.muted = kept.muted;
+    show.on = false;
+    if (kept.show && !linked) setShow(true);
     build(); label();
     // The first points at once, before the first animation frame: a host may keep the App hidden until it is ready.
     step(performance.now());
     touch();
+    $('speaker').addEventListener('click', speakerTapped);
+    $('playerClose').addEventListener('click', () => openPanel(false));
+    document.addEventListener('visibilitychange', () => player.pause(document.hidden));
     sdk.controls.onEvent(onControl);
     await sdk.ready();
+    void player.setSource(linked ? 'silent' : kept.source);
+    soundChanged();
     requestAnimationFrame(frame);
     setInterval(publish, 1000); publish(); shareSoon();
   }
-  addEventListener('pagehide', () => { clearTimeout(saveTimer); closeInput(); closeRig(); }, {once: true});
+  addEventListener('pagehide', () => { clearTimeout(saveTimer); if (player) player.dispose(); }, {once: true});
   void init();
 })();

@@ -156,14 +156,15 @@ async function open({args = [], permissions = []} = {}) {
   // What the host sent to the audio device in the last "ms": the loudest sample left and right, how far the two were
   // apart, and the largest jump between neighbouring samples.
   const heard = (page, ms) => page.evaluate(span => { const now = performance.now(), blocks = (window.__host?.recent || []).filter(b => now - b.at < span), most = key => blocks.reduce((m, b) => Math.max(m, b[key]), 0); return {blocks: blocks.length, left: most('left'), right: most('right'), apart: most('apart'), step: most('step')}; }, ms);
-  // The picture as the browser holds it: its exact bytes, and the centred square as a 64 x 64 grid of light.
+  // The picture as the browser holds it: its exact bytes, and the centred square as a 64 x 64 grid of light
+  // ("part": only that share of the square, about its middle).
   const bytes = frame => frame.evaluate(() => document.getElementById('picture').toDataURL('image/png'));
-  const grid = frame => frame.evaluate(() => {
-    const source = document.getElementById('picture'), side = Math.min(source.width, source.height), copy = document.createElement('canvas'); copy.width = copy.height = 64;
+  const grid = (frame, part = 1) => frame.evaluate(share => {
+    const source = document.getElementById('picture'), side = Math.min(source.width, source.height) * share, copy = document.createElement('canvas'); copy.width = copy.height = 64;
     const g = copy.getContext('2d', {willReadFrequently: true}); g.drawImage(source, (source.width - side) / 2, (source.height - side) / 2, side, side, 0, 0, 64, 64);
     const d = g.getImageData(0, 0, 64, 64).data, light = []; for (let i = 0; i < d.length; i += 4) light.push(d[i] + d[i + 1] + d[i + 2]);
     return light;
-  });
+  }, part);
   const alike = (a, b) => { const mean = l => l.reduce((s, v) => s + v, 0) / l.length, ma = mean(a), mb = mean(b); let ab = 0, aa = 0, bb = 0; for (let i = 0; i < a.length; i++) { ab += (a[i] - ma) * (b[i] - mb); aa += (a[i] - ma) ** 2; bb += (b[i] - mb) ** 2; } return ab / Math.sqrt(aa * bb || 1); };
   // Watch the picture frame by frame: its light, how much it moved since the frame before, and the letter a.
   const watch = frame => frame.evaluate(() => {

@@ -25,6 +25,12 @@ def formulas():
     return json.loads(subprocess.check_output(['node', '-e', script, str(SRC / 'formulas.js')]))
 
 
+def tracks():
+    """The list in tracks.js, read by Node."""
+    script = 'global.window = {}; require(process.argv[1]); process.stdout.write(JSON.stringify(window.Tracks));'
+    return json.loads(subprocess.check_output(['node', '-e', script, str(SRC / 'tracks.js')]))
+
+
 def rule(formula):
     """The formula's expressions as a Python function (x, y, z, a, b, c, d) -> the next point, or the rate of change."""
     tidy = lambda text: re.sub(r'\bvec[23]\(', '(', text).replace('p.x', 'x').replace('p.y', 'y').replace('p.z', 'z')
@@ -56,7 +62,7 @@ class Attractor(unittest.TestCase):
         # The music is the only large part (two pieces); everything else stays small.
         self.assertLessEqual(sum(path.stat().st_size for path in SRC.rglob('*') if path.is_file() and path.suffix != '.mp3'), int(0.3 * 1024 * 1024))
         self.assertLessEqual(len([path for path in SRC.rglob('*.mp3')]), 2)
-        self.assertEqual(sorted(path.relative_to(SRC).as_posix() for path in SRC.rglob('*.mp3')), sorted(re.findall(r"file: '(music/[^']+)'", (SRC / 'app.js').read_text())))
+        self.assertEqual(sorted(path.relative_to(SRC).as_posix() for path in SRC.rglob('*.mp3')), sorted(track['file'] for track in tracks()))
         with tempfile.TemporaryDirectory() as temporary:
             package, release = apps.build(SLUG, output=Path(temporary), source_commit='0' * 40)
             self.assertLessEqual(package.stat().st_size, 6 * 1024 * 1024)
@@ -83,10 +89,11 @@ class Attractor(unittest.TestCase):
             links = [link for link in re.findall(r'(?:https?:)?//[\w.-]+\.\w+[^\s"\']*', text) if not link.startswith('http://www.w3.org/')]
             self.assertEqual(links, [], path)
             self.assertNotIn('Math.random', text, path)
-        self.assertEqual(re.findall(r'<script[^>]*src="([^"]+)"', self.text['index.html']), ['/apps/sdk/apps-v1.js', 'formulas.js', 'picture.js', 'app.js'])
+        self.assertEqual(re.findall(r'<script[^>]*src="([^"]+)"', self.text['index.html']), ['/apps/sdk/apps-v1.js', 'formulas.js', 'thread.js', 'picture.js', 'tracks.js', 'music.js', 'app.js'])
 
     def test_the_source_is_not_packed(self):
-        for path in ('formulas.js', 'picture.js', 'voice.js', 'app.js'):
+        # (tracks.js is data written by the music tool.)
+        for path in ('formulas.js', 'thread.js', 'picture.js', 'music.js', 'app.js'):
             self.assertLessEqual(max(len(line) for line in self.text[path].splitlines()), 320, path)
 
     @unittest.skipUnless(shutil.which('node'), 'Node reads formulas.js')
@@ -99,6 +106,7 @@ class Attractor(unittest.TestCase):
             self.assertRegex(formula['id'], r'^[a-z0-9-]{1,24}$')
             self.assertTrue(formula['name'] and 2 <= len(formula['text']) <= 3 and formula['view'] > 0, formula['id'])
             self.assertEqual('flow' in formula, 'dt' in formula, formula['id'])
+            self.assertEqual('flow' in formula, formula.get('thread', 0) > 0, formula['id'])
             self.assertNotEqual('flow' in formula, 'step' in formula, formula['id'])
             self.assertGreaterEqual(len(formula['presets']), 6, formula['id'])
             self.assertEqual(len({tuple(preset) for preset in formula['presets']}), len(formula['presets']), formula['id'])
@@ -135,6 +143,42 @@ class Attractor(unittest.TestCase):
         for _ in range(200):
             p = advance(formula, f, p, (0.0, 0.0, 0.0, 0.0))
         self.assertEqual(p, (-1.0, -1.0, 0.0))
+
+    @unittest.skipUnless(shutil.which('node'), 'Node reads tracks.js')
+    def test_each_piece_comes_with_what_the_figure_follows(self):
+        import base64
+        listed = tracks()
+        self.assertEqual([track['title'] for track in listed], ['Strange Loop', 'Sacred Orbit'])
+        for track in listed:
+            levels = base64.b64decode(track['levels'])
+            # Three bands for every 20 ms of the piece, and not silence.
+            self.assertEqual(len(levels) % 3, 0, track['id'])
+            self.assertAlmostEqual(len(levels) / 3 * 0.02, track['duration'], delta=0.05, msg=track['id'])
+            self.assertGreater(max(levels), 100, track['id'])
+            self.assertTrue(80 <= track['bpm'] <= 140 and len(track['sections']) >= 3, track['id'])
+            self.assertEqual(track['sections'], sorted(track['sections']), track['id'])
+            self.assertTrue(all(6 <= at <= track['duration'] - 6 for at in track['sections']), track['id'])
+
+    @unittest.skipUnless(shutil.which('node'), 'Node runs thread.js')
+    def test_a_flows_line_follows_its_formula(self):
+        # thread.js compiles the expressions in formulas.js for itself: its path must be the one the formula gives.
+        script = (
+            "global.window = global; global.performance = require('perf_hooks').performance;"
+            "global.document = {createElement: () => ({remove() {}}), head: {appendChild(s) { (0, eval)(s.textContent); }}};"
+            "require(process.argv[1]); require(process.argv[2]); const out = {};"
+            "for (const f of window.Formulas.filter(f => f.flow)) { const points = new Float32Array(900), job = window.Thread.path(f, f.presets[0], 300, f.dt, points, 1);"
+            " out[f.id] = [job.run(1e9), Array.from(points)]; }"
+            "process.stdout.write(JSON.stringify(out));")
+        got = json.loads(subprocess.check_output(['node', '-e', script, str(SRC / 'formulas.js'), str(SRC / 'thread.js')]))
+        for formula in [f for f in formulas() if 'flow' in f]:
+            done, points = got[formula['id']]
+            self.assertEqual(done, 'done', formula['id'])
+            f, view, centre = rule(formula), formula['view'], (formula.get('centre', []) + [0, 0, 0])[:3]
+            p = (centre[0] + 0.137 * view / 3, centre[1] + 0.137 * view * 2 / 3, centre[2] + 0.137 * view)
+            for i in range(300):
+                for j in range(3):
+                    self.assertAlmostEqual(points[3 * i + j], p[j], delta=1e-3 * view, msg=(formula['id'], i))
+                p = advance(formula, f, p, formula['presets'][0])
 
 
 if __name__ == '__main__':

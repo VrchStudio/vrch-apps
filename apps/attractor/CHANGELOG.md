@@ -1,5 +1,14 @@
 # Attractor
 
+## 0.5.0
+
+- The App opens in a show: the figure turns, tilts and sways by itself, moves with the music, and goes on to new figures, formulas and colours where the music changes. Hold K3 to stop it and rest.
+- K4 opens Player: music, microphone or line in, or silence; the piece; the show. A speaker on the picture mutes the music and brings it back.
+- The figure follows the music from the first moment, also while muted.
+- Lorenz, Aizawa and Thomas are drawn as one long line wound into the figure.
+- A large output fills its height, and in the show the figure grows past the edges and comes back.
+- K2 held is now the next formula. The formula is no longer played as sound.
+
 ## 0.4.1
 
 - The soft light around a figure ends evenly, without a faint blocky fringe.
