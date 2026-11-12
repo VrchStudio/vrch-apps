@@ -4,6 +4,7 @@
 
 ### Added
 
+- Add Chladni: a humming plate with sand on it. Two knobs choose the note, and the sand gathers into that note's figure, on the device and on a large output.
 - Attractor: six presets for every formula and six sets of colours, with Aurora and Flare new.
 - Attractor: a large output can show the figure whole, in three views or mirrored.
 - Attractor: choose formula, preset and colours in a Figures panel, and Auto, Hold or Still in Player; no key needs holding.
