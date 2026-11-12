@@ -341,6 +341,8 @@
     touch();
     sdk.controls.onEvent(onControl);
     await sdk.ready();
+    // (Labels set before the host is ready are lost on the device: they are set again now.)
+    label();
     requestAnimationFrame(frame);
     setInterval(publish, 1000); publish(); shareSoon();
   }
