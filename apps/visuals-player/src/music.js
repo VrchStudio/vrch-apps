@@ -143,7 +143,7 @@
         if (error?.code === 'stale') return;
         if (this.poked) { this.poked = false; this.retryAt = 0; this.wake(true); return; }
         if (this.error?.code === 'interaction_required') return;
-        this.retryTimer = setTimeout(() => this.wake(), Math.min(8000, 1000 * 2 ** this.retries++));
+        this.retryTimer = setTimeout(() => { this.retryAt = 0; this.wake(); }, Math.min(8000, 1000 * 2 ** this.retries++));
       });
     }
     async play() {

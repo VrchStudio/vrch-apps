@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.8
+
+- Music now really starts by itself when Visuals Player opens; in a browser it starts with the first tap anywhere on the page.
+
 ## 0.3.7
 
 - Music plays as soon as Visuals Player opens, unmuted; a browser that waits for a first tap starts it on that tap.

@@ -742,6 +742,8 @@
         onChange: () => { renderPlayer(); renderMute(); publish(); shareSoon(); }, onSection: sectionChanged});
       if (Number.isInteger(restored.track) && tracks[restored.track]) music.setTrack(restored.track, 0, performance.now(), false);
       mirror.setAudioProvider(() => music.features(performance.now()));
+      // A host that holds sound until a first tap anywhere on its page says when it can play.
+      if (!isOutput) VrchApp.audio.onAvailable?.(() => music.wake(true));
       catalog = new VrchSceneCatalog.PresetCatalog();
       await catalog.load();
     } catch (_) { fatal('The visuals could not load.'); return; }
@@ -774,8 +776,7 @@
     // them on; the device restores them.
     const device = VrchApp.context?.mode === 'device';
     if (device && restored.source === 'input' && !fromLink?.item) void music.setSource('input');
-    else if (!isOutput) music.wake();
-    VrchApp.ready().then(() => { monitorDirty = true; publish(); shareSoon(); if (restored.camera && device) void startCamera(); }, () => {});
+    VrchApp.ready().then(() => { monitorDirty = true; publish(); shareSoon(); if (!isOutput) music.wake(); if (restored.camera && device) void startCamera(); }, () => {});
     requestAnimationFrame(() => requestAnimationFrame(() => { stats.firstFrameAt = performance.now(); }));
     if (!isOutput) requestAnimationFrame(meter);
   }
