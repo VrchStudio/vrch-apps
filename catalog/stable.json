@@ -5039,7 +5039,7 @@
     },
     "519caba2-df87-4150-8503-bd394e6098d5": {
       "slug": "chladni",
-      "latest": "0.1.0",
+      "latest": "0.1.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -5059,6 +5059,25 @@
             "updateApi": 1
           },
           "notes": "- First version: a humming plate with sand on it. n and m choose the figure and the pitch, the sand lets go and gathers again when they change, the plate goes from square to round, and a large output shows the same plate."
+        },
+        "0.1.1": {
+          "version": "0.1.1",
+          "name": "Chladni",
+          "tag": "chladni-v0.1.1",
+          "sourceCommit": "f1d7d97b4f7114e405dc2ef207b302ecc21f555e",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/chladni-v0.1.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/chladni-v0.1.1/chladni-0.1.1.vrchapp",
+          "size": 56620,
+          "sha256": "8752650e7b3fbb16fad692b14472ccf5c166002a4e39a13e6f9372e5c5801885",
+          "packageDigest": "8752650e7b3fbb16fad692b14472ccf5c166002a4e39a13e6f9372e5c5801885",
+          "revision": "38d705c8d6b52e218f364599c0ebcb2b381456f5f9348a51bcf949466da3166d",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- The knobs and keys are labelled on the device from the moment the App opens."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+U2FuZCBmaWd1cmUgb24gYSBzcXVhcmUgcGxhdGU8L3RpdGxlPgogIDxyZWN0IHg9IjciIHk9IjciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgcng9IjYiIHN0cm9rZT0iI2U4ZThlMyIgc3Ryb2tlLXdpZHRoPSIzLjUiLz4KICA8cGF0aCBkPSJNNyAyNGM5IDAgMTctOCAxNy0xN001NyAyNGMtOSAwLTE3LTgtMTctMTdNNyA0MGM5IDAgMTcgOCAxNyAxN001NyA0MGMtOSAwLTE3IDgtMTcgMTciIHN0cm9rZT0iI2FhYTlhNSIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPHBhdGggZD0iTTMyIDIwYzUgNiA3IDggMTIgMTItNSA0LTcgNi0xMiAxMi01LTYtNy04LTEyLTEyIDUtNCA3LTYgMTItMTJ6IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMy41Ii8+Cjwvc3ZnPgo=",
