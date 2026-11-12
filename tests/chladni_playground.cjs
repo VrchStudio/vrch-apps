@@ -1,11 +1,12 @@
 // What the Chladni browser tests share: the real Pages Playground (Shell, SDK, local runtime, virtual E/K hardware
-// and the output panel) serving this working tree's package as tools/apps.py publishes it. The catalog entry is a
+// and the output panel) serving this working tree's package as tools/apps.py publishes it (CHLADNI_SLUG picks the App:
+// chladni by default, or chladni-3d). The catalog entry is a
 // fixture, so the App runs before its first release. CHLADNI_ORIGIN=https://host runs against a deployed Playground
 // and the published App instead. CHLADNI_GPU=1 uses this machine's GPU; without it Chrome draws in software and the
 // speed checks are only reported.
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), http = require('node:http'), crypto = require('node:crypto'), {execFileSync} = require('node:child_process');
 const APPS = path.resolve(__dirname, '..'), PAGES = process.env.VRCH_PAGES_ROOT || path.resolve(APPS, '../vrch-web-viewer-pages'), STATIC = path.join(PAGES, 'static');
-const SLUG = 'chladni', OUT = process.env.CHLADNI_OUT || '/tmp/chladni-test', LIVE = (process.env.CHLADNI_ORIGIN || '').replace(/\/$/, ''), GPU = !!process.env.CHLADNI_GPU;
+const SLUG = process.env.CHLADNI_SLUG || 'chladni', OUT = process.env.CHLADNI_OUT || '/tmp/chladni-test', LIVE = (process.env.CHLADNI_ORIGIN || '').replace(/\/$/, ''), GPU = !!process.env.CHLADNI_GPU;
 const RAW = 'https://raw.githubusercontent.com/VrchStudio/vrch-apps/', RELEASE = 'https://github.com/VrchStudio/vrch-apps/releases/download/', ZERO = '0'.repeat(40);
 const TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.json': 'application/json', '.glb': 'model/gltf-binary'};
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');

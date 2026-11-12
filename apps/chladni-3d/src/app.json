@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "sdk_version": 1,
+  "data_schema_version": 1,
+  "id": "b85e211d-307a-4c1a-b9a5-add0f3696826",
+  "name": "Chladni 3D",
+  "version": "0.1.0",
+  "entry": "index.html",
+  "icon": "assets/icon.svg",
+  "roles": [
+    "output"
+  ],
+  "capabilities": {
+    "controls": true,
+    "audio_input": true,
+    "audio_output": true
+  },
+  "guide": {
+    "description": "A box of ringing air with sand in it. Every note sets the air still on curved surfaces of its own, the sand drifts onto them and hangs there as glowing sheets, and the note you hear is the one that shapes them.",
+    "sections": [
+      {
+        "title": "Quick start",
+        "controls": [
+          {
+            "control": "E1 · Turn",
+            "action": "Change the note. The sand lets go and drifts onto new surfaces."
+          },
+          {
+            "control": "E4 · Press",
+            "action": "Change the weave: the surfaces bend into another family."
+          },
+          {
+            "control": "K2 · Press",
+            "action": "Hear the note that shapes them."
+          }
+        ]
+      },
+      {
+        "title": "Common controls",
+        "controls": [
+          {
+            "control": "E1 · Turn",
+            "action": "n, 1 to 8: half waves across the box."
+          },
+          {
+            "control": "E1 · Press",
+            "action": "Keep this mode ringing and find a second one with the knobs: the two sets of surfaces and the two notes are laid over each other. Press again to let it go."
+          },
+          {
+            "control": "E2 · Turn",
+            "action": "m, 1 to 8: half waves from front to back."
+          },
+          {
+            "control": "E2 · Press",
+            "action": "Next colours."
+          },
+          {
+            "control": "E3 · Turn",
+            "action": "Drive: how hard the box rings. More gathers the sand faster into thinner sheets; at 0% it hangs still."
+          },
+          {
+            "control": "E3 · Press",
+            "action": "The view: circling the box, along its long diagonal, or facing a side. The camera glides there."
+          },
+          {
+            "control": "E4 · Turn",
+            "action": "l, 0 to 8: half waves from bottom to top."
+          },
+          {
+            "control": "E4 · Press",
+            "action": "Next weave: even, twist, counter."
+          },
+          {
+            "control": "K1 · Press",
+            "action": "Open Menu for Guide, audio, Reload or Exit."
+          },
+          {
+            "control": "K2 · Press",
+            "action": "Sound, then Listen, then off."
+          },
+          {
+            "control": "K3 · Press",
+            "action": "Throw the sand about the box."
+          },
+          {
+            "control": "K3 · Hold",
+            "action": "Keep shaking the box. Let go and the sand gathers."
+          },
+          {
+            "control": "K4 · Press",
+            "action": "Next preset: n, m, l and weave slide there together."
+          }
+        ]
+      },
+      {
+        "title": "Touch",
+        "controls": [
+          {
+            "control": "Box · Tap",
+            "action": "Knock the sand away from the line your finger makes through the box. It drifts back."
+          },
+          {
+            "control": "Box · Drag",
+            "action": "Sweep through the sand."
+          }
+        ]
+      },
+      {
+        "title": "How it works",
+        "text": "The box is always ringing and the sand is always moving; K2 only decides whether you hear it. n, m and l are how many half waves fit across the box each way. The same three numbers in any order ring at the same pitch, so the box rings with a mix of all six orders, and the weave chooses the mix: even takes them all alike, twist only the three that turn round in order, counter sets some against the others. Where the mix is still, the sand comes to rest: on surfaces in the box, as sand on a plate comes to rest on lines. On the far walls faint lines show where those surfaces meet them. The pitch rises with n*n + m*m + l*l, as a box of air's does."
+      },
+      {
+        "title": "Audio",
+        "text": "The App opens silent. K2 starts the note: sine waves with a few overtones; with a mode kept there are two notes. Changes of note and loudness glide, and nothing is louder than half of full level."
+      },
+      {
+        "title": "Listen",
+        "text": "K2 pressed again after Sound is Listen: the App falls silent, opens the microphone or line in, and the box takes the mode whose note is nearest the one it hears. Sing or play one long note and the surfaces stand; slide, and the sand drifts from one set to the next. What is heard is used for nothing else and is not kept. The input is asked for only once K2 has rested on Listen for a moment, and is given back when you leave it."
+      },
+      {
+        "title": "Large output",
+        "text": "A large output shows the box and its sand and nothing else, from the same view as the device. The output has grains of its own, so the surfaces are the same while single grains differ."
+      },
+      {
+        "title": "Saved settings",
+        "text": "n, m, l, a kept mode, drive, weave, colours and the view save automatically, and a shared link opens the same figure. Sound and Listen always start off."
+      }
+    ]
+  }
+}

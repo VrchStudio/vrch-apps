@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Still surface in a ringing box</title>
+  <path d="M32 7L53.65 19.5V44.5L32 57L10.35 44.5V19.5Z" stroke="#e8e8e3" stroke-width="3.5"/>
+  <path d="M22.91 26.75L10.35 19.5M41.09 26.75L53.65 19.5M32 46.5V57" stroke="#e8e8e3" stroke-width="2.5"/>
+  <path d="M23.34 12Q32 17.5 40.66 12M10.35 34Q17.5 40 19 49.7M53.65 34Q46.5 40 45 49.7" stroke="#aaa9a5" stroke-width="2.5"/>
+  <path d="M32 20c5 6 7 8 12 12-5 4-7 6-12 12-5-6-7-8-12-12 5-4 7-6 12-12z" stroke="#ff1493" stroke-width="3.5"/>
+</svg>
