@@ -5036,6 +5036,140 @@
           }
         ]
       }
+    },
+    "519caba2-df87-4150-8503-bd394e6098d5": {
+      "slug": "chladni",
+      "latest": "0.1.0",
+      "versions": {
+        "0.1.0": {
+          "version": "0.1.0",
+          "name": "Chladni",
+          "tag": "chladni-v0.1.0",
+          "sourceCommit": "b97cf267dfe7be1dce3a08b9d79d253e812506e0",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/chladni-v0.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/chladni-v0.1.0/chladni-0.1.0.vrchapp",
+          "size": 56514,
+          "sha256": "a44c3044c48f887c73657780519dcd8c30f8ebf03c1322d2d09f43378d29f1cf",
+          "packageDigest": "a44c3044c48f887c73657780519dcd8c30f8ebf03c1322d2d09f43378d29f1cf",
+          "revision": "a735feb21e30c0ba194d03194c908da5b6ffaf7a776f1f3d41d47261a2d4fd1b",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- First version: a humming plate with sand on it. n and m choose the figure and the pitch, the sand lets go and gathers again when they change, the plate goes from square to round, and a large output shows the same plate."
+        }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+U2FuZCBmaWd1cmUgb24gYSBzcXVhcmUgcGxhdGU8L3RpdGxlPgogIDxyZWN0IHg9IjciIHk9IjciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgcng9IjYiIHN0cm9rZT0iI2U4ZThlMyIgc3Ryb2tlLXdpZHRoPSIzLjUiLz4KICA8cGF0aCBkPSJNNyAyNGM5IDAgMTctOCAxNy0xN001NyAyNGMtOSAwLTE3LTgtMTctMTdNNyA0MGM5IDAgMTcgOCAxNyAxN001NyA0MGMtOSAwLTE3IDgtMTcgMTciIHN0cm9rZT0iI2FhYTlhNSIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPHBhdGggZD0iTTMyIDIwYzUgNiA3IDggMTIgMTItNSA0LTcgNi0xMiAxMi01LTYtNy04LTEyLTEyIDUtNCA3LTYgMTItMTJ6IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMy41Ii8+Cjwvc3ZnPgo=",
+      "guide": {
+        "description": "A humming plate with sand on it. Every note shakes the sand into a figure of its own, and the note you hear is the one that draws it.",
+        "sections": [
+          {
+            "title": "Quick start",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "Change the note. The sand lets go and gathers into a new figure."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Scatter the sand and watch it gather again."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Hear the note that draws the figure."
+              }
+            ]
+          },
+          {
+            "title": "Common controls",
+            "controls": [
+              {
+                "control": "E1 · Turn",
+                "action": "n, 1 to 12."
+              },
+              {
+                "control": "E1 · Press",
+                "action": "Swap n and m."
+              },
+              {
+                "control": "E2 · Turn",
+                "action": "m, 1 to 12."
+              },
+              {
+                "control": "E2 · Press",
+                "action": "Next colours."
+              },
+              {
+                "control": "E3 · Turn",
+                "action": "Drive: how hard the plate shakes. More gathers the sand faster into finer lines; at 0% it lies still."
+              },
+              {
+                "control": "E3 · Press",
+                "action": "Drive back to 60%."
+              },
+              {
+                "control": "E4 · Turn",
+                "action": "Shape: from a square plate to a round one."
+              },
+              {
+                "control": "E4 · Press",
+                "action": "Straight to square or round."
+              },
+              {
+                "control": "K1 · Press",
+                "action": "Open Menu for Guide, audio, Reload or Exit."
+              },
+              {
+                "control": "K2 · Press",
+                "action": "Sound on or off."
+              },
+              {
+                "control": "K3 · Press",
+                "action": "Scatter the sand."
+              },
+              {
+                "control": "K3 · Hold",
+                "action": "Keep shaking the plate. Let go and the sand gathers."
+              },
+              {
+                "control": "K4 · Press",
+                "action": "Next preset: n, m and shape slide there together."
+              }
+            ]
+          },
+          {
+            "title": "Touch",
+            "controls": [
+              {
+                "control": "Plate · Tap",
+                "action": "Knock the sand away from that spot. It flows back."
+              },
+              {
+                "control": "Plate · Drag",
+                "action": "Plough through the sand."
+              }
+            ]
+          },
+          {
+            "title": "How it works",
+            "text": "The plate is always humming and the sand is always moving; K2 only decides whether you hear it. Sand jumps about wherever the plate shakes and comes to rest on the lines where it stands still. n and m choose the figure, and the pitch rises with them. The figures come from tidy formulas chosen for their looks."
+          },
+          {
+            "title": "Audio",
+            "text": "The App opens silent. K2 starts the note: sine waves with a few overtones, like a bowed plate. Changes of note and loudness glide, and nothing is louder than half of full level."
+          },
+          {
+            "title": "Large output",
+            "text": "A large output shows the plate and its sand and nothing else. It has grains of its own, so the figure is the same while single grains differ."
+          },
+          {
+            "title": "Saved settings",
+            "text": "n, m, drive, shape and colours save automatically, and a shared link opens the same figure. Sound always starts off."
+          }
+        ]
+      }
     }
   }
 }

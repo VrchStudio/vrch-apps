@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Sand figure on a square plate</title>
+  <rect x="7" y="7" width="50" height="50" rx="6" stroke="#e8e8e3" stroke-width="3.5"/>
+  <path d="M7 24c9 0 17-8 17-17M57 24c-9 0-17-8-17-17M7 40c9 0 17 8 17 17M57 40c-9 0-17 8-17 17" stroke="#aaa9a5" stroke-width="3"/>
+  <path d="M32 20c5 6 7 8 12 12-5 4-7 6-12 12-5-6-7-8-12-12 5-4 7-6 12-12z" stroke="#ff1493" stroke-width="3.5"/>
+</svg>
