@@ -5039,7 +5039,7 @@
     },
     "519caba2-df87-4150-8503-bd394e6098d5": {
       "slug": "chladni",
-      "latest": "0.3.0",
+      "latest": "0.3.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -5116,6 +5116,25 @@
             "updateApi": 1
           },
           "notes": "- Listen: K2 pressed again after Sound opens the microphone or line in, and the plate takes the figure of the note it hears.\n- Two modes at once: a press of E1 keeps the mode sounding while the knobs find a second one; figures and notes are laid over each other.\n- Two more plates after square and round: six sides and three."
+        },
+        "0.3.1": {
+          "version": "0.3.1",
+          "name": "Chladni",
+          "tag": "chladni-v0.3.1",
+          "sourceCommit": "75d9d6cbbbb661d53d0d84d37a93a513a5ad34cf",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/chladni-v0.3.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/chladni-v0.3.1/chladni-0.3.1.vrchapp",
+          "size": 76052,
+          "sha256": "e49c895a7ce32d4e30c4fa3f7ca7b5cc6760be2ba5c73e7ce86467ddf04466b1",
+          "packageDigest": "e49c895a7ce32d4e30c4fa3f7ca7b5cc6760be2ba5c73e7ce86467ddf04466b1",
+          "revision": "22270d255de25523f6f08b2074d76136a5ea5168d3210f70ad588abeb162acb8",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- The device keeps its full amount of sand at the frame rates it runs at."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+U2FuZCBmaWd1cmUgb24gYSBzcXVhcmUgcGxhdGU8L3RpdGxlPgogIDxyZWN0IHg9IjciIHk9IjciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgcng9IjYiIHN0cm9rZT0iI2U4ZThlMyIgc3Ryb2tlLXdpZHRoPSIzLjUiLz4KICA8cGF0aCBkPSJNNyAyNGM5IDAgMTctOCAxNy0xN001NyAyNGMtOSAwLTE3LTgtMTctMTdNNyA0MGM5IDAgMTcgOCAxNyAxN001NyA0MGMtOSAwLTE3IDgtMTcgMTciIHN0cm9rZT0iI2FhYTlhNSIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPHBhdGggZD0iTTMyIDIwYzUgNiA3IDggMTIgMTItNSA0LTcgNi0xMiAxMi01LTYtNy04LTEyLTEyIDUtNCA3LTYgMTItMTJ6IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMy41Ii8+Cjwvc3ZnPgo=",
