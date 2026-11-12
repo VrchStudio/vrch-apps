@@ -94,7 +94,7 @@ class Chladni(unittest.TestCase):
     def test_every_plate_is_one_complete_entry(self):
         listed = modes()
         self.assertEqual([plate['id'] for plate in listed['plates']], ['square', 'round'])
-        self.assertEqual([listed['lowest'], listed['highest']], [1, 12])
+        self.assertEqual([listed['lowest'], listed['highest']], [1, 24])
         for plate in listed['plates']:
             self.assertRegex(plate['id'], r'^[a-z0-9-]{1,24}$')
             self.assertTrue(plate['name'])
@@ -115,9 +115,9 @@ class Chladni(unittest.TestCase):
             for n in range(listed['lowest'], listed['highest'] + 1):
                 for m in range(listed['lowest'], listed['highest'] + 1):
                     values = []
-                    for j in range(33):
-                        for i in range(33):
-                            x, y = (i + 0.5) / 33, (j + 0.5) / 33
+                    for j in range(41):
+                        for i in range(41):
+                            x, y = (i + 0.5) / 41, (j + 0.5) / 41
                             t, r = math.atan2(y - 0.5, x - 0.5), math.hypot(x - 0.5, y - 0.5)
                             if r > rim(t):
                                 continue

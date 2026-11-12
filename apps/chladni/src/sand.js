@@ -15,7 +15,10 @@
 // To change what the sand looks like, edit the "dot" and "lay" shaders; to change how it moves, the "step" shader.
 //
 // Sand.create(canvas, Modes) gives:
-//   resize(width, height, ratio)  the canvas in CSS pixels and the screen's pixel ratio
+//   resize(width, height, ratio, rows)  the canvas in CSS pixels and the screen's pixel ratio. rows 0: one plate in
+//                                 the middle, black beside it. rows 1 or 2: the plate repeated over the whole screen,
+//                                 that many to the shorter side, every other one turned over so that the figure runs
+//                                 on from plate to plate
 //   draw(view, steps)             move the sand "steps" times, then draw. view:
 //                                   from, to   [n, m] of the mode it is leaving and the mode it is going to
 //                                   blend      0 (all "from") to 1 (all "to")
@@ -31,7 +34,7 @@
   'use strict';
   const COUNTS = [20000, 40000, 80000];   // grains, chosen by how many pixels the plate has
   const SIDES = [520, 900];               // a plate narrower than 520 pixels takes the first count, than 900 the second
-  const FILL = 0.94;                      // the plate's width as a share of the shorter side of the screen
+  const FILL = 0.94;                      // one plate's width as a share of the shorter side of the screen
   const GRAIN = 0.0031;                   // a grain's width as a share of the plate's, with 40,000 grains
   const THROW = 0.085, THROW_STEPS = 18;  // a scatter: the first jump, and how many steps it lasts
   const FLICK = 0.02, FLICK_STEPS = 14, FLICK_WIDE = 0.12, FLICKS = 4;   // a tap: the first jump, how long, how wide, how many at once
@@ -129,6 +132,8 @@
     'uniform sampler2D sand;',
     'uniform vec2 origin;             // the plate\'s lower left corner on the screen, in pixels',
     'uniform float side;              // and its width in pixels',
+    'uniform vec2 screen;             // the screen in pixels',
+    'uniform float tiled;             // 1: the plate repeats over the whole screen, every other one turned over',
     'uniform vec3 plateColour, lightColour, thinColour, thickColour;',
     'uniform float glint;             // how bright the rim catches the light',
     'out vec4 o;',
@@ -139,18 +144,27 @@
     '  return mix(mix(speck(i), speck(i + vec2(1.0, 0.0)), f.x), mix(speck(i + vec2(0.0, 1.0)), speck(i + vec2(1.0, 1.0)), f.x), f.y);',
     '}',
     'void main() {',
-    '  vec2 p = (gl_FragCoord.xy - origin) / side, d = p - 0.5 + 1e-6;',
-    '  float r = length(d), inside = (rim(atan(d.y, d.x)) - r) * side, on = clamp(inside + 0.5, 0.0, 1.0);',
+    '  vec2 across = (gl_FragCoord.xy - origin) / side, p = across, turned = vec2(0.0);',
+    '  if (tiled > 0.5) {',
+    '    // Which plate this is, and where on it: on every other plate left and right (or up and down) are swapped.',
+    '    vec2 plateAt = floor(across);',
+    '    turned = mod(plateAt, 2.0);',
+    '    p = mix(across - plateAt, 1.0 - (across - plateAt), turned);',
+    '  }',
+    '  vec2 d = p - 0.5 + 1e-6;',
+    '  // (Plates laid side by side overlap by a pixel, so that no line shows where two square ones meet.)',
+    '  float r = length(d), inside = (rim(atan(d.y, d.x)) - r) * side, on = clamp(inside + 0.5 + tiled, 0.0, 1.0);',
     '  if (on <= 0.0) { o = vec4(0.0, 0.0, 0.0, 1.0); return; }',
     '  // The plate: lit from the upper left, faintly brushed, with a rim that catches a little light.',
-    '  float lit = clamp(0.5 + dot(d, vec2(-0.55, 0.7)), 0.0, 1.0);',
-    '  float brushed = cloud(vec2(p.x * 5.0, p.y * side * 0.5)) - 0.5, fine = speck(gl_FragCoord.xy) - 0.5;',
+    '  vec2 from = tiled > 0.5 ? (gl_FragCoord.xy - 0.5 * screen) / max(screen.x, screen.y) : d;',
+    '  float lit = clamp(0.5 + dot(from, vec2(-0.55, 0.7)), 0.0, 1.0);',
+    '  float brushed = cloud(vec2(across.x * 5.0, across.y * side * 0.5)) - 0.5, fine = speck(gl_FragCoord.xy) - 0.5;',
     '  vec3 metal = mix(plateColour, lightColour, lit) * (1.0 + 0.1 * brushed + 0.05 * fine);',
-    '  metal += lightColour * glint * (1.0 - smoothstep(0.5, 3.0, inside));',
+    '  metal += lightColour * glint * (1.0 - tiled) * (1.0 - smoothstep(0.5, 3.0, inside));',
     '  // The sand.',
     '  vec4 s = texture(sand, p);',
     '  float cover = s.g, shade = s.r / max(s.g, 0.004), thick = clamp(s.a * ' + (THICK / 5).toFixed(1) + ', 0.0, 1.0);',
-    '  float shadow = texture(sand, p + vec2(1.4, -1.4) / side).g * (1.0 - cover);',
+    '  float shadow = texture(sand, p + (1.0 - 2.0 * turned) * vec2(1.4, -1.4) / side).g * (1.0 - cover);',
     '  vec3 grains = mix(thinColour, thickColour, thick) * (0.62 + 0.38 * shade);',
     '  o = vec4(mix(metal * (1.0 - 0.4 * shadow), grains, cover) * on, 1.0);',
     '}',
@@ -199,17 +213,19 @@
       return {made, frame, width, height};
     };
     let sandPicture = null, scale = null, wide = 0;
-    let width = 0, height = 0, side = 0, origin = [0, 0], tier = 0, capped = COUNTS.length - 1, grains = COUNTS[0];
+    let width = 0, height = 0, side = 0, origin = [0, 0], tiles = 0, tier = 0, capped = COUNTS.length - 1, grains = COUNTS[0];
     let now = 0, turn = 0, last = null;
     let thrown = null;        // {seed, left}
     const flicks = [];        // {x, y, left}
 
-    function resize(cssWidth, cssHeight, ratio) {
+    function resize(cssWidth, cssHeight, ratio, rows = 0) {
       const w = Math.max(1, Math.round(cssWidth * ratio)), h = Math.max(1, Math.round(cssHeight * ratio));
-      if (w === width && h === height) return;
-      width = w; height = h; canvas.width = w; canvas.height = h;
-      side = Math.max(16, Math.min(2048, Math.floor(Math.min(w, h) * FILL)));
-      origin = [Math.round((w - side) / 2), Math.round((h - side) / 2)];
+      if (w === width && h === height && rows === tiles) return;
+      if (w !== width || h !== height) { canvas.width = w; canvas.height = h; }
+      width = w; height = h; tiles = rows;
+      // One plate leaves a margin; repeated plates fill the shorter side exactly, the block of them in the middle.
+      side = Math.max(16, Math.min(2048, rows ? Math.ceil(Math.min(w, h) / rows) : Math.floor(Math.min(w, h) * FILL)));
+      origin = [Math.round((w - side * (rows || 1)) / 2), Math.round((h - side * (rows || 1)) / 2)];
       tier = Math.min(capped, side < SIDES[0] ? 0 : side < SIDES[1] ? 1 : 2); grains = COUNTS[tier];
       if (sandPicture) { gl.deleteTexture(sandPicture.made); gl.deleteFramebuffer(sandPicture.frame); }
       sandPicture = texture(side, side);
@@ -263,6 +279,7 @@
       gl.useProgram(lay.made); plateUniforms(lay, view);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, sandPicture.made); gl.uniform1i(lay.at.sand, 0);
       gl.uniform2f(lay.at.origin, origin[0], origin[1]); gl.uniform1f(lay.at.side, side);
+      gl.uniform2f(lay.at.screen, width, height); gl.uniform1f(lay.at.tiled, tiles ? 1 : 0);
       const c = view.colours;
       gl.uniform3fv(lay.at.plateColour, c.plate); gl.uniform3fv(lay.at.lightColour, c.light); gl.uniform3fv(lay.at.thinColour, c.thin); gl.uniform3fv(lay.at.thickColour, c.thick);
       gl.uniform1f(lay.at.glint, c.glint);
@@ -299,6 +316,8 @@
       get grains() { return grains; },
       get side() { return side; },
       get size() { return [width, height]; },
+      get origin() { return origin.slice(); },
+      get tiles() { return tiles; },
       get lost() { return gl.isContextLost(); },
     };
   }

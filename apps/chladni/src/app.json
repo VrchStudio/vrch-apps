@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "519caba2-df87-4150-8503-bd394e6098d5",
   "name": "Chladni",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -39,7 +39,7 @@
         "controls": [
           {
             "control": "E1 · Turn",
-            "action": "n, 1 to 12."
+            "action": "n, 1 to 24."
           },
           {
             "control": "E1 · Press",
@@ -47,7 +47,7 @@
           },
           {
             "control": "E2 · Turn",
-            "action": "m, 1 to 12."
+            "action": "m, 1 to 24."
           },
           {
             "control": "E2 · Press",
@@ -59,7 +59,7 @@
           },
           {
             "control": "E3 · Press",
-            "action": "Drive back to 60%."
+            "action": "What a large output shows: tiles, small tiles or the one plate."
           },
           {
             "control": "E4 · Turn",
@@ -114,11 +114,11 @@
       },
       {
         "title": "Large output",
-        "text": "A large output shows the plate and its sand and nothing else. It has grains of its own, so the figure is the same while single grains differ."
+        "text": "A large output shows the plate and its sand and nothing else. E3 pressed chooses how: Tiles lays the plate over the whole screen, every other one turned over so that the figure runs on from plate to plate; Small tiles does the same with plates half the size; Plate shows the one plate. The output has grains of its own, so the figure is the same while single grains differ."
       },
       {
         "title": "Saved settings",
-        "text": "n, m, drive, shape and colours save automatically, and a shared link opens the same figure. Sound always starts off."
+        "text": "n, m, drive, shape, colours and what the output shows save automatically, and a shared link opens the same figure. Sound always starts off."
       }
     ]
   }

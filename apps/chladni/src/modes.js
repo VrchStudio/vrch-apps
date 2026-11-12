@@ -1,7 +1,7 @@
 // modes.js: how the plate vibrates, and nothing else. One entry in the list is one plate.
 //
 // The plate lies in a square that reaches from 0 to 1 both ways; its centre is (0.5, 0.5). A mode is two whole
-// numbers n and m (1 to 12). For every place on the plate a mode gives one number, the amplitude: how hard the plate
+// numbers n and m (from "lowest" to "highest" below). For every place on the plate a mode gives one number, the amplitude: how hard the plate
 // shakes there, between -1 and 1. Where it is 0 the plate stands still, and that is where the sand ends up.
 // These are tidy formulas chosen for their figures; they are not a model of a real metal plate.
 //
@@ -23,7 +23,7 @@
 // overtones are each a mix of the two neighbours, so there is no jump anywhere.
 window.Modes = {
   lowest: 1,
-  highest: 12,
+  highest: 24,
   plates: [
     {
       // The classic square plate with free edges: two ways of bending, one taken from the other. With n equal to m the

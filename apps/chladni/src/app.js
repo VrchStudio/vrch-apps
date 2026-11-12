@@ -20,8 +20,11 @@
   /* ---------- settings ---------- */
   const LOW = Modes.lowest, HIGH = Modes.highest, PLATES = Modes.plates, LAST = (PLATES.length - 1) * 100;
   // n and m: the mode. drive: how hard the plate shakes, in percent. shape: 0 is the first plate in modes.js, 100
-  // the second. palette: index into PALETTES.
-  const DEFAULTS = {n: 3, m: 5, drive: 60, shape: 0, palette: 0};
+  // the second. palette: index into PALETTES. output: index into OUTPUTS.
+  const DEFAULTS = {n: 3, m: 5, drive: 60, shape: 0, palette: 0, output: 0};
+  // What a large output shows: the plate repeated over the whole screen, one or two to the shorter side, every other
+  // one turned over so that the figure runs on from plate to plate; or the one plate. The device shows the one plate.
+  const OUTPUTS = [{name: 'Tiles', rows: 1}, {name: 'Small tiles', rows: 2}, {name: 'Plate', rows: 0}];
   const DRIVE_STEP = 5, SHAPE_STEP = 4;
   const state = {...DEFAULTS};
   // plate and light: the plate in shade and in light. thin and thick: sand lying thin and piled up.
@@ -35,15 +38,16 @@
   const REACH = 0.3;            // at full drive a grain where the plate shakes hardest jumps this far, divided by the pitch number below
   const FARTHEST = 0.07;        // but never farther than this in one step (lengths are shares of the plate's width)
   const SHAKE = 0.0064;         // the tiny shake that never stops while the plate is driven, divided by the same number,
-  const SHAKIEST = 0.003;       // and never more than this: simple figures get broad lines, busy ones fine lines
+  const SHAKIEST = 0.0022;      // and never more than this: simple figures get broad lines, busy ones fine lines
   const TOSS = 0.03;            // a hand shaking the plate (K3 held) moves every grain up to this far a step, wherever it lies
   const STEP_MS = 1000 / 60;    // the sand moves 60 times a second, whatever the screen does
   const TURN_MS = 300, PRESET_MS = 900, JUMP_MS = 600, SHAPE_MS = 220, COLOUR_MS = 500;
   const LOWEST_HZ = 55, OCTAVES = 3;
-  // The pitch rises with n*n + m*m, as a plate's does, pressed into three octaves from 55 Hz.
+  // The pitch rises with n*n + m*m, as a plate's does, pressed together so that n and m from 1 to 12 take three
+  // octaves from 55 Hz (to 440 Hz); beyond 12 it goes on rising in the same way.
   const pitchNumber = (n, m) => n * n + m * m;
-  const SPAN = Math.log2(pitchNumber(HIGH, HIGH) / pitchNumber(LOW, LOW));
-  const hertzOf = (n, m) => LOWEST_HZ * 2 ** (OCTAVES * Math.log2(pitchNumber(n, m) / pitchNumber(LOW, LOW)) / SPAN);
+  const SPAN = Math.log2(pitchNumber(12, 12) / pitchNumber(1, 1));
+  const hertzOf = (n, m) => LOWEST_HZ * 2 ** (OCTAVES * Math.log2(pitchNumber(n, m) / pitchNumber(1, 1)) / SPAN);
   const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const noteName = hertz => { const key = Math.round(69 + 12 * Math.log2(hertz / 440)); return NOTES[((key % 12) + 12) % 12] + (Math.floor(key / 12) - 1); };
 
@@ -117,7 +121,7 @@
     try { inset = sdk.context.safeInsets?.left || 0; } catch (_) { /* default */ }
     document.documentElement.style.setProperty('--inset-left', inset + 'px');
     const box = $('stage');
-    if (sand) sand.resize(box.clientWidth, box.clientHeight, Math.min(2, devicePixelRatio || 1));
+    if (sand) sand.resize(box.clientWidth, box.clientHeight, Math.min(2, devicePixelRatio || 1), isOutput ? OUTPUTS[state.output].rows : 0);
   }
   function view(now) {
     const drive = state.drive / 100, pace = Math.sqrt(pitchNumber(state.n, state.m));
@@ -147,7 +151,7 @@
   /* ---------- labels ---------- */
   const presetNow = () => PRESETS.findIndex(set => set[0] === state.n && set[1] === state.m && set[2] === state.shape);
   const shapeName = () => state.shape % 100 === 0 ? PLATES[state.shape / 100].name : state.shape + '%';
-  let monitorTimer = 0;
+  let monitorTimer = 0, outputShown = 0;
   function label() {
     if (isOutput) return;
     clearTimeout(monitorTimer);
@@ -155,7 +159,8 @@
       const on = presetNow();
       const values = {
         E1: {label: 'n', value: String(state.n)}, E2: {label: 'm', value: String(state.m)},
-        E3: {label: 'Drive', value: state.drive + '%'}, E4: {label: 'Shape', value: shapeName()},
+        // (For a moment after E3 is pressed its label says what the output now shows.)
+        E3: performance.now() < outputShown ? {label: 'Output', value: OUTPUTS[state.output].name} : {label: 'Drive', value: state.drive + '%'}, E4: {label: 'Shape', value: shapeName()},
         K2: {label: 'Sound', value: sound ? 'on · ' + noteName(hertz()) : 'off', pressed: sound},
         K3: {label: 'Scatter', value: '', pressed: shaking},
         K4: {label: 'Preset', value: (on < 0 ? '–' : on + 1) + '/' + PRESETS.length},
@@ -167,7 +172,7 @@
   /* ---------- saved settings, the share link and the output ---------- */
   let version, saveTimer = 0, shareTimer = 0, shared = '', glide = TURN_MS;
   const whole = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
-  // Takes what is valid from "value" (n, m, drive, shape, palette) and leaves the rest as it is.
+  // Takes what is valid from "value" (n, m, drive, shape, palette, output) and leaves the rest as it is.
   function take(value) {
     if (!value) return;
     if (whole(value.n, LOW, HIGH)) state.n = value.n;
@@ -175,6 +180,7 @@
     if (whole(value.drive, 0, 100)) state.drive = value.drive;
     if (whole(value.shape, 0, LAST)) state.shape = value.shape;
     if (whole(value.palette, 0, PALETTES.length - 1)) state.palette = value.palette;
+    if (whole(value.output, 0, OUTPUTS.length - 1)) state.output = value.output;
   }
   function saveSoon() {
     clearTimeout(saveTimer);
@@ -204,7 +210,7 @@
   }
   function publish() {
     if (isOutput || !relay) return;
-    try { relay.publish({v: 1, n: state.n, m: state.m, drive: state.drive, shape: state.shape, palette: state.palette, shaking, ms: glide}); } catch (_) { /* no output */ }
+    try { relay.publish({v: 1, n: state.n, m: state.m, drive: state.drive, shape: state.shape, palette: state.palette, output: state.output, shaking, ms: glide}); } catch (_) { /* no output */ }
   }
   function send(event) {
     if (isOutput || !relay) return;
@@ -219,7 +225,9 @@
       return;
     }
     if (kind !== 'state') return;
+    const shown = state.output;
     take(data);
+    if (state.output !== shown) layout();
     shaking = data.shaking === true;
     arrive(told ? clamp(Number(data.ms) || TURN_MS, 100, 5000) : 0);
     told = true;
@@ -258,7 +266,8 @@
   const PRESSES = {
     E1: () => { [state.n, state.m] = [state.m, state.n]; changed(); },
     E2: () => { state.palette = (state.palette + 1) % PALETTES.length; changed(); },
-    E3: () => { state.drive = DEFAULTS.drive; changed(); },
+    // What a large output shows. (Without one there is nothing to choose.)
+    E3: () => { if (!relay) return; state.output = (state.output + 1) % OUTPUTS.length; outputShown = performance.now() + 1600; setTimeout(label, 1650); changed(); },
     // Between two plates: to the nearer one. On a plate: to the next, and from the last back to the first.
     E4: () => { const near = Math.round(state.shape / 100) * 100; state.shape = state.shape !== near ? near : near === LAST ? 0 : near + 100; changed(JUMP_MS); },
     K2: () => setSound(!sound),
@@ -305,12 +314,12 @@
   const stats = () => {
     const measured = sand ? sand.measure() : {grains: 0, amplitude: 0};
     return {fps: fps(), grains: measured.grains, amplitude: Math.round(measured.amplitude * 10000) / 10000, hertz: Math.round(hertz() * 100) / 100, audible: tone ? tone.audible : false,
-      side: sand ? sand.side : 0, size: sand ? sand.size : [0, 0], changedAt, tunedAt};
+      side: sand ? sand.side : 0, size: sand ? sand.size : [0, 0], origin: sand ? sand.origin : [0, 0], tiles: sand ? sand.tiles : 0, changedAt, tunedAt};
   };
   window.__chladni = {
     role: isOutput ? 'output' : 'control',
     get firstFrameAt() { return firstFrameAt; },
-    state: () => ({n: state.n, m: state.m, drive: state.drive / 100, shape: state.shape / 100, palette: PALETTES[state.palette].name, sound, shaking, preset: presetNow() + 1,
+    state: () => ({n: state.n, m: state.m, drive: state.drive / 100, shape: state.shape / 100, palette: PALETTES[state.palette].name, output: OUTPUTS[state.output].name, sound, shaking, preset: presetNow() + 1,
       shapeNow: Math.round(shapeAt(performance.now())) / 100, note: noteName(hertz())}),
     stats,
   };

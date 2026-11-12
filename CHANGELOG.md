@@ -4,6 +4,7 @@
 
 ### Added
 
+- Chladni: a large output can be tiled with the plate from edge to edge, and n and m go up to 24.
 - Add Chladni: a humming plate with sand on it. Two knobs choose the note, and the sand gathers into that note's figure, on the device and on a large output.
 - Attractor: six presets for every formula and six sets of colours, with Aurora and Flare new.
 - Attractor: a large output can show the figure whole, in three views or mirrored.

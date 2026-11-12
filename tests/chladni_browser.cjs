@@ -21,15 +21,15 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
   const mean = list => list.reduce((sum, value) => sum + value, 0) / list.length;
   const round = value => Math.round(value * 1000) / 1000;
   // How alike two pictures are as figures: only the sand counts (what is lighter than the bare plate, which is what most of
-  // the picture shows), and grain by grain they differ, so it is first gathered into 16 x 16 cells.
-  const coarse = light => { const plate = light.slice().sort((a, b) => a - b)[2048], cells = new Array(256).fill(0); light.forEach((value, i) => { cells[(Math.floor(i / 64) >> 2) * 16 + ((i % 64) >> 2)] += Math.max(0, value - plate); }); return cells; };
-  const alike = (a, b) => round(t.alike(coarse(a), coarse(b)));
+  // the picture shows), and grain by grain they differ, so it is first gathered into cells: 16 x 16, or 32 x 32 for a closer look.
+  const coarse = (light, across = 16) => { const plate = light.slice().sort((a, b) => a - b)[2048], cells = new Array(across * across).fill(0), by = 64 / across; light.forEach((value, i) => { cells[Math.floor(Math.floor(i / 64) / by) * across + Math.floor((i % 64) / by)] += Math.max(0, value - plate); }); return cells; };
+  const alike = (a, b, across) => round(t.alike(coarse(a, across), coarse(b, across)));
   try {
     /* ---- it opens with the plate and its sand, silent, asking for nothing; the sand gathers by itself ---- */
     const v = await t.visit(''), app = await v.find('control');
     result.firstFrameMs = await app.evaluate(() => __chladni.firstFrameAt);
     if (GPU) assert(result.firstFrameMs < 1000, 'plate and sand within 1 s: ' + result.firstFrameMs);
-    assert.deepEqual(await state(app), {n: 3, m: 5, drive: 0.6, shape: 0, palette: 'Sand', sound: false, shaking: false, preset: 1, shapeNow: 0, note: 'F#3'});
+    assert.deepEqual(await state(app), {n: 3, m: 5, drive: 0.6, shape: 0, palette: 'Sand', output: 'Tiles', sound: false, shaking: false, preset: 1, shapeNow: 0, note: 'F#3'});
     await v.page.waitForTimeout(3000);
     result.opened = {amplitude: await amplitude(app), stats: await stats(app)};
     assert.deepEqual(await everyFrame(v.page, () => window.__asked || []), [], 'nothing is asked for');
@@ -42,6 +42,17 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     await v.page.waitForTimeout(3000);
     assert.deepEqual(figure(await state(out)), figure(await state(app)), 'the output shows the same settings');
     assert.equal(await out.evaluate(() => document.body.innerText.trim()), '', 'no text on the output');
+    // The output opens tiled; a press of E3 goes on to small tiles and then to the one plate, which the checks below look at.
+    result.outputs = [(await stats(out)).tiles];
+    await v.page.locator('#outputScreen').screenshot({path: path.join(OUT, 'output-tiles.png')});
+    for (const name of ['Small tiles', 'Plate']) {
+      await v.press(2); await v.page.waitForTimeout(400);
+      assert.deepEqual([(await state(app)).output, (await state(out)).output, (await state(app)).drive], [name, name, 0.6], 'E3 pressed: ' + name);
+      result.outputs.push((await stats(out)).tiles);
+    }
+    assert.deepEqual(result.outputs, [1, 2, 0], 'tiles, small tiles, the one plate');
+    assert.equal((await stats(app)).tiles, 0, 'the device always shows the one plate');
+    await v.page.waitForTimeout(3000);
 
     /* ---- K3: the sand is thrown and gathers again; held, the plate keeps shaking ---- */
     const rest = mean(await watch(v.page, app, 5));
@@ -62,6 +73,7 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     // The same figure on both screens: the same lines, each from its own grains.
     await v.page.waitForTimeout(1500);
     result.outputAlike = alike(await t.grid(app), await t.grid(out));
+    result.outputAlikeCloser = alike(await t.grid(app), await t.grid(out), 32);
     assert(result.outputAlike > 0.8, 'device and output show the same figure: ' + result.outputAlike);
     await v.page.screenshot({path: path.join(OUT, 'page.png')});
 
@@ -102,9 +114,7 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     still[1] = await t.bytes(app);
     assert.equal((await state(app)).drive, 0);
     assert(still[0] === still[1], 'at 0% nothing moves');
-    await v.press(2);
-    assert.equal((await state(app)).drive, 0.6, 'a press of E3 sets drive back');
-    await v.turn(2, 8, 60);
+    await v.turn(2, 20, 60);
     assert.equal((await state(app)).drive, 1);
     await v.page.waitForTimeout(3500);
     const fine = mean(await watch(v.page, app, 5));
@@ -113,7 +123,8 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     result.drive = {restAt60: round(rest), restAt100: round(fine), after1sAt60: round(thrown[9]), after1sAt100: round(quick[9])};
     assert(fine < 0.85 * rest && quick[9] < thrown[9], 'full drive: finer lines, sooner: ' + JSON.stringify(result.drive));
     await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-drive-100.png')});
-    await v.press(2);
+    await v.turn(2, -8, 60);
+    assert.equal((await state(app)).drive, 0.6);
 
     /* ---- E4: square to round without a jump, the rim with it; a press goes straight to one of them ---- */
     // (A corner of the square: plate when square, black when round.)
@@ -206,10 +217,10 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     assert.equal(new Set(result.presets).size, PRESETS, 'eight different presets: ' + result.presets);
     assert.equal((await state(app)).preset, 1, 'K4 comes round to the first');
     result.presetsAlike = 0;
-    for (let a = 0; a < PRESETS; a++) for (let b = a + 1; b < PRESETS; b++) result.presetsAlike = Math.max(result.presetsAlike, alike(seen[a].light, seen[b].light));
-    result.presetPairs = seen.map((a, i) => seen.map((b, j) => j > i ? alike(a.light, b.light) : null).filter(v => v !== null));
+    for (let a = 0; a < PRESETS; a++) for (let b = a + 1; b < PRESETS; b++) result.presetsAlike = Math.max(result.presetsAlike, alike(seen[a].light, seen[b].light, 32));
+    result.presetPairs = seen.map((a, i) => seen.map((b, j) => j > i ? alike(a.light, b.light, 32) : null).filter(v => v !== null));
     // (Every square figure has the same diagonal line, so two of them are never wholly unlike.)
-    assert(result.presetsAlike < 0.8, 'no two presets look alike: ' + result.presetsAlike);
+    assert(result.presetsAlike < 0.65, 'no two presets look alike: ' + result.presetsAlike);
 
     /* ---- settings are kept, sound is not; the share link opens the same figure in another browser ---- */
     await v.turn(0, 1, 150); await v.turn(3, 6, 70); await v.press(1); await v.turn(2, 2, 70);
@@ -222,7 +233,7 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     await app.waitForFunction(() => __chladni.stats().audible, null, {timeout: 15000});
     await v.page.goto(v.page.url().replace(/[?&]s=[^&]*/, ''));
     const again = await v.find('control');
-    assert.deepEqual([figure(await state(again)), (await state(again)).sound], [sent, false], 'opened again: the same settings, and silent');
+    assert.deepEqual([figure(await state(again)), (await state(again)).output, (await state(again)).sound], [sent, 'Plate', false], 'opened again: the same settings, and silent');
     await v.context.close();
     const w = await t.visit('&s=' + encodeURIComponent(result.shareState)), theirs = await w.find('control');
     await w.page.waitForTimeout(4000);
@@ -231,18 +242,53 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     assert(result.sharedAlike > 0.7, 'and shows the same figure: ' + result.sharedAlike);
     await w.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'shared.png')});
     await w.context.close();
-    for (const broken of ['v1.0.5.60.0.0', 'v1.3.13.60.0.0', 'v1.3.5.101.0.0', 'v1.3.5.60.0.3', 'v2.3.5.60.0.0', 'nonsense']) {
+    for (const broken of ['v1.0.5.60.0.0', 'v1.3.25.60.0.0', 'v1.3.5.101.0.0', 'v1.3.5.60.0.3', 'v2.3.5.60.0.0', 'nonsense']) {
       const bad = await t.visit('&s=' + broken), fallback = await bad.find('control');
       assert.deepEqual(figure(await state(fallback)), {n: 3, m: 5, drive: 0.6, shape: 0, palette: 'Sand'}, 'a link that cannot be read is ignored: ' + broken);
       await bad.context.close();
     }
 
-    /* ---- output formats: the plate stays square and inside the picture ---- */
+    /* ---- tiles: the plate over the whole output, every other one turned over, so the figure runs on across the joins ---- */
+    // (A figure that is not the same left and right, so that turning a plate over shows.)
+    result.tiles = {};
+    for (const ratio of ['16:9', '9:16']) {
+      const o = await t.visit('&s=v1.1.4.60.0.0', {ratio, size: 0});
+      const hand = await o.find('control'), picture = await o.output();
+      await o.page.waitForTimeout(4000);
+      await o.page.locator('#outputScreen').screenshot({path: path.join(OUT, 'tiles-' + ratio.replace(':', 'x') + '.png')});
+      // How much of the picture is lit, and how alike the pixels are either side of the join beside the middle plate,
+      // set against pixels as far apart elsewhere.
+      const join = await picture.evaluate(() => {
+        const {origin, side, size} = __chladni.stats(), source = document.getElementById('picture'), [w, h] = size, copy = document.createElement('canvas'); copy.width = w; copy.height = h;
+        const g = copy.getContext('2d', {willReadFrequently: true}); g.drawImage(source, 0, 0);
+        const d = g.getImageData(0, 0, w, h).data, light = (x, y) => d[4 * (y * w + x)] + d[4 * (y * w + x) + 1] + d[4 * (y * w + x) + 2];
+        let lit = 0; for (let i = 0; i < w * h; i++) if (d[4 * i] + d[4 * i + 1] + d[4 * i + 2] > 12) lit++;
+        // The join runs down the screen when it is wider than tall, across it otherwise.
+        const wide = w > h, at = wide ? origin[0] : h - origin[1], along = wide ? h : w, read = (across, i) => wide ? light(across, i) : light(i, across);
+        let mirrored = 0, elsewhere = 0, count = 0;
+        for (let k = 0; k < 10; k++) for (let i = 0; i < along; i++) { mirrored += Math.abs(read(at - 1 - k, i) - read(at + k, i)); elsewhere += Math.abs(read(at - 1 - k, i) - read(at + k + 24, i)); count++; }
+        return {size, side, origin, lit: lit / (w * h), mirrored: mirrored / count, elsewhere: elsewhere / count};
+      });
+      result.tiles[ratio] = join;
+      assert.equal((await stats(picture)).tiles, 1);
+      assert(join.side === Math.min(...join.size) && join.lit > 0.999, ratio + ': plates as tall as the screen cover all of it: ' + JSON.stringify(join));
+      assert(join.mirrored < 0.5 * join.elsewhere, ratio + ': the figure runs on across the join: ' + JSON.stringify(join));
+      await o.press(2); await o.page.waitForTimeout(2500);
+      const small = await stats(picture);
+      assert(small.tiles === 2 && small.side === Math.ceil(Math.min(...small.size) / 2), ratio + ': small tiles are half as tall: ' + JSON.stringify(small));
+      await o.page.locator('#outputScreen').screenshot({path: path.join(OUT, 'small-tiles-' + ratio.replace(':', 'x') + '.png')});
+      assert.equal(await picture.evaluate(() => document.body.innerText.trim()), '');
+      await o.context.close();
+    }
+
+    /* ---- output formats: the one plate stays square and inside the picture ---- */
     result.formats = {};
     for (const ratio of ['16:9', '9:16', '21:9', '4:3']) {
       const o = await t.visit(REST, {ratio, size: 0});
       await o.find('control');
       const picture = await o.output();
+      await o.press(2); await o.press(2);
+      assert.equal((await stats(picture)).tiles, 0);
       await o.page.waitForTimeout(3500);
       assert.equal(await picture.evaluate(() => document.body.innerText.trim()), '');
       await o.page.locator('#outputScreen').screenshot({path: path.join(OUT, 'output-' + ratio.replace(':', 'x') + '.png')});
@@ -265,9 +311,8 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     /* ---- a 1080p output while a knob keeps turning ---- */
     const big = await t.visit(REST, {ratio: '16:9', size: 1080}), small = await big.find('control'), wall = await big.output();
     await big.page.waitForTimeout(3000);
-    result.large = {size: (await stats(wall)).size, grains: (await stats(wall)).grains, resting: (await stats(wall)).fps};
-    assert.deepEqual(result.large.size, [1920, 1080]);
-    assert.equal(result.large.grains, 80000);
+    result.large = {size: (await stats(wall)).size, grains: (await stats(wall)).grains, tiles: (await stats(wall)).tiles, side: (await stats(wall)).side, resting: (await stats(wall)).fps};
+    assert.deepEqual([result.large.size, result.large.tiles, result.large.side, result.large.grains], [[1920, 1080], 1, 1080, 80000], 'a 1080p output, tiled: ' + JSON.stringify(result.large));
     const busy = [];
     for (let i = 0; i < 24; i++) { await big.turn(0, i % 2 ? -1 : 1, 110); if (i >= 12) busy.push([await stats(small), await stats(wall)]); }
     result.large.turning = {device: Math.min(...busy.map(b => b[0].fps)), output: Math.min(...busy.map(b => b[1].fps))};
@@ -278,7 +323,7 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
 
     assert.deepEqual(t.errors, [], 'no page errors');
     console.log(JSON.stringify(result, null, 1));
-    console.log('PASS Chladni in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening silent with the sand gathering, K3 thrown and held, the note with figure and pitch changing together and no click, drive, shape, swap, colours, a tap, eight presets, saved settings, share link, formats and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
+    console.log('PASS Chladni in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening silent with the sand gathering, the output tiled or as one plate, K3 thrown and held, the note with figure and pitch changing together and no click, drive, shape, swap, colours, a tap, eight presets, saved settings, share link, tiles, formats and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
   } catch (error) {
     console.log(JSON.stringify(result, null, 1));
     console.log('errors', JSON.stringify(t.errors));
