@@ -5039,7 +5039,7 @@
     },
     "519caba2-df87-4150-8503-bd394e6098d5": {
       "slug": "chladni",
-      "latest": "0.1.1",
+      "latest": "0.2.0",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -5078,6 +5078,25 @@
             "updateApi": 1
           },
           "notes": "- The knobs and keys are labelled on the device from the moment the App opens."
+        },
+        "0.2.0": {
+          "version": "0.2.0",
+          "name": "Chladni",
+          "tag": "chladni-v0.2.0",
+          "sourceCommit": "967436460f68b7fc6b0758e36d7bc64fa1b3257c",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/chladni-v0.2.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/chladni-v0.2.0/chladni-0.2.0.vrchapp",
+          "size": 59710,
+          "sha256": "4c288936d052d1437bd792a1ff30981a936642dc514deac257b8b2717572953e",
+          "packageDigest": "4c288936d052d1437bd792a1ff30981a936642dc514deac257b8b2717572953e",
+          "revision": "86b97c7989c12b3154682f4edd59dbab65fd4d6b767af7709373df6e6c6dbe85",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- A large output is covered with the plate from edge to edge: Tiles, Small tiles or the one Plate, chosen with a press of E3. Neighbouring plates are turned over, so the figure runs on from one to the next.\n- n and m go up to 24.\n- The simplest figures have tidier lines."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+U2FuZCBmaWd1cmUgb24gYSBzcXVhcmUgcGxhdGU8L3RpdGxlPgogIDxyZWN0IHg9IjciIHk9IjciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgcng9IjYiIHN0cm9rZT0iI2U4ZThlMyIgc3Ryb2tlLXdpZHRoPSIzLjUiLz4KICA8cGF0aCBkPSJNNyAyNGM5IDAgMTctOCAxNy0xN001NyAyNGMtOSAwLTE3LTgtMTctMTdNNyA0MGM5IDAgMTcgOCAxNyAxN001NyA0MGMtOSAwLTE3IDgtMTcgMTciIHN0cm9rZT0iI2FhYTlhNSIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPHBhdGggZD0iTTMyIDIwYzUgNiA3IDggMTIgMTItNSA0LTcgNi0xMiAxMi01LTYtNy04LTEyLTEyIDUtNCA3LTYgMTItMTJ6IiBzdHJva2U9IiNmZjE0OTMiIHN0cm9rZS13aWR0aD0iMy41Ii8+Cjwvc3ZnPgo=",
@@ -5106,7 +5125,7 @@
             "controls": [
               {
                 "control": "E1 · Turn",
-                "action": "n, 1 to 12."
+                "action": "n, 1 to 24."
               },
               {
                 "control": "E1 · Press",
@@ -5114,7 +5133,7 @@
               },
               {
                 "control": "E2 · Turn",
-                "action": "m, 1 to 12."
+                "action": "m, 1 to 24."
               },
               {
                 "control": "E2 · Press",
@@ -5126,7 +5145,7 @@
               },
               {
                 "control": "E3 · Press",
-                "action": "Drive back to 60%."
+                "action": "What a large output shows: tiles, small tiles or the one plate."
               },
               {
                 "control": "E4 · Turn",
@@ -5181,11 +5200,11 @@
           },
           {
             "title": "Large output",
-            "text": "A large output shows the plate and its sand and nothing else. It has grains of its own, so the figure is the same while single grains differ."
+            "text": "A large output shows the plate and its sand and nothing else. E3 pressed chooses how: Tiles lays the plate over the whole screen, every other one turned over so that the figure runs on from plate to plate; Small tiles does the same with plates half the size; Plate shows the one plate. The output has grains of its own, so the figure is the same while single grains differ."
           },
           {
             "title": "Saved settings",
-            "text": "n, m, drive, shape and colours save automatically, and a shared link opens the same figure. Sound always starts off."
+            "text": "n, m, drive, shape, colours and what the output shows save automatically, and a shared link opens the same figure. Sound always starts off."
           }
         ]
       }
