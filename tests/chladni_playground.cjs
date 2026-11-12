@@ -40,7 +40,7 @@ function instrument() {
   if (navigator.mediaDevices?.getUserMedia) { const ask = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = constraints => { __asked.push(JSON.stringify(constraints)); return ask(constraints).then(stream => { __tracks.push(...stream.getTracks()); return stream; }); }; }
   if (window !== top && window.AudioContext) { const Native = window.AudioContext; window.AudioContext = class extends Native { constructor(options) { super(options); window.__sound.push({sampleRate: options?.sampleRate, sink: options?.sinkId?.type}); } }; }
   if (window === top && window.AudioWorkletNode) {
-    const Native = window.AudioWorkletNode, tap = window.__host = {nodes: 0, recent: []};
+    const Native = window.AudioWorkletNode, tap = window.__host = {nodes: 0, recent: [], last: [0, 0], silent: 1e9, fell: 0};
     window.AudioWorkletNode = class extends Native {
       constructor(ctx, name, options) {
         super(ctx, name, options);
@@ -51,14 +51,24 @@ function instrument() {
         pair.port2.onmessage = ({data}) => {
           if (data?.type !== 'pcm') return;
           pair.port2.postMessage({type: 'ack', sequence: data.sequence, generation: -7});
-          let left = 0, right = 0, apart = 0, step = 0;
+          // step: the largest jump from one sample to the next, which is what a click is. gaps: stretches of plain
+          // silence shorter than a tenth of a second with sound either side. Those are the host's playback running
+          // dry (the App's samples came late), not something the App played, and their edges are not counted as jumps.
+          // A fall to silence that stays silent is a jump like any other.
+          let left = 0, right = 0, apart = 0, step = 0, gaps = 0;
           for (let i = 0; i < 960; i++) {
-            const l = data.samples[2 * i], r = data.samples[2 * i + 1];
+            const l = data.samples[2 * i], r = data.samples[2 * i + 1], jump = Math.max(Math.abs(l - tap.last[0]), Math.abs(r - tap.last[1]));
             left = Math.max(left, Math.abs(l)); right = Math.max(right, Math.abs(r)); apart = Math.max(apart, Math.abs(l - r));
-            if (tap.last) step = Math.max(step, Math.abs(l - tap.last[0]), Math.abs(r - tap.last[1]));
+            if (l === 0 && r === 0) {
+              if (!tap.silent) tap.fell = jump;
+              if (++tap.silent > 4800 && tap.fell) { step = Math.max(step, tap.fell); tap.fell = 0; }
+            } else {
+              if (tap.silent && tap.fell) gaps++; else step = Math.max(step, jump);
+              tap.silent = 0; tap.fell = 0;
+            }
             tap.last = [l, r];
           }
-          tap.recent.push({at: performance.now(), left, right, apart, step}); if (tap.recent.length > 500) tap.recent.shift();
+          tap.recent.push({at: performance.now(), left, right, apart, step, gaps}); if (tap.recent.length > 500) tap.recent.shift();
         };
         listen.port.postMessage({type: 'attach', port: pair.port1}, [pair.port1]);
         this.connect(listen);
@@ -164,8 +174,8 @@ async function open({args = [], permissions = []} = {}) {
   }
   const state = frame => frame.evaluate(() => __chladni.state()), stats = frame => frame.evaluate(() => __chladni.stats());
   // What the host sent to the audio device in the last "ms": the loudest sample left and right, how far the two were
-  // apart, and the largest jump between neighbouring samples.
-  const heard = (page, ms) => page.evaluate(span => { const now = performance.now(), blocks = (window.__host?.recent || []).filter(b => now - b.at < span), most = key => blocks.reduce((m, b) => Math.max(m, b[key]), 0); return {blocks: blocks.length, left: most('left'), right: most('right'), apart: most('apart'), step: most('step')}; }, ms);
+  // apart, the largest jump between neighbouring samples, and how often the host's playback ran dry.
+  const heard = (page, ms) => page.evaluate(span => { const now = performance.now(), blocks = (window.__host?.recent || []).filter(b => now - b.at < span), most = key => blocks.reduce((m, b) => Math.max(m, b[key]), 0); return {blocks: blocks.length, left: most('left'), right: most('right'), apart: most('apart'), step: most('step'), gaps: blocks.reduce((sum, b) => sum + b.gaps, 0)}; }, ms);
   // The picture as the browser holds it: its exact bytes, and the centred square as a 64 x 64 grid of light
   // ("part": only that share of the square, about its middle).
   const bytes = frame => frame.evaluate(() => document.getElementById('picture').toDataURL('image/png'));

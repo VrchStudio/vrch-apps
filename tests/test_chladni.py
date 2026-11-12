@@ -30,7 +30,7 @@ def function(body, arguments):
     lines = []
     for line in body.replace('p.x', 'px').replace('p.y', 'py').replace('c.x', 'cx').replace('c.y', 'cy').splitlines():
         match = re.fullmatch(r'\s*if \((.+)\) return (.+);\s*', line)
-        lines.append('    if %s: return %s' % match.groups() if match else '    ' + line.strip().rstrip(';'))
+        lines.append('    if %s: return %s' % match.groups() if match else '    ' + re.sub(r'^float ', '', line.strip()).rstrip(';'))
     scope = dict(names)
     exec('def f(%s):\n%s' % (arguments, '\n'.join(lines)), scope)
     return scope['f']
@@ -48,8 +48,8 @@ class Chladni(unittest.TestCase):
             self.assertLessEqual(package.stat().st_size, int(0.3 * 1024 * 1024))
             self.assertEqual(release['size'], package.stat().st_size)
 
-    def test_declares_controls_sound_out_and_the_output_picture(self):
-        self.assertEqual(self.manifest['capabilities'], {'controls': True, 'audio_output': True})
+    def test_declares_controls_sound_and_the_output_picture(self):
+        self.assertEqual(self.manifest['capabilities'], {'controls': True, 'audio_input': True, 'audio_output': True})
         self.assertEqual(self.manifest['roles'], ['output'])
         self.assertEqual([section['title'] for section in self.manifest['guide']['sections'][:3]], ['Quick start', 'Common controls', 'Touch'])
         self.assertEqual(len(self.manifest['guide']['sections'][0]['controls']), 3)
@@ -77,10 +77,10 @@ class Chladni(unittest.TestCase):
             links = [link for link in re.findall(r'(?:https?:)?//[\w.-]+\.\w+[^\s"\']*', text) if not link.startswith('http://www.w3.org/')]
             self.assertEqual(links, [], path)
             self.assertNotIn('Math.random', text, path)
-        self.assertEqual(re.findall(r'<script[^>]*src="([^"]+)"', self.text['index.html']), ['/apps/sdk/apps-v1.js', 'modes.js', 'sand.js', 'tone.js', 'app.js'])
+        self.assertEqual(re.findall(r'<script[^>]*src="([^"]+)"', self.text['index.html']), ['/apps/sdk/apps-v1.js', 'modes.js', 'sand.js', 'tone.js', 'ear.js', 'app.js'])
 
     def test_the_source_is_not_packed(self):
-        for path in ('modes.js', 'sand.js', 'tone.js', 'app.js'):
+        for path in ('modes.js', 'sand.js', 'tone.js', 'ear.js', 'app.js'):
             self.assertLessEqual(max(len(line) for line in self.text[path].splitlines()), 320, path)
 
     def test_the_plate_is_in_one_file_and_the_sand_in_another(self):
@@ -93,7 +93,7 @@ class Chladni(unittest.TestCase):
     @unittest.skipUnless(shutil.which('node'), 'Node reads modes.js')
     def test_every_plate_is_one_complete_entry(self):
         listed = modes()
-        self.assertEqual([plate['id'] for plate in listed['plates']], ['square', 'round'])
+        self.assertEqual([plate['id'] for plate in listed['plates']], ['square', 'round', 'hexagon', 'triangle'])
         self.assertEqual([listed['lowest'], listed['highest']], [1, 24])
         for plate in listed['plates']:
             self.assertRegex(plate['id'], r'^[a-z0-9-]{1,24}$')
@@ -133,6 +133,25 @@ class Chladni(unittest.TestCase):
             want = 0.5 * (math.cos(n * math.pi * x) * math.cos(m * math.pi * y) - math.cos(m * math.pi * x) * math.cos(n * math.pi * y))
             self.assertAlmostEqual(amplitude(x, y, 0, 0, float(n), float(m)), want, places=12)
         self.assertAlmostEqual(amplitude(0.3, 0.8, 0, 0, 4.0, 4.0), math.cos(4 * math.pi * 0.3) * math.cos(4 * math.pi * 0.8), places=12)
+
+    def test_the_six_and_three_sided_plates_stand_still_along_no_edge_but_do_not_push_through_it(self):
+        # Free edges: going straight out through any side the amplitude neither rises nor falls there.
+        plates = {plate['id']: plate for plate in modes()['plates']}
+        corners = {'hexagon': [(0.5 + 0.5 * math.cos(k * math.pi / 3), 0.5 + 0.5 * math.sin(k * math.pi / 3)) for k in range(6)],
+                   'triangle': [(0.01, 0.0756476), (0.99, 0.0756476), (0.5, 0.9243524)]}
+        for name, points in corners.items():
+            amplitude, rim = function(plates[name]['amplitude'], 'px, py, cx, cy, n, m'), function(plates[name]['rim'], 't')
+            for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1]):
+                out = (y1 - y0, x0 - x1)
+                size = math.hypot(*out)
+                out = (out[0] / size, out[1] / size)
+                for share in (0.2, 0.5, 0.8):
+                    x, y = x0 + (x1 - x0) * share, y0 + (y1 - y0) * share
+                    # The side is where the rim says it is.
+                    self.assertAlmostEqual(rim(math.atan2(y - 0.5, x - 0.5)), math.hypot(x - 0.5, y - 0.5), places=5, msg=name)
+                    for n, m in ((2, 5), (5, 2), (3, 3), (7, 4)):
+                        slope = (amplitude(x + 1e-5 * out[0], y + 1e-5 * out[1], 0, 0, float(n), float(m)) - amplitude(x - 1e-5 * out[0], y - 1e-5 * out[1], 0, 0, float(n), float(m))) / 2e-5
+                        self.assertLess(abs(slope), 1e-4, (name, n, m))
 
 
 if __name__ == '__main__':

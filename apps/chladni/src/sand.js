@@ -22,6 +22,8 @@
 //   draw(view, steps)             move the sand "steps" times, then draw. view:
 //                                   from, to   [n, m] of the mode it is leaving and the mode it is going to
 //                                   blend      0 (all "from") to 1 (all "to")
+//                                   kept       [n, m, share]: a second mode sounding with the first (share 0: none,
+//                                              1: fully there). The plate then moves as the two added together
 //                                   shape      0 for the first plate in modes.js, 1 for the second, between for a mix
 //                                   reach, shake, toss   lengths as a share of the plate's width
 //                                   colours    {plate, light, thin, thick} each [red, green, blue] 0 to 1, and glint
@@ -46,7 +48,7 @@
   ].join('\n');
   // The plate, from modes.js: rim(t) is where the edge is, amplitudeAt(p) how hard the plate shakes at p.
   function plateSource(Modes) {
-    const plates = Modes.plates, lines = ['const float PI = 3.14159265358979;', 'uniform float weights[' + plates.length + '];', 'uniform vec4 modes;', 'uniform float blend;'];
+    const plates = Modes.plates, lines = ['const float PI = 3.14159265358979;', 'uniform float weights[' + plates.length + '];', 'uniform vec4 modes;', 'uniform float blend;', 'uniform vec3 kept;'];
     plates.forEach((plate, i) => {
       lines.push('float rim_' + i + '(float t) {\n' + plate.rim + '\n}');
       lines.push('float amplitude_' + i + '(vec2 p, vec2 c, float n, float m) {\n' + plate.amplitude + '\n}');
@@ -62,6 +64,8 @@
       '  vec2 c = vec2(min(r / rim(t), 1.0), t);',
       '  float a = plate(p, c, modes.z, modes.w);',
       '  if (blend < 1.0) a = mix(plate(p, c, modes.x, modes.y), a, blend);',
+      '  // Two modes at once: the plate moves as both added together (a little less of each, to stay as lively as one).',
+      '  if (kept.z > 0.0) a = mix(a, 0.62 * (a + plate(p, c, kept.x, kept.y)), kept.z);',
       '  return a;',
       '}');
     return lines.join('\n');
@@ -240,6 +244,7 @@
       gl.uniform1fv(to.at.weights, weights(view.shape));
       if (to.at.modes) gl.uniform4f(to.at.modes, view.from[0], view.from[1], view.to[0], view.to[1]);
       if (to.at.blend) gl.uniform1f(to.at.blend, view.blend);
+      if (to.at.kept) gl.uniform3f(to.at.kept, view.kept[0], view.kept[1], view.kept[2]);
     }
     function draw(view, steps) {
       if (!sandPicture) return;

@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "519caba2-df87-4150-8503-bd394e6098d5",
   "name": "Chladni",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [
@@ -12,6 +12,7 @@
   ],
   "capabilities": {
     "controls": true,
+    "audio_input": true,
     "audio_output": true
   },
   "guide": {
@@ -43,7 +44,7 @@
           },
           {
             "control": "E1 · Press",
-            "action": "Swap n and m."
+            "action": "Keep this mode sounding and find a second one with the knobs: the two figures and the two notes are laid over each other. Press again to let it go."
           },
           {
             "control": "E2 · Turn",
@@ -63,11 +64,11 @@
           },
           {
             "control": "E4 · Turn",
-            "action": "Shape: from a square plate to a round one."
+            "action": "Shape: from a square plate to a round one, on to six sides and to three."
           },
           {
             "control": "E4 · Press",
-            "action": "Straight to square or round."
+            "action": "Straight to the next plate."
           },
           {
             "control": "K1 · Press",
@@ -75,7 +76,7 @@
           },
           {
             "control": "K2 · Press",
-            "action": "Sound on or off."
+            "action": "Sound, then Listen, then off."
           },
           {
             "control": "K3 · Press",
@@ -110,7 +111,11 @@
       },
       {
         "title": "Audio",
-        "text": "The App opens silent. K2 starts the note: sine waves with a few overtones, like a bowed plate. Changes of note and loudness glide, and nothing is louder than half of full level."
+        "text": "The App opens silent. K2 starts the note: sine waves with a few overtones, like a bowed plate; with a mode kept there are two notes. Changes of note and loudness glide, and nothing is louder than half of full level."
+      },
+      {
+        "title": "Listen",
+        "text": "K2 pressed again after Sound is Listen: the App falls silent, opens the microphone or line in, and the plate takes the mode whose note is nearest the one it hears. Sing or play one long note and the figure stands; slide, and the sand flows from figure to figure. What is heard is used for nothing else and is not kept. The input is asked for only once K2 has rested on Listen for a moment, and is given back when you leave it."
       },
       {
         "title": "Large output",
@@ -118,7 +123,7 @@
       },
       {
         "title": "Saved settings",
-        "text": "n, m, drive, shape, colours and what the output shows save automatically, and a shared link opens the same figure. Sound always starts off."
+        "text": "n, m, a kept mode, drive, shape, colours and what the output shows save automatically, and a shared link opens the same figure. Sound and Listen always start off."
       }
     ]
   }

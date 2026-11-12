@@ -8,7 +8,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 const {open, OUT, GPU, LIVE} = require('./chladni_playground.cjs');
 // The first figure as a link.
 const REST = '&s=v1.3.5.60.0.0';
-const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
+const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 10;
 
 (async () => {
   const t = await open(), {state, stats} = t, result = {gpu: GPU, origin: t.origin, packageBytes: t.fx?.size, files: t.fx?.files.map(f => [f.path, f.size])};
@@ -29,11 +29,11 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     const v = await t.visit(''), app = await v.find('control');
     result.firstFrameMs = await app.evaluate(() => __chladni.firstFrameAt);
     if (GPU) assert(result.firstFrameMs < 1000, 'plate and sand within 1 s: ' + result.firstFrameMs);
-    assert.deepEqual(await state(app), {n: 3, m: 5, drive: 0.6, shape: 0, palette: 'Sand', output: 'Tiles', sound: false, shaking: false, preset: 1, shapeNow: 0, note: 'F#3'});
+    assert.deepEqual(await state(app), {n: 3, m: 5, drive: 0.6, shape: 0, palette: 'Sand', output: 'Tiles', kept: null, sound: false, listen: false, heard: null, shaking: false, preset: 1, shapeNow: 0, note: 'F#3'});
     await v.page.waitForTimeout(3000);
     result.opened = {amplitude: await amplitude(app), stats: await stats(app)};
     assert.deepEqual(await everyFrame(v.page, () => window.__asked || []), [], 'nothing is asked for');
-    assert.deepEqual(await everyFrame(v.page, () => window.__sound || []), [], 'no sound is set up before K2');
+    assert.deepEqual(await everyFrame(v.page, () => window.__sound || []), [], 'no sound is set up before a knob or key is touched');
     assert.equal((await t.heard(v.page, 2000)).left, 0, 'it opens silent');
     assert.equal(await app.evaluate(() => document.getElementById('notice').hidden), true);
     if (GPU) assert(result.opened.stats.fps >= 55, 'the device screen at 60 frames a second: ' + JSON.stringify(result.opened.stats));
@@ -97,14 +97,17 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     await v.turn(0, 6, 45); await v.turn(1, 5, 45); await v.turn(0, -6, 45); await v.turn(1, -5, 45);
     await v.page.waitForTimeout(200);
     result.fast = await t.heard(v.page, 2200);
-    assert(result.fast.step < 0.09 && result.fast.left > 0.02, 'fast turning makes no click: ' + JSON.stringify(result.fast));
+    assert(result.fast.step < 0.05 && result.fast.left > 0.02, 'fast turning makes no click: ' + JSON.stringify(result.fast));
     assert.deepEqual([(await state(app)).n, (await state(app)).m], [4, 5]);
     await v.turn(0, -1, 150);
-    await v.key(1);
+    // K2 goes on to Listen and then to off; pressed straight through, no input is asked for.
+    await v.key(1); await v.key(1);
     await v.page.waitForTimeout(500);
     result.silent = await t.heard(v.page, 250);
-    assert(!(await state(app)).sound && result.silent.left < 0.002 && result.silent.right < 0.002, 'K2 again: silence: ' + JSON.stringify(result.silent));
-    assert((await t.heard(v.page, 800)).step < 0.09, 'fading out makes no click');
+    assert(!(await state(app)).sound && !(await state(app)).listen && result.silent.left < 0.002 && result.silent.right < 0.002, 'K2 twice more: silence: ' + JSON.stringify(result.silent));
+    await v.page.waitForTimeout(1200);
+    assert.deepEqual(await everyFrame(v.page, () => window.__asked || []), [], 'passing Listen asks for nothing');
+    assert((await t.heard(v.page, 800)).step < 0.05, 'fading out makes no click');
 
     /* ---- E3: at 0 the sand lies still; at full drive the lines are finer and it gathers faster ---- */
     await v.turn(2, -12, 60);
@@ -132,7 +135,7 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     assert(await corner(app) > 60, 'the square plate reaches its corners');
     save('shape-square.png', await t.bytes(out));
     const sliding = [];
-    const slide = v.turn(3, 25, 70);
+    const slide = v.turn(3, 20, 70);
     for (let i = 0; i < 40; i++) { sliding.push((await state(app)).shapeNow); await v.page.waitForTimeout(50); }
     await slide; await v.page.waitForTimeout(600);
     result.shape = {largestStep: round(Math.max(...sliding.slice(1).map((value, i) => value - sliding[i]))), backwards: round(Math.min(...sliding.slice(1).map((value, i) => value - sliding[i])))};
@@ -141,19 +144,24 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     assert.equal(await corner(app), 0, 'the round plate leaves the corners black');
     await v.page.waitForTimeout(2500);
     save('shape-round.png', await t.bytes(out));
-    await v.turn(3, -12, 70); await v.page.waitForTimeout(3000);
-    assert.equal((await state(app)).shape, 0.52);
+    await v.turn(3, -10, 70); await v.page.waitForTimeout(3000);
+    assert.equal((await state(app)).shape, 0.5);
     save('shape-between.png', await t.bytes(out));
     await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-between.png')});
     await v.press(3); await v.page.waitForTimeout(900);
     assert.equal((await state(app)).shape, 1, 'a press of E4 goes to the nearer plate');
+    // From a plate a press goes on to the next: six sides, three sides, and round to the square again.
+    for (const [shape, name] of [[2, 'hexagon'], [3, 'triangle']]) {
+      await v.press(3); await v.page.waitForTimeout(3500);
+      assert.deepEqual([(await state(app)).shape, (await state(app)).shapeNow, (await state(out)).shape], [shape, shape, shape], 'E4 pressed: ' + name);
+      assert((await stats(app)).amplitude < 0.12 && await corner(app) === 0, name + ': the sand gathers, and the corners are black');
+      save('shape-' + name + '.png', await t.bytes(out));
+      await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-' + name + '.png')});
+    }
     await v.press(3); await v.page.waitForTimeout(900);
-    assert.deepEqual([(await state(app)).shape, (await state(app)).shapeNow], [0, 0], 'and from a plate to the other one');
+    assert.deepEqual([(await state(app)).shape, (await state(app)).shapeNow], [0, 0], 'and from the last plate to the first');
 
-    /* ---- E1 pressed swaps n and m; E2 pressed goes through the colours ---- */
-    await v.press(0);
-    assert.deepEqual([(await state(app)).n, (await state(app)).m], [5, 3], 'E1 pressed swaps n and m');
-    await v.press(0);
+    /* ---- E2 pressed goes through the colours (E1 pressed, keeping a mode, is in chladni_listen_browser.cjs) ---- */
     result.colours = [];
     for (let i = 0; i < COLOURS.length; i++) {
       result.colours.push((await state(app)).palette);
@@ -202,19 +210,20 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
       await v.page.waitForTimeout(i ? 3200 : 0);
       const now = await state(app);
       assert.equal(now.preset, i + 1);
-      seen.push({key: [now.n, now.m, now.shape].join(' '), light: await t.grid(out)});
+      seen.push({key: [now.n, now.m, now.shape, ...(now.kept || [])].join(' '), light: await t.grid(out)});
       save('preset-' + (i + 1) + '.png', await t.bytes(out));
       await v.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'device-preset-' + (i + 1) + '.png')});
       await v.key(3);
       if (i === 0) {
         // Half way there the shape and the plate are between the two.
         await v.page.waitForTimeout(250);
-        assert.notDeepEqual([(await state(app)).n, (await state(app)).m, (await state(app)).shape].join(' '), seen[0].key, 'K4 goes to the next preset');
+        assert.equal((await state(app)).preset, 2, 'K4 goes to the next preset');
       }
     }
     await v.page.waitForTimeout(1200);
     result.presets = seen.map(s => s.key);
-    assert.equal(new Set(result.presets).size, PRESETS, 'eight different presets: ' + result.presets);
+    assert.equal(new Set(result.presets).size, PRESETS, 'ten different presets: ' + result.presets);
+    assert(result.presets.some(key => key.split(' ').length === 5) && [0, 1, 2, 3].every(shape => result.presets.some(key => key.split(' ')[2] === String(shape))), 'every plate and two modes at once are among them: ' + result.presets);
     assert.equal((await state(app)).preset, 1, 'K4 comes round to the first');
     result.presetsAlike = 0;
     for (let a = 0; a < PRESETS; a++) for (let b = a + 1; b < PRESETS; b++) result.presetsAlike = Math.max(result.presetsAlike, alike(seen[a].light, seen[b].light, 32));
@@ -223,12 +232,12 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     assert(result.presetsAlike < 0.65, 'no two presets look alike: ' + result.presetsAlike);
 
     /* ---- settings are kept, sound is not; the share link opens the same figure in another browser ---- */
-    await v.turn(0, 1, 150); await v.turn(3, 6, 70); await v.press(1); await v.turn(2, 2, 70);
-    await v.page.waitForTimeout(3500);
+    await v.turn(0, 1, 150); await v.turn(3, 20, 70); await v.press(1); await v.turn(2, 2, 70);
+    await v.page.waitForTimeout(5000);
     const sent = figure(await state(app)), link = new URL(v.page.url()), sentLight = await t.grid(app);
     result.shareState = link.searchParams.get('s');
-    assert.deepEqual(sent, {n: 4, m: 5, drive: 0.7, shape: 0.24, palette: 'Night'});
-    assert.equal(result.shareState, 'v1.4.5.70.24.1', 'the address carries the figure: ' + link.search);
+    assert.deepEqual(sent, {n: 4, m: 5, drive: 0.7, shape: 1, palette: 'Night'});
+    assert.equal(result.shareState, 'v2.4.5.70.100.1.0.0', 'the address carries the figure: ' + link.search);
     await v.key(1);
     await app.waitForFunction(() => __chladni.stats().audible, null, {timeout: 15000});
     await v.page.goto(v.page.url().replace(/[?&]s=[^&]*/, ''));
@@ -236,13 +245,14 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
     assert.deepEqual([figure(await state(again)), (await state(again)).output, (await state(again)).sound], [sent, 'Plate', false], 'opened again: the same settings, and silent');
     await v.context.close();
     const w = await t.visit('&s=' + encodeURIComponent(result.shareState)), theirs = await w.find('control');
-    await w.page.waitForTimeout(4000);
+    await w.page.waitForTimeout(5000);
     assert.deepEqual(figure(await state(theirs)), sent, 'the link restores n, m, drive, shape and colours');
     result.sharedAlike = alike(await t.grid(theirs), sentLight);
     assert(result.sharedAlike > 0.7, 'and shows the same figure: ' + result.sharedAlike);
     await w.page.locator('#stageDevice').screenshot({path: path.join(OUT, 'shared.png')});
     await w.context.close();
-    for (const broken of ['v1.0.5.60.0.0', 'v1.3.25.60.0.0', 'v1.3.5.101.0.0', 'v1.3.5.60.0.3', 'v2.3.5.60.0.0', 'nonsense']) {
+    // (A link from the first versions, v1 with its two plates, still opens: every visit here that starts from the first figure uses one.)
+    for (const broken of ['v1.0.5.60.0.0', 'v1.3.25.60.0.0', 'v1.3.5.101.0.0', 'v1.3.5.60.0.3', 'v1.3.5.60.200.0', 'v2.3.5.60.0.0', 'v2.3.5.60.301.0.0.0', 'v2.3.5.60.0.0.3.0', 'v1.3.5.60.0.0.1.1', 'nonsense']) {
       const bad = await t.visit('&s=' + broken), fallback = await bad.find('control');
       assert.deepEqual(figure(await state(fallback)), {n: 3, m: 5, drive: 0.6, shape: 0, palette: 'Sand'}, 'a link that cannot be read is ignored: ' + broken);
       await bad.context.close();
@@ -323,7 +333,7 @@ const COLOURS = ['Sand', 'Night', 'Brass'], PRESETS = 8;
 
     assert.deepEqual(t.errors, [], 'no page errors');
     console.log(JSON.stringify(result, null, 1));
-    console.log('PASS Chladni in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening silent with the sand gathering, the output tiled or as one plate, K3 thrown and held, the note with figure and pitch changing together and no click, drive, shape, swap, colours, a tap, eight presets, saved settings, share link, tiles, formats and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
+    console.log('PASS Chladni in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening silent with the sand gathering, the output tiled or as one plate, K3 thrown and held, the note with figure and pitch changing together and no click, drive, the four plates, colours, a tap, ten presets, saved settings, share link, tiles, formats and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
   } catch (error) {
     console.log(JSON.stringify(result, null, 1));
     console.log('errors', JSON.stringify(t.errors));

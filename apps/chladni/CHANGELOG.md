@@ -1,5 +1,11 @@
 # Chladni
 
+## 0.3.0
+
+- Listen: K2 pressed again after Sound opens the microphone or line in, and the plate takes the figure of the note it hears.
+- Two modes at once: a press of E1 keeps the mode sounding while the knobs find a second one; figures and notes are laid over each other.
+- Two more plates after square and round: six sides and three.
+
 ## 0.2.0
 
 - A large output is covered with the plate from edge to edge: Tiles, Small tiles or the one Plate, chosen with a press of E3. Neighbouring plates are turned over, so the figure runs on from one to the next.
