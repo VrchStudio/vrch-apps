@@ -192,9 +192,10 @@
     sand.draw(view(now), steps);
     if (firstFrameAt === null) firstFrameAt = now;
     frames.push(now); while (frames[0] < now - 1000) frames.shift();
-    // A screen that cannot keep up gets fewer grains (seen over three seconds, not while the page was away).
+    // A screen that cannot keep 30 frames a second gets fewer grains (seen over three seconds, not while the page was
+    // away). Above that, fewer grains would buy little: what costs time then is painting the pixels.
     if (now - checkedAt >= 1000) {
-      slowFor = now - checkedAt < 1500 && firstFrameAt < now - 2000 && fps() < 40 ? slowFor + 1 : 0;
+      slowFor = now - checkedAt < 1500 && firstFrameAt < now - 2000 && fps() < 30 ? slowFor + 1 : 0;
       checkedAt = now;
       if (slowFor >= 3) { slowFor = 0; sand.fewer(); }
     }

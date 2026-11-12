@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "519caba2-df87-4150-8503-bd394e6098d5",
   "name": "Chladni",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "entry": "index.html",
   "icon": "assets/icon.svg",
   "roles": [

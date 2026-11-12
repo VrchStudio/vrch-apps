@@ -1,5 +1,9 @@
 # Chladni
 
+## 0.3.1
+
+- The device keeps its full amount of sand at the frame rates it runs at.
+
 ## 0.3.0
 
 - Listen: K2 pressed again after Sound opens the microphone or line in, and the plate takes the figure of the note it hears.
