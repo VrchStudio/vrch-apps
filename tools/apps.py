@@ -2,6 +2,7 @@
 """Build and publish official VRCH Apps using Python's standard library and gh."""
 import argparse
 import base64
+import datetime
 import hashlib
 import json
 import os
@@ -186,7 +187,25 @@ def deferred_files(slug, prefixes, names):
     return sorted(result, key=lambda n: n.encode('utf-8'))
 
 
-def write_playground_catalog(catalog, root=None, presentation=None, sources=committed_source):
+def committed_time(commit, root=ROOT):
+    """UTC time of a published source commit, the date a release of it entered the catalog."""
+    if not re.fullmatch('[0-9a-f]{40}', commit or ''):
+        raise ValueError('Invalid published App source reference.')
+    stamp = subprocess.check_output(['git', 'show', '-s', '--format=%ct', commit], cwd=root, text=True).strip()
+    return datetime.datetime.fromtimestamp(int(stamp), datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def release_dates(app, released):
+    """When an App first entered the catalog, and when its current feature version (x.y) came out.
+
+    A patch fix keeps the update date, so Playground marks an App as updated only for a new x.y version."""
+    key = lambda v: tuple(int(n) for n in v.split('.'))
+    versions = sorted(app['versions'], key=key)
+    feature = next(v for v in versions if key(v)[:2] == key(app['latest'])[:2])
+    return released(app['versions'][versions[0]]['sourceCommit']), released(app['versions'][feature]['sourceCommit'])
+
+
+def write_playground_catalog(catalog, root=None, presentation=None, sources=committed_source, released=None):
     """Browser Playground catalog: the published release package plus its exact source files.
 
     Browsers fetch the package through a same-origin route to the GitHub Release (one request,
@@ -196,6 +215,7 @@ def write_playground_catalog(catalog, root=None, presentation=None, sources=comm
     reproduces the recorded content revision.
     """
     root = root or ROOT
+    released = released or (lambda commit: committed_time(commit, root))
     presentation = presentation or read_presentation(root)
     order = {c['id']: i for i, c in enumerate(presentation['categories'])}
     known = {app['slug'] for app in catalog['apps'].values()}
@@ -244,6 +264,7 @@ def write_playground_catalog(catalog, root=None, presentation=None, sources=comm
                  'summary': summary.strip()[:240], 'category': meta['category'], 'featured': meta.get('featured'),
                  'tags': meta.get('tags', []), 'capabilities': capabilities, 'size': release['size'],
                  'revision': release['revision'], 'packageDigest': release['sha256'], 'assets': assets}
+        entry['addedAt'], entry['updatedAt'] = release_dates(app, released)
         # Roles beyond the controlling instance (an 'output' picture for a large or second screen) mark the App's card.
         roles = sorted({r for r in manifest.get('roles', []) if r in ('output',)}) if isinstance(manifest.get('roles'), list) else []
         if roles:

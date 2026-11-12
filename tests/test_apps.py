@@ -226,6 +226,9 @@ class Packages(unittest.TestCase):
         self.assertEqual([f['path'] for f in listing['files']],[name for name,_ in records])
         self.assertEqual(apps.content_revision([(f['path'],dict(records)[f['path']]) for f in listing['files']]),revision)
         self.assertEqual(entry['assets']['icon']['mediaType'],'image/svg+xml')
+        stamp=git('show','-s','--format=%ct',commit)
+        import datetime
+        self.assertEqual((entry['addedAt'],entry['updatedAt']),(datetime.datetime.fromtimestamp(int(stamp),datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),)*2)
         # The release package is listed as one verified download.
         self.assertEqual(entry['assets']['package'],{'url':release['assetUrl'],'size':10,'sha256':'a'*64})
         with self.assertRaises(ValueError):
@@ -253,6 +256,15 @@ class Packages(unittest.TestCase):
         output={**release,'sourceCommit':git('rev-parse','HEAD'),'revision':revision}
         result=apps.write_playground_catalog({'schemaVersion':1,'apps':{self.manifest['id']:{'slug':'demo','latest':'1.0.0','versions':{'1.0.0':output}}}},root=self.root,presentation=presentation)
         self.assertEqual(result['apps'][0]['roles'],['output'])
+
+    def test_playground_dates_follow_first_and_feature_releases(self):
+        commits={'1.0.0':'a'*40,'1.1.0':'b'*40,'1.1.1':'c'*40,'1.10.0':'d'*40}
+        app={'latest':'1.1.1','versions':{v:{'sourceCommit':c} for v,c in commits.items() if v!='1.10.0'}}
+        when={c:v for v,c in commits.items()}.get
+        # A patch fix keeps the feature release date; numeric order, not text order.
+        self.assertEqual(apps.release_dates(app,when),('1.0.0','1.1.0'))
+        app={'latest':'1.10.0','versions':{v:{'sourceCommit':c} for v,c in commits.items()}}
+        self.assertEqual(apps.release_dates(app,when),('1.0.0','1.10.0'))
 
     def test_catalog_rejects_downgrade(self):
         _,release=self.build()

@@ -4,6 +4,7 @@
 
 ### Added
 
+- The Playground catalog says when each App first arrived and when its current feature version came out, so the Playground can mark new and updated Apps.
 - Chladni: a large output can be tiled with the plate from edge to edge, and n and m go up to 24.
 - Add Chladni: a humming plate with sand on it. Two knobs choose the note, and the sand gathers into that note's figure, on the device and on a large output.
 - Attractor: six presets for every formula and six sets of colours, with Aurora and Flare new.
