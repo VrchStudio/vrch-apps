@@ -311,7 +311,7 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
       await o.context.close();
     }
 
-    /* ---- how an output shows the figure: whole, three, mirrored or close; the device keeps the one whole figure ---- */
+    /* ---- how an output shows the figure: whole, three or mirrored; the device keeps the one whole figure ---- */
     const y = await t.visit(REST, {ratio: '16:9', size: 0}), hand = await y.find('control'), screen = await y.output();
     await stopped(screen);
     // Where the light is across the picture, and how alike its left half is to its right half turned over.
@@ -324,20 +324,19 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
       return {wide: Math.max(0, right - left + 1) / 96, left: left / 96, right: (95 - right) / 96, mirrored: ab / Math.sqrt(aa * bb || 1)};
     });
     await y.key(2);
-    assert.deepEqual((await app0(hand)).slice(-6), ['Whole*', 'Three', 'Mirror', 'Close', 'Show*', 'Hide'], 'Figures offers the four ways');
+    assert.deepEqual((await app0(hand)).slice(-5), ['Whole*', 'Three', 'Mirror', 'Show*', 'Hide'], 'Figures offers the three ways, in one row');
     result.layouts = {};
-    for (const [i, name] of ['Whole', 'Three', 'Mirror', 'Close'].entries()) {
+    for (const [i, name] of ['Whole', 'Three', 'Mirror'].entries()) {
       await y.click(hand, '[data-row="output"] [data-value="' + i + '"]');
       await y.page.waitForTimeout(400); await stopped(screen); await stopped(hand);
       result.layouts[name] = {...(await spread(screen)), fit: (await stats(screen)).fit, copies: (await stats(screen)).copies};
       assert.deepEqual([(await state(screen)).layout, (await stats(hand)).copies, (await stats(hand)).fit], [name, 0, 1], 'the output is told; the device keeps its one whole figure');
       await y.page.locator('#outputScreen').screenshot({path: path.join(OUT, 'output-layout-' + name.toLowerCase() + '.png')});
     }
-    const {Whole, Three, Mirror, Close} = result.layouts;
+    const {Whole, Three, Mirror} = result.layouts;
     assert(Whole.copies === 0 && Whole.wide < 0.6 && Whole.mirrored < 0.9, 'whole: one figure in the middle: ' + JSON.stringify(Whole));
     assert(Three.copies === 2 && Three.wide > 1.4 * Whole.wide, 'three: the figure with one more at each side: ' + JSON.stringify(Three));
     assert(Mirror.copies >= 1 && Mirror.mirrored > 0.97 && Mirror.wide > 1.4 * Whole.wide, 'mirror: the two halves answer each other: ' + JSON.stringify(Mirror));
-    assert(Close.fit > 1.5 * Whole.fit && Close.left < 0.03 && Close.right < 0.03, 'close: the figure runs from edge to edge: ' + JSON.stringify(Close));
     await y.click(hand, '[data-row="output"] [data-value="0"]');
     await y.context.close();
 
@@ -356,7 +355,7 @@ const REST = '&s=v2.dejong.149.-228.236.-213.0.0.0';
 
     assert.deepEqual(t.errors, [], 'no page errors');
     console.log(JSON.stringify(result, null, 1));
-    console.log('PASS Attractor in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening in the show, a link at rest, turning without flashes, the same picture again, output, steps, all presets, colours, the show, text, share link, collapsed setting, formats, the four ways an output shows the figure and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
+    console.log('PASS Attractor in the Playground' + (LIVE ? ' at ' + LIVE : '') + ': opening in the show, a link at rest, turning without flashes, the same picture again, output, steps, all presets, colours, the show, text, share link, collapsed setting, formats, the three ways an output shows the figure and a 1080p output. Screenshots in ' + OUT + '.' + (GPU ? '' : ' Speed was not checked (software drawing).'));
   } catch (error) {
     console.log(JSON.stringify(result, null, 1));
     console.error('errors', t.errors);

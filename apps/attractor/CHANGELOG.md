@@ -1,5 +1,9 @@
 # Attractor
 
+## 0.8.1
+
+- Output in Figures has three choices, Whole, Three and Mirror, in one row. Close is gone; an output that was set to it shows the whole figure.
+
 ## 0.8.0
 
 - Every formula has six presets and there are six sets of colours, Aurora and Flare being new, so each fills two full rows in Figures.

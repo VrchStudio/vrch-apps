@@ -117,9 +117,9 @@
   }
   // How an output shows the figure. Whole: the one figure. Three: it and, at its sides, the same figure seen from
   // two other sides, smaller and fainter. Mirror: it and its mirror image side by side, overlapping, and again
-  // where there is room. Close: so near that it fills the longer side and runs past the shorter one.
-  // The device's own screen always shows the one whole figure.
-  const LAYOUTS = ['Whole', 'Three', 'Mirror', 'Close'];
+  // where there is room. The device's own screen always shows the one whole figure.
+  // (Three choices fill one row in Figures.)
+  const LAYOUTS = ['Whole', 'Three', 'Mirror'];
   let arrange = 0;
   let room = null;   // an output: how much wider and taller the stage is than its shorter side, and how much larger the figure may be
   function lookAt(at) {
@@ -149,11 +149,6 @@
       const copies = [[...flipped, 1, ...place(step), 1]];
       if (3 * step + 0.8 * reach <= 1) copies.push([...main.slice(0, 6), 1, ...place(3 * step), 0.5], [...flipped, 1, ...place(-3 * step), 0.5]);
       return [...main, size, deep, ...place(-step), 1, copies.length, ...copies.flat()];
-    }
-    if (arrange === 3) {
-      // (A figure does not quite fill the square it is given: a little closer still, and it reaches the edges.)
-      const size = Math.max(whole, 1.15 * Math.max(room[0] / wide, room[1] / tall) * (1 + 0.4 * (zoom - 1)));
-      return [...main, size, deep, 0, 0, Math.min(6, (size / whole) ** 2), 0];
     }
     return [...main, whole * zoom, deep];
   }
