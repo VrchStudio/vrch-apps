@@ -3690,7 +3690,7 @@
     },
     "b5ad6149-dc87-473a-87c0-c1a6cf3fdf6c": {
       "slug": "visuals-player",
-      "latest": "0.3.7",
+      "latest": "0.3.8",
       "versions": {
         "0.1.3": {
           "version": "0.1.3",
@@ -3938,6 +3938,25 @@
             "updateApi": 1
           },
           "notes": "- Music plays as soon as Visuals Player opens, unmuted; a browser that waits for a first tap starts it on that tap."
+        },
+        "0.3.8": {
+          "version": "0.3.8",
+          "name": "Visuals Player",
+          "tag": "visuals-player-v0.3.8",
+          "sourceCommit": "6dc59bae2b625ec96fbc8922737d5cafc9b73bf9",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/visuals-player-v0.3.8",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/visuals-player-v0.3.8/visuals-player-0.3.8.vrchapp",
+          "size": 40111152,
+          "sha256": "efc2c08b3f92069c3a30fd0e3f2cd9395e0f6f0c2215f9f9245c9edc2e66b3ce",
+          "packageDigest": "efc2c08b3f92069c3a30fd0e3f2cd9395e0f6f0c2215f9f9245c9edc2e66b3ce",
+          "revision": "72feb5ffd43b6bd767bbf9990983fe17927436caae063fe72aa19f7b38bcbbd3",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Music now really starts by itself when Visuals Player opens; in a browser it starts with the first tap anywhere on the page."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPlZpc3VhbHMgUGxheWVyPC90aXRsZT4KICA8cmVjdCB4PSIzIiB5PSI1IiB3aWR0aD0iMjYiIGhlaWdodD0iMjIiIHJ4PSIyIiBzdHJva2U9IiNkZWRlZGUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik02IDIyYzMtNiA2LTYgOSAwczYgNiAxMCAwIiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNNiAxN2MzLTYgNi02IDkgMHM2IDYgMTAgMCIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTcgOC41djVsNC0yLjV6IiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo=",
