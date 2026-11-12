@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.7
+
+- Music plays as soon as Visuals Player opens, unmuted; a browser that waits for a first tap starts it on that tap.
+
 ## 0.3.6
 
 - On the device screen, a finger tap on or near the camera and speaker buttons turns them on and off; it no longer opens Player.

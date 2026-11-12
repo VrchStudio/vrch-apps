@@ -279,7 +279,7 @@
   }
   let inputs = {devices: [], selected: null};
   function soundNote(state) {
-    if (state.source === 'music') return state.error === 'interaction_required' || !interacted && !state.audible ? 'Starts when you play' : state.error ? 'Sound unavailable' : '';
+    if (state.source === 'music') return state.error === 'interaction_required' ? 'Starts when you play' : state.error ? 'Sound unavailable' : '';
     if (state.source === 'input') return state.error === 'permission_required' ? 'Allow the input on this device' : state.error === 'audio_device_unavailable' ? 'Input unavailable' : state.error ? 'Input unavailable' : music.listening ? '' : 'Connecting';
     return '';
   }
@@ -457,7 +457,7 @@
     const now = performance.now();
     if (!interacted) { interacted = true; stats.firstInteraction = {kind, at: now}; }
     if (kind === 'rotate' || kind === 'settings') playedAt = now;
-    music?.wake();
+    music?.wake(true);
   }
   function pressKey(control) {
     if (control === 'K2') { if (!open || open === 'settings') { page = (page + 1) % 3; monitorDirty = true; } return; }
@@ -594,7 +594,7 @@
     shareSoon();
   }
   async function save() {
-    const value = {schema_version: 1, scene: active?.definition.scene_id || null, source: music?.source || 'music', track: music?.index || 0, muted: !!music?.muted, auto,
+    const value = {schema_version: 1, scene: active?.definition.scene_id || null, source: music?.source || 'music', track: music?.index || 0, auto,
       camera: cameraWanted, picture: pictureIndex, instances, picker: pickerStore};
     try {
       const result = await VrchApp.data.set(DATA_KEY, value, {expectedVersion: saved.version});
@@ -740,7 +740,6 @@
       pictureImage(pictureIndex); pictureImage(pictureIndex + 1);
       music = new VisualsMusic({sdk: VrchApp, tracks, external: isOutput,
         onChange: () => { renderPlayer(); renderMute(); publish(); shareSoon(); }, onSection: sectionChanged});
-      if (!isOutput && restored.muted === true) music.muted = true;
       if (Number.isInteger(restored.track) && tracks[restored.track]) music.setTrack(restored.track, 0, performance.now(), false);
       mirror.setAudioProvider(() => music.features(performance.now()));
       catalog = new VrchSceneCatalog.PresetCatalog();
@@ -771,9 +770,11 @@
     }
     if (followed) follow(followed);
     renderMute(); renderCamera();
-    // In a browser the camera and Mic / Line in open only when the visitor turns them on; the device restores them.
+    // Every launch plays the music unmuted. In a browser the camera and Mic / Line in open only when the visitor turns
+    // them on; the device restores them.
     const device = VrchApp.context?.mode === 'device';
-    if (typeof restored.source === 'string' && restored.source !== 'music' && (device || restored.source !== 'input') && !fromLink?.item) void music.setSource(restored.source);
+    if (device && restored.source === 'input' && !fromLink?.item) void music.setSource('input');
+    else if (!isOutput) music.wake();
     VrchApp.ready().then(() => { monitorDirty = true; publish(); shareSoon(); if (restored.camera && device) void startCamera(); }, () => {});
     requestAnimationFrame(() => requestAnimationFrame(() => { stats.firstFrameAt = performance.now(); }));
     if (!isOutput) requestAnimationFrame(meter);

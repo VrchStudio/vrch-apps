@@ -1,6 +1,6 @@
 /* Visuals Player sound. Three sources: the built-in tracks, the host audio input (microphone or line in, as chosen
-   in the host's Device audio settings) and Silent. The picture follows the tracks from the first frame: until the
-   first interaction allows sound, and while Silent, a clock plays them without output. Audio features always come
+   in the host's Device audio settings) and Silent. Music starts sounding as soon as the App opens; where the browser
+   waits for a first interaction, and while Silent, a clock plays the tracks without output for the picture to follow. Audio features always come
    from the sound itself through the shared VrchImageAudio.computeSceneSignalSample, as in Live Console. */
 (() => {
   'use strict';
@@ -18,7 +18,7 @@
       this.anchor = {index: 0, offset: 0, at: performance.now()};
       this.output = null; this.opening = null; this.epoch = 0; this.retryAt = 0; this.error = null;
       this.input = null; this.relayed = null; this.lastFeatures = null; this.lastAt = -1; this.section = -1; this.hidden = false;
-      this.muted = false;
+      this.muted = false; this.poked = false; this.retries = 0; this.retryTimer = 0;
       this.trim();
     }
 
@@ -131,11 +131,20 @@
       }
     }
 
-    // Sound starts after an interaction; the host may need a moment or a later gesture, so retries are spaced.
-    wake() {
-      if (this.external || this.source !== 'music' || this.output || this.opening || this.hidden || performance.now() < this.retryAt) return;
-      this.retryAt = performance.now() + RETRY_MS;
-      void this.play().catch(() => {});
+    // Sound starts when the App opens. Where the browser needs a gesture first, the next interaction ('force') starts it,
+    // also one that arrives while an attempt is still failing; other failures retry by themselves, further apart each time.
+    wake(force = false) {
+      if (this.external || this.source !== 'music' || this.output || this.hidden) return;
+      if (this.opening) { if (force) this.poked = true; return; }
+      if ((!force || this.error?.code !== 'interaction_required') && performance.now() < this.retryAt) return;
+      clearTimeout(this.retryTimer);
+      this.retryAt = performance.now() + RETRY_MS; this.poked = false;
+      void this.play().then(() => { this.retries = 0; }, error => {
+        if (error?.code === 'stale') return;
+        if (this.poked) { this.poked = false; this.retryAt = 0; this.wake(true); return; }
+        if (this.error?.code === 'interaction_required') return;
+        this.retryTimer = setTimeout(() => this.wake(), Math.min(8000, 1000 * 2 ** this.retries++));
+      });
     }
     async play() {
       const epoch = ++this.epoch;
@@ -291,7 +300,7 @@
     pause(hidden) {
       this.hidden = hidden;
       const output = this.output;
-      if (!output) return;
+      if (!output) { if (!hidden) this.wake(); return; }
       if (hidden) {
         if (output.playing) this.anchor = {index: this.index, offset: this.position(performance.now()), at: performance.now()};
         output.playing = false; output.audio.pause(); void output.ctx.suspend().catch(() => {});
