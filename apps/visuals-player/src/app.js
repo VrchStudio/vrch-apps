@@ -772,10 +772,9 @@
     }
     if (followed) follow(followed);
     renderMute(); renderCamera();
-    // Every launch plays the music unmuted. In a browser the camera and Mic / Line in open only when the visitor turns
-    // them on; the device restores them.
+    // Every launch plays the music unmuted, on the device too; Mic / Line in is one tap away in Player. In a browser the
+    // camera opens only when the visitor turns it on; the device restores it.
     const device = VrchApp.context?.mode === 'device';
-    if (device && restored.source === 'input' && !fromLink?.item) void music.setSource('input');
     VrchApp.ready().then(() => { monitorDirty = true; publish(); shareSoon(); if (!isOutput) music.wake(); if (restored.camera && device) void startCamera(); }, () => {});
     requestAnimationFrame(() => requestAnimationFrame(() => { stats.firstFrameAt = performance.now(); }));
     if (!isOutput) requestAnimationFrame(meter);

@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.9
+
+- On the device, Visuals Player also opens playing music when Mic / Line in was chosen last time.
+
 ## 0.3.8
 
 - Music now really starts by itself when Visuals Player opens; in a browser it starts with the first tap anywhere on the page.
