@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.12
+
+- With the picture on a second screen, Visuals stays open while you try visuals there; Done closes it.
+
 ## 0.3.11
 
 - In Visuals, a tap on a visual plays it at once; turning E1 still moves through the cards and pressing E1 plays the one chosen.
