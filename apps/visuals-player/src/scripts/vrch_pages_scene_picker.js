@@ -154,6 +154,8 @@
         favoritesStorageKey: FAVORITES_KEY,
         recentsStorageKey: RECENTS_KEY,
         recentLimit: 6,
+        // A tap on a visual uses it at once; the picker shows no separate confirm button.
+        confirmOnSelect: false,
         onConfirm: null,
         onClear: null,
         onDelete: null,
@@ -330,6 +332,7 @@
         this.leaveSearch();
       }, true);
       this.elements.confirm.textContent = this.options.primaryLabel;
+      this.elements.confirm.hidden = this.options.confirmOnSelect === true;
       this.selection.collections.forEach((collection) => {
         const button = document.createElement('button');
         button.type = 'button';
@@ -767,11 +770,21 @@
     _select(hash) {
       if (this.busy || !this._item(hash)) return;
       if (this.searching) this._endTyping();
+      const direct = this.options.confirmOnSelect === true;
+      // With direct use, the visual already in use only closes the picker.
+      if (direct && hash === this._currentHash()) { this.close('cancel'); return; }
+      this.preselect(hash, !direct);
+      if (direct) void this._confirm();
+    }
+
+    // Moves the choice without using it, as a knob stepping through the cards does.
+    preselect(hash, preview = true) {
+      if (this.busy || !this._item(hash)) return;
       this.pendingHash = hash;
       this._feedback('');
       this._syncCardState();
       this._syncInteractiveState();
-      this._renderPreview();
+      if (preview) this._renderPreview();
     }
 
     // Choosing a search result ends typing: release the search field and ask

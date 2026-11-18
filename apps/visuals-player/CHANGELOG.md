@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.11
+
+- In Visuals, a tap on a visual plays it at once; turning E1 still moves through the cards and pressing E1 plays the one chosen.
+
 ## 0.3.10
 
 - On a small host with a second screen, the picture there runs smoother and follows Mic / Line in more closely; the device screen shows a lighter preview while it is on.
