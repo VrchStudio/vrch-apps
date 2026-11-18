@@ -735,7 +735,10 @@
       id: 'visualsPlayerPicker', catalog, selection, storage, hosted: false, mirrorOptions: {analysis: false},
       source: 'visuals-player', title: 'Visuals', confirmOnSelect: true, progressLabel: 'Opening...', currentLabel: 'PLAYING',
       emptyTitle: 'Choose a visual', emptyMeta: '', getCurrentHash: () => active?.key,
-      onOpen: () => { setOpen('visuals'); mirror.hide(); },
+      // While the picture is on a second screen, a tapped visual plays there and the picker stays open (Done closes it);
+      // the device keeps drawing its light preview underneath, so tracking and the second screen stay live.
+      stayOpen: () => outputOn === true,
+      onOpen: () => { setOpen('visuals'); if (outputOn !== true) mirror.hide(); },
       onClose: () => { if (open === 'visuals') setOpen(null); if (active && !mirror.effect) { applySources(); mirror.show(active.definition, active.instance, active.entry.trusted === true); } },
       onConfirm: async item => {
         auto = false;
