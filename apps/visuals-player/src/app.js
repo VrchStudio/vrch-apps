@@ -351,6 +351,7 @@
     if (open === 'player') setOpen(null);
   }
   // E1 moves through the open panel's choices (in Visuals: the cards, E2 the collections); E1 press takes the choice.
+  // A tap on a card plays it at once.
   function focusables(container) { return [...container.querySelectorAll('button:not(:disabled),[data-scene-picker-select]')].filter(item => item.offsetParent !== null); }
   function panelStep(delta, knob = 0) {
     const container = open === 'player' ? $('player') : open === 'visuals' ? picker?.overlay : null;
@@ -366,7 +367,7 @@
       if (!cards.length) return;
       const at = cards.findIndex(card => card.closest('.is-pending'));
       const next = cards[((at < 0 ? -1 : at) + Math.sign(delta) + cards.length) % cards.length];
-      next.focus(); next.scrollIntoView({block: 'nearest'}); next.click();
+      next.focus(); next.scrollIntoView({block: 'nearest'}); picker.preselect(next.dataset.scenePickerSelect);
       return;
     }
     if (knob !== 0) return;
@@ -732,7 +733,7 @@
     };
     picker = VrchScenePresetPicker.createPicker({
       id: 'visualsPlayerPicker', catalog, selection, storage, hosted: false, mirrorOptions: {analysis: false},
-      source: 'visuals-player', title: 'Visuals', primaryLabel: 'Play', progressLabel: 'Opening...', currentLabel: 'PLAYING',
+      source: 'visuals-player', title: 'Visuals', confirmOnSelect: true, progressLabel: 'Opening...', currentLabel: 'PLAYING',
       emptyTitle: 'Choose a visual', emptyMeta: '', getCurrentHash: () => active?.key,
       onOpen: () => { setOpen('visuals'); mirror.hide(); },
       onClose: () => { if (open === 'visuals') setOpen(null); if (active && !mirror.effect) { applySources(); mirror.show(active.definition, active.instance, active.entry.trusted === true); } },
