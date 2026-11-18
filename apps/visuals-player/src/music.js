@@ -5,7 +5,7 @@
 (() => {
   'use strict';
   const {SR, FFT, MIN_DB, MAX_DB, Spectrum, TrackFeatures} = VisualsSpectrum;
-  const HOST_LATENCY_S = 0.03, RETRY_MS = 3000, KEEP_TRACKS = 2;
+  const HOST_LATENCY_S = 0.03, RETRY_MS = 3000, KEEP_TRACKS = 2, READ_MS = 12;
   // Sound never starts or stops abruptly: muting, unmuting, starting and leaving Music fade the level.
   const FADE_S = 0.6, START_FADE_S = 0.5, STOP_FADE_S = 0.4;
   const stale = () => Object.assign(Error('stale'), {code: 'stale'});
@@ -17,7 +17,7 @@
       this.source = 'music'; this.index = 0; this.loaded = new Map(); this.retired = []; this.spectrum = new Spectrum();
       this.anchor = {index: 0, offset: 0, at: performance.now()};
       this.output = null; this.opening = null; this.epoch = 0; this.retryAt = 0; this.error = null;
-      this.input = null; this.relayed = null; this.lastFeatures = null; this.lastAt = -1; this.section = -1; this.hidden = false;
+      this.input = null; this.relayed = null; this.lastFeatures = null; this.lastAt = -1; this.readAt = -Infinity; this.reads = 0; this.section = -1; this.hidden = false;
       this.muted = false; this.poked = false; this.retries = 0; this.retryTimer = 0;
       this.trim();
     }
@@ -73,6 +73,8 @@
       const keep = new Set(Array.from({length: Math.min(KEEP_TRACKS, this.tracks.length)}, (_, step) => (this.index + step) % this.tracks.length));
       for (const [key, entry] of [...this.loaded]) if (!keep.has(key)) { this.loaded.delete(key); if (entry.sound) this.retired.push(entry.sound); }
       this.releaseSounds();
+      // An output picture loads a track's features only when it follows that track (Mic / Line in arrives relayed).
+      if (this.external) return;
       void this.load(this.index).then(() => this.load((this.index + 1) % this.tracks.length)).catch(() => {});
     }
     releaseSounds() {
@@ -109,10 +111,15 @@
       if (now === this.lastAt) return this.lastFeatures;
       this.lastAt = now;
       if (this.source === 'input') {
-        this.lastFeatures = this.relayed || (this.input?.analyser ? this.spectrum.readAnalyser(this.input.analyser) : null);
+        if (this.relayed || !this.input?.analyser) { this.lastFeatures = this.relayed; return this.lastFeatures; }
+        // One analyser reading per display refresh, for the picture and the output relay alike.
+        if (!this.lastFeatures || now - this.readAt >= READ_MS || now < this.readAt) {
+          this.lastFeatures = this.spectrum.readAnalyser(this.input.analyser); this.readAt = now; this.reads++;
+        }
         return this.lastFeatures;
       }
       this.advance(now);
+      if (this.external && !this.loaded.has(this.index)) void this.load(this.index).catch(() => {});
       const features = this.loaded.get(this.index)?.features;
       if (!features) { this.lastFeatures = null; return null; }
       const position = this.position(now);
