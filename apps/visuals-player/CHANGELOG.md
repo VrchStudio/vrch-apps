@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.10
+
+- On a small host with a second screen, the picture there runs smoother and follows Mic / Line in more closely; the device screen shows a lighter preview while it is on.
+
 ## 0.3.9
 
 - On the device, Visuals Player also opens playing music when Mic / Line in was chosen last time.

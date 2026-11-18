@@ -9,7 +9,9 @@
   const KNOBS = ['E1', 'E2', 'E3', 'E4'], SPEEDS = [1, 2, 4], HOLD_MS = 650;
   // Auto change follows the music's sections; without sections (input) it waits this long.
   const AUTO_MIN_MS = 24000, AUTO_FALLBACK_MS = 40000, PLAYED_IDLE_MS = 60000, SAVE_MS = 800;
-  const SLOW_FPS = 45, SLOW_SECONDS = 3, TRACK_RELAY_MS = 66, FRAME_RELAY_MS = 66, AUDIO_RELAY_MS = 33, TIMING_RELAY_MS = 4000;
+  const SLOW_FPS = 45, SLOW_SECONDS = 3, TRACK_RELAY_MS = 66, FRAME_RELAY_MS = 66, TIMING_RELAY_MS = 4000;
+  // While a small host also draws the picture on its second screen, the device screen previews it at this rate and scale.
+  const OUTPUT_PREVIEW_FPS = 10, OUTPUT_PREVIEW_SCALE = 0.5;
   const COLLECTIONS = ['curated'];
   // Image visuals that read best with a particular picture; the others take the next one in turn.
   const PICTURE_FOR = {'vrch.matrix': 'portrait', 'user.vp-rain-glass': 'rain-street', 'user.vp-print-echo': 'keys'};
@@ -25,7 +27,9 @@
   let page = 0, speeds = {E1: 1, E2: 1, E3: 1, E4: 1}, auto = true, open = null, presented = 0;
   let lastChangeAt = 0, playedAt = -Infinity, interacted = false, followed = null, pickerStore = {};
   let monitorDirty = true, monitorBusy = false, saveTimer = 0, saved = {version: 0}, holdTimers = {};
-  let degradeLevel = 0, slowSeconds = 0, baselineFps = 0, lastTrackRelay = 0, lastFrameRelay = 0, lastAudioRelay = 0, lastTimingRelay = 0;
+  let degradeLevel = 0, slowSeconds = 0, baselineFps = 0, lastTrackRelay = 0, lastFrameRelay = 0, lastTimingRelay = 0;
+  // The host's report that this App's picture is on another screen (null: the host does not say).
+  let outputOn = null;
   let cameraWanted = false, cameraState = 'off', cameraError = '';
   const camera = !isOutput && VrchApp.camera ? new VisualsCamera.Camera({sdk: VrchApp, onFrame: cameraFrame, onEnded: cameraEnded}) : null;
   const picture = isOutput ? new VisualsCamera.RelayPicture() : null, pictureJoin = isOutput ? new VisualsCamera.PictureJoin() : null;
@@ -427,12 +431,21 @@
     const analysis = mirror.frameAnalysis;
     if (analysis && mirror.getPerformanceState()?.profile === 'edge') Object.assign(analysis.config, {targetHz: 10, maxDutyCycle: 0.5});
   }
-  function resetDegrade() { if (degradeLevel) mirror?.setRenderBudget(null); degradeLevel = 0; slowSeconds = 0; }
+  // The device screen gives the GPU to the second screen while a small host draws both; a slow camera visual draws smaller.
+  function applyBudget() {
+    if (isOutput || !mirror || mirror.disposed) return;
+    const budget = {};
+    if (outputOn && mirror.getPerformanceState()?.profile === 'edge') Object.assign(budget, {maxFps: OUTPUT_PREVIEW_FPS, maxScale: OUTPUT_PREVIEW_SCALE});
+    if (degradeLevel >= 2) budget.maxScale = 0.75;
+    mirror.setRenderBudget(Object.keys(budget).length ? budget : null);
+  }
+  if (!isOutput && relay?.onPresence) relay.onPresence(({active} = {}) => { outputOn = active === true; stats.outputOn = outputOn; applyBudget(); });
+  function resetDegrade() { const was = degradeLevel; degradeLevel = 0; slowSeconds = 0; if (was) applyBudget(); }
   function degrade(fps) {
     degradeLevel++;
     const analysis = mirror.frameAnalysis;
     if (degradeLevel === 1 && analysis) Object.assign(analysis.config, {targetHz: Math.min(analysis.config.targetHz, 12), maxDutyCycle: Math.min(analysis.config.maxDutyCycle, 0.35)});
-    else if (degradeLevel === 2) mirror.setRenderBudget({maxScale: 0.75});
+    else if (degradeLevel === 2) applyBudget();
     stats.degrades.push({level: degradeLevel, fps: Math.round(fps), scene_id: active?.definition.scene_id, at: performance.now()});
   }
   let meterFrames = 0, meterSince = 0;
@@ -446,6 +459,8 @@
     const drawn = mirror.getPerformanceState()?.frame_time_p50_ms;
     const fps = drawn > 0 ? 1000 / drawn : meterFrames * 1000 / (now - meterSince);
     meterFrames = 0; meterSince = now; stats.fps = Math.round(fps * 10) / 10;
+    // The device screen's preview rate says nothing about the second screen's picture.
+    if (outputOn) { slowSeconds = 0; return; }
     if (!camera?.on) { baselineFps = Math.max(baselineFps * 0.9, fps); return; }
     // Without a reading from before the camera started, compare with the 30 frames a second a small host draws.
     slowSeconds = fps < Math.min(SLOW_FPS, (baselineFps || 30) * 0.9) ? slowSeconds + 1 : 0;
@@ -650,15 +665,6 @@
   function relayLive(now) {
     if (isOutput || !relay || !active) return;
     if (now - lastTimingRelay >= TIMING_RELAY_MS) publish();
-    if (music?.source === 'input' && now - lastAudioRelay >= AUDIO_RELAY_MS) {
-      lastAudioRelay = now;
-      const features = music.lastFeatures;
-      if (features) {
-        const compact = {};
-        for (const [key, value] of Object.entries(features)) compact[key] = typeof value === 'number' ? Math.round(value * 1e4) / 1e4 : value && value.length ? Array.from(value, v => Math.round(v * 10) / 10) : value;
-        send({type: 'audio', features: compact});
-      }
-    }
     if (!camera?.on) return;
     if (active.definition.analysis_requirements?.length && now - lastTrackRelay >= TRACK_RELAY_MS) {
       lastTrackRelay = now;
@@ -689,6 +695,18 @@
     updateMonitor();
   }, 250);
   setInterval(() => { if (!document.hidden) relayLive(performance.now()); }, 33);
+  // Mic / Line in: the input is analysed once per display refresh, whatever rate the device screen draws at, and each
+  // new reading goes straight to the output picture.
+  function listen(now) {
+    requestAnimationFrame(listen);
+    if (document.hidden || music?.source !== 'input' || !music.input) return;
+    const read = music.reads;
+    const features = music.features(now);
+    if (!features || music.reads === read || !relay || !active || outputOn === false) return;
+    const compact = {};
+    for (const [key, value] of Object.entries(features)) compact[key] = typeof value === 'number' ? Math.round(value * 1e4) / 1e4 : value && value.length ? Array.from(value, v => Math.round(v * 10) / 10) : value;
+    send({type: 'audio', features: compact});
+  }
   document.addEventListener('visibilitychange', () => music?.pause(document.hidden));
   window.addEventListener('pagehide', () => { music?.dispose(); camera?.close(); picker?.destroy?.(); mirror?.dispose(); });
 
@@ -731,8 +749,14 @@
         sourceBindings: {0: 'A', 1: 'B'}, analysisOptions: VisualsCamera.analysisOptions, onAnalysisState: analysisState,
         performance: isOutput ? {config: {performanceWindowFrames: 60, performanceOverrunWindows: 3, performanceRecoveryWindows: 6}} : true});
     } catch (_) { fatal('Visuals need WebGL 2, which this device does not provide.'); return; }
+    // An output picture follows the controlling instance: it is ready for that state at once and loads alongside it.
+    if (isOutput) VrchApp.ready().catch(() => {});
     let restored = {};
     try {
+      // The visual catalog loads alongside the music and picture lists.
+      const loading = new VrchSceneCatalog.PresetCatalog();
+      const catalogLoad = loading.load();
+      catalogLoad.catch(() => {});
       const [tracks, value, list] = await Promise.all([loadTracks(), isOutput ? {} : restore(), loadPictures()]);
       restored = value;
       pictures = list;
@@ -744,8 +768,8 @@
       mirror.setAudioProvider(() => music.features(performance.now()));
       // A host that holds sound until a first tap anywhere on its page says when it can play.
       if (!isOutput) VrchApp.audio.onAvailable?.(() => music.wake(true));
-      catalog = new VrchSceneCatalog.PresetCatalog();
-      await catalog.load();
+      await catalogLoad;
+      catalog = loading;
     } catch (_) { fatal('The visuals could not load.'); return; }
     // The shared Curated collection (and the visitor's own favourites and recents), limited to this package.
     const shared = clone(VrchSceneSelection), present_ = new Set(catalog.list().map(item => item.definition.scene_id));
@@ -777,7 +801,7 @@
     const device = VrchApp.context?.mode === 'device';
     VrchApp.ready().then(() => { monitorDirty = true; publish(); shareSoon(); if (!isOutput) music.wake(); if (restored.camera && device) void startCamera(); }, () => {});
     requestAnimationFrame(() => requestAnimationFrame(() => { stats.firstFrameAt = performance.now(); }));
-    if (!isOutput) requestAnimationFrame(meter);
+    if (!isOutput) { requestAnimationFrame(meter); requestAnimationFrame(listen); applyBudget(); }
   }
   start();
 })();

@@ -2351,7 +2351,18 @@
       this.onRecord = typeof options.onRecord === 'function' ? options.onRecord : null;
     }
 
-    activate(definition) { this._activatePerformanceProfile(definition); this.lastPacedFrameAt = 0; }
+    activate(definition) { this.definition = definition || null; this._activatePerformanceProfile(definition); this.lastPacedFrameAt = 0; }
+
+    // The canvas changed size (or was laid out after the Visual started): the edge pixel budget is measured again.
+    resized() {
+      if (!this.definition) return false;
+      const next = this._preferredScale(this.definition);
+      if (Math.abs(next - (this.performanceState.profile_scale || 0)) < 0.001) return false;
+      this.performanceState.profile_scale = next;
+      if (this.renderBudget) this._applyRenderBudget();
+      else this._applyRenderScale(next);
+      return true;
+    }
 
     observe(frameTimeMs) { this._observeFrame(frameTimeMs); }
 
