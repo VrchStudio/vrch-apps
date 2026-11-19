@@ -1,5 +1,11 @@
 # Visuals Player
 
+## 0.3.14
+
+- Player shows the Mic / Line in level beside Sound, and No signal when the input stays quiet.
+- The device screen briefly names the next visual or track when they change by themselves.
+- Holding K3 fills its label until Visual Settings opens.
+
 ## 0.3.13
 
 - With Mic / Line in, short hits such as drums reach the picture even when it draws fewer frames than the screen refreshes.

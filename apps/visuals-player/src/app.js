@@ -117,8 +117,13 @@
     if (!keys.length) return;
     const at = keys.indexOf(active?.key);
     for (let step = 1; step <= keys.length; step++) {
-      if (present(keys[(at + step + keys.length) % keys.length], source)) return;
+      if (present(keys[(at + step + keys.length) % keys.length], source)) { if (source === 'auto') notice('Visual', title(active)); return; }
     }
+  }
+  // A change the App makes by itself shows once on the device screen, where the host supports it.
+  function notice(label, value) {
+    if (isOutput || !value || typeof VrchApp.monitor.notice !== 'function') return;
+    VrchApp.monitor.notice({label, value: String(value).slice(0, 32)}).catch(() => {});
   }
   function applySources() {
     const live = isOutput ? (followed?.camera ? picture.canvas : null) : camera?.on ? camera.canvas : null;
@@ -214,7 +219,14 @@
       Object.assign(values, {K2: {label: 'Page', value: (page + 1) + '/3'}, K3: {label: open === 'settings' ? 'Close' : 'Visuals', value: ''}, K4: {label: 'Player', value: ''}});
     }
     // A refused update (for example before the host is ready) is sent again on the next tick.
-    VrchApp.monitor.set(values).catch(() => { monitorDirty = true; }).finally(() => { monitorBusy = false; });
+    VrchApp.monitor.set(values).then(declareHolds, () => { monitorDirty = true; }).finally(() => { monitorBusy = false; });
+  }
+  // K3's hold (Visual Settings) fills its strip label while held, where the host supports it.
+  let holdsDeclared = false;
+  function declareHolds() {
+    if (holdsDeclared || typeof VrchApp.monitor.hold !== 'function') return;
+    holdsDeclared = true;
+    VrchApp.monitor.hold({K3: HOLD_MS}).catch(() => { holdsDeclared = false; });
   }
 
   // ---- Panels: Visuals (shared picker), Visual Settings (shared view), Player --------------------------------------
@@ -300,6 +312,12 @@
       {id: 'silent', label: 'Silent', current: state.source === 'silent'},
     ], id => { interact('panel'); void music.setSource(id).then(renderPlayer); if (id === 'input') void refreshInputs(); remember(); renderPlayer(); });
     sound.dataset.row = 'sound'; rows.push(sound);
+    if (state.source === 'input' && music.listening && !state.error) {
+      const meter = document.createElement('span'); meter.className = 'input-meter'; meter.setAttribute('aria-hidden', 'true');
+      for (let i = 0; i < METER_STEPS; i++) meter.append(document.createElement('i'));
+      sound.querySelector('.scene-param-row__heading').insertBefore(meter, sound.querySelector('.scene-param-row__value'));
+      paintMeter(performance.now());
+    }
     if (state.source === 'input' && inputs.devices.length > 1) {
       const input = row('Input', '', inputs.devices.filter(device => device.available !== false).map(device => ({id: device.id, label: device.label, current: device.id === inputs.selected})),
         id => { void music.selectInput(id).then(refreshInputs).catch(() => {}); });
@@ -698,11 +716,31 @@
   setInterval(() => { if (!document.hidden) relayLive(performance.now()); }, 33);
   // Mic / Line in: the input is analysed once per display refresh, whatever rate the device screen draws at, and each
   // new reading goes straight to the output picture.
+  // Player shows the input level beside Mic / Line in, and No signal after a few quiet seconds.
+  const METER_STEPS = 8, QUIET_MS = 3000;
+  let meterLevel = 0, meterAt = 0, signalAt = 0, meterInput = null;
+  function readMeter(now, features) {
+    const rms = Number(features?.rms) || 0, db = rms > 0 ? 20 * Math.log10(rms) : -100;
+    // A newly opened input gets the full quiet time before it counts as silent.
+    if (rms > 0.003 || music.input !== meterInput) { signalAt = now; meterInput = music.input; }
+    meterLevel = Math.max(Math.min(1, Math.max(0, (db + 54) / 48)), meterLevel - Math.max(0, now - meterAt) / 900);
+    meterAt = now;
+    if (open === 'player') paintMeter(now);
+  }
+  function paintMeter(now) {
+    const meter = $('playerBody')?.querySelector('.input-meter');
+    if (!meter) return;
+    const lit = Math.round(meterLevel * METER_STEPS);
+    meter.querySelectorAll('i').forEach((step, index) => step.classList.toggle('is-on', index < lit));
+    const note = meter.parentElement.querySelector('.scene-param-row__value'), quiet = meterInput === music.input && now - signalAt > QUIET_MS ? 'No signal' : '';
+    if (note.textContent !== quiet) note.textContent = quiet;
+  }
   function listen(now) {
     requestAnimationFrame(listen);
     if (document.hidden || music?.source !== 'input' || !music.input) return;
     const read = music.reads;
     const features = music.features(now);
+    if (music.reads !== read) readMeter(now, features);
     if (!features || music.reads === read || !relay || !active || outputOn === false) return;
     const compact = {};
     for (const [key, value] of Object.entries(features)) compact[key] = typeof value === 'number' ? Math.round(value * 1e4) / 1e4 : value && value.length ? Array.from(value, v => Math.round(v * 10) / 10) : value;
@@ -767,7 +805,8 @@
       if (pictureIndex >= pictures.length) pictureIndex = 0;
       pictureImage(pictureIndex); pictureImage(pictureIndex + 1);
       music = new VisualsMusic({sdk: VrchApp, tracks, external: isOutput,
-        onChange: () => { renderPlayer(); renderMute(); publish(); shareSoon(); }, onSection: sectionChanged});
+        onChange: () => { renderPlayer(); renderMute(); publish(); shareSoon(); }, onSection: sectionChanged,
+        onAdvance: () => { if (music.source !== 'input') notice('Track', music.title); }});
       if (Number.isInteger(restored.track) && tracks[restored.track]) music.setTrack(restored.track, 0, performance.now(), false);
       mirror.setAudioProvider(() => music.picture(performance.now()));
       // A host that holds sound until a first tap anywhere on its page says when it can play.

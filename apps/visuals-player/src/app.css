@@ -13,6 +13,9 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000}
 .player-row{padding:8px 10px 10px;border-bottom:1px solid var(--vrch-line)}
 .player-row .scene-param-row__heading{min-height:22px}
 .player-row .scene-param-row__value{color:var(--vrch-text-muted)}
+.player-row .input-meter{display:flex;gap:2px;align-items:stretch;height:10px;margin-left:auto}
+.player-row .input-meter i{width:5px;background:var(--vrch-line-strong)}
+.player-row .input-meter i.is-on{background:var(--vrch-theme-action)}
 .player-row .ui-grid-btn-group{margin-top:6px}
 .player-row .ui-grid-btn{min-height:44px}
 /* The E1 cursor, shown with the control chrome that hover uses. */
