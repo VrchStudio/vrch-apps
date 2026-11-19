@@ -5540,6 +5540,78 @@
           }
         ]
       }
+    },
+    "59388a02-eddb-46de-b431-2d2ccdef7b2e": {
+      "slug": "palmnotes-beat",
+      "latest": "0.1.0",
+      "versions": {
+        "0.1.0": {
+          "version": "0.1.0",
+          "name": "PalmNotes Beat",
+          "tag": "palmnotes-beat-v0.1.0",
+          "sourceCommit": "3fb5629dce5f40873d0b606bb30dd9cd530644c4",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/palmnotes-beat-v0.1.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/palmnotes-beat-v0.1.0/palmnotes-beat-0.1.0.vrchapp",
+          "size": 16873333,
+          "sha256": "807eced991bd4f9f837281948d2230b5dc20460cd1a34556f51ac144f9de53e7",
+          "packageDigest": "807eced991bd4f9f837281948d2230b5dc20460cd1a34556f51ac144f9de53e7",
+          "revision": "f7bef909db21d0506fd4fe4ad7fb5630832314c5e98f16720b5d92f5229feeab",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Play seven complete melodies with your hands, including Silent Night and Jingle Bells.\n- Follow at your own pace, try a timed challenge, or import your own score."
+        }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHBhdGggZmlsbD0iI2RlZGVkZSIgZD0iTTEwIDM2cS0yLTcgMy04dDggNlYxM3EwLTcgNi02IDMgMCAzIDZ2MTZoMlY4cTAtNiA1LTZ0NSA2djIyaDJWMTRxMC02IDUtNnQ1IDZ2MjZxMCAxOS0xOCAyMS0xMiAxLTE4LTl6Ii8+PHBhdGggZmlsbD0iI2ZmMTQ5MyIgZD0iTTMwIDM2aDE3djVIMzZ2OXEwIDYtNyA1dC0yLTlsMy0xeiIvPjwvc3ZnPgo=",
+      "guide": {
+        "description": "Play seven familiar melodies with your hands. See yourself on stage and hear every note you play.",
+        "sections": [
+          {
+            "title": "Play with your hands",
+            "text": "Choose Start camera or press K2. Show both hands. Play with your left hand and make a fist with your right. Raise 1–5 fingers for Do–Sol, extend your thumb and pinky for La, or make an OK sign for Si. Close and reopen your hand to repeat a note. Point your other thumb up or down to change octave."
+          },
+          {
+            "title": "Choose your pace",
+            "text": "Follow waits for your next note. For a timed round, open Songbook and choose Challenge. Play by touch lets you use the seven note pads without a camera."
+          },
+          {
+            "title": "Controls",
+            "controls": [
+              {
+                "control": "K1",
+                "action": "Host menu"
+              },
+              {
+                "control": "K2",
+                "action": "Start or stop the camera and sound"
+              },
+              {
+                "control": "K3",
+                "action": "Swap melody and octave hands"
+              },
+              {
+                "control": "K4",
+                "action": "Open Songbook"
+              },
+              {
+                "control": "E1 / E2",
+                "action": "Volume / voice"
+              },
+              {
+                "control": "E3 / E4",
+                "action": "Choose song / tempo before playing"
+              }
+            ]
+          },
+          {
+            "title": "Import a score",
+            "text": "In Songbook, choose Import JSON score. Example: {\"title\":\"Three notes\",\"bpm\":60,\"notes\":[[3,1],[2,1],[1,2]]}. Use [scale degree, beats, optional octave]. A 0 is a rest. Octaves are -1, 0 or 1."
+          }
+        ]
+      }
     }
   }
 }
