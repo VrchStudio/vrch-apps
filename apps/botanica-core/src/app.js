@@ -2,6 +2,8 @@
   'use strict';
 
   const sdk = window.VrchApp;
+  // A host with control toasts shows a knob's or key's new value itself; the garden's own flash is then left to touches.
+  const hostToast = typeof sdk?.monitor?.toast === 'function';
   // Output role: a picture-only instance (the Playground output, a second screen) draws the same garden. The controlling
   // instance publishes the garden's look (state) and relays the engine's notes, glitches, freezes, sections and level
   // (events); the output plays no sound, reads no controls, saves nothing and shows no text.
@@ -223,12 +225,12 @@
     pushSeq(); flash(on ? 'Garden growing' : 'Garden resting');
     syncViz(); dirty = true;
   }
-  function selectSpecimen(i) {
+  function selectSpecimen(i, quiet = false) {
     state.specimen = (i + SPECIMENS.length) % SPECIMENS.length;
     const sp = SPECIMENS[state.specimen];
     Object.assign(state, sp.p, sp.s);
     pushSound(); pushSeq();
-    syncViz(); flash(`${sp.name} · ${sp.jp}`);
+    syncViz(); if (!quiet) flash(`${sp.name} · ${sp.jp}`);
     dirty = true; save();
   }
   function setPage(i) { state.page = (i + PAGES.length) % PAGES.length; dirty = true; save(); }
@@ -264,18 +266,18 @@
         if (spec.int) {
           encAcc[ei] += e.delta;
           const steps = Math.trunc(encAcc[ei] / 2);
-          if (steps) { encAcc[ei] -= steps * 2; setValue(key, state[key] + steps); }
-        } else setValue(key, state[key] + (e.delta / 160) * (spec.max - spec.min));
+          if (steps) { encAcc[ei] -= steps * 2; setValue(key, state[key] + steps, hostToast); }
+        } else setValue(key, state[key] + (e.delta / 160) * (spec.max - spec.min), hostToast);
       } else if (e.type === 'down') {
         if (key === 'key') { toggleMode(); return; }
         const sp = SPECIMENS[state.specimen];
         setValue(key, key in sp.p ? sp.p[key] : key in sp.s ? sp.s[key] : spec.def, true);
-        flash(`${label(key)} restored`);
+        if (!hostToast) flash(`${label(key)} restored`);
       }
       return;
     }
     if (e.type !== 'down') return;
-    if (e.control === 'K2') { ensureAudio(); selectSpecimen(state.specimen + 1); }
+    if (e.control === 'K2') { ensureAudio(); selectSpecimen(state.specimen + 1, hostToast); }
     else if (e.control === 'K3') setPage(state.page + 1);
     else if (e.control === 'K4') setPlaying(!state.playing);
   }

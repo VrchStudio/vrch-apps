@@ -1,5 +1,9 @@
 # Botanica Core
 
+## 2.2.3
+
+- Turning a knob, restoring a value or changing the specimen with K2 now shows the new value once, at the top of the screen, instead of also over the garden.
+
 ## 2.2.2
 
 - Keep the second-screen garden at least at the screen's own size on a busy device, so the device stays smooth too.
