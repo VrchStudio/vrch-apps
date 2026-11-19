@@ -95,6 +95,9 @@
         "Needs VibeLive on a Mac"
       ]
     },
+    "palmnotes-beat": {
+      "category": "rhythm"
+    },
     "metronome": {
       "category": "rhythm"
     },

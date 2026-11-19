@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PalmNotes Beat</title><link rel="stylesheet" href="style.css"><script src="/apps/sdk/apps-v1.js"></script><script type="module" src="app.mjs"></script></head>
+<body><main id="stage">
+<section id="scene" aria-label="Performance stage">
+<img class="poster" src="assets/cover.webp" alt="">
+<div class="wordmark"><span>PalmNotes</span><strong>Beat<span class="dot">.</span></strong></div>
+<canvas id="camera" width="640" height="480" hidden aria-label="Live camera and hand tracking"></canvas>
+<div class="scene-bar"><p id="status" role="status">Loading…</p><span id="tempo"></span></div>
+<div id="response"><b id="feedback"></b><span id="counter"></span></div>
+<div id="touch-note" aria-hidden="true"></div>
+</section>
+<section id="scoreboard">
+<div class="song"><h1 id="title">PalmNotes Beat</h1><button id="library" aria-label="Open songbook">Songbook ↗</button></div>
+<div class="music"><div id="target"><div id="hand"></div><div><small>PLAY</small><strong id="name"></strong></div></div><div class="track"><span id="pose"></span><div id="lane" aria-label="Beat line and upcoming notes"><div class="beatline"></div><div id="chips"></div></div></div></div>
+<canvas id="trace" aria-label="Your last phrase"></canvas>
+</section>
+<footer><p id="instruction"></p><div id="actions"><button id="start" class="primary">Start camera</button><button id="practice">Play by touch</button></div><div id="padrow" hidden><button id="octave"></button><div id="pads"></div></div></footer>
+</main><dialog id="book"><header><b>Songbook</b><button id="close">Done</button></header><div id="modes" aria-label="Game mode"><button data-mode="follow">Follow · your pace</button><button data-mode="timed">Challenge · on the beat</button></div><div id="songs"></div><label id="importLabel">+ Import JSON score<input id="file" type="file" accept=".json,application/json"></label><p id="fileStatus" role="status"></p></dialog></body></html>

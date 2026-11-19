@@ -27,6 +27,8 @@ Update notifications require a My Apps platform release with official update sup
 
 - [PalmNotes Duo](apps/palmnotes-duo): play notes and octaves with two-hand gestures.
 
+- [PalmNotes Beat](apps/palmnotes-beat): play familiar melodies with finger gestures and follow the score at your own pace.
+
 - [BODY VIBES](apps/body-vibes): mix music with arms, body position and head movement.
 
 - [PitchPlay](apps/pitchplay): transform live voice with Giant, Goblin and Robot presets.
