@@ -4090,7 +4090,7 @@
     },
     "db065989-bdb9-4c22-8c80-a15f92c65154": {
       "slug": "botanica-core",
-      "latest": "2.2.2",
+      "latest": "2.2.3",
       "versions": {
         "2.1.0": {
           "version": "2.1.0",
@@ -4167,6 +4167,25 @@
             "updateApi": 1
           },
           "notes": "- Keep the second-screen garden at least at the screen's own size on a busy device, so the device stays smooth too."
+        },
+        "2.2.3": {
+          "version": "2.2.3",
+          "name": "Botanica Core",
+          "tag": "botanica-core-v2.2.3",
+          "sourceCommit": "2ba80f5e28c2be4631876445983311c574fec747",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/botanica-core-v2.2.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/botanica-core-v2.2.3/botanica-core-2.2.3.vrchapp",
+          "size": 210776,
+          "sha256": "92af013c627eae50952b300bdb409aa708543771214465d4806f23b4cfe6003c",
+          "packageDigest": "92af013c627eae50952b300bdb409aa708543771214465d4806f23b4cfe6003c",
+          "revision": "be70105d71d2cb602b8554deb6ab80fe8b8084788676259984ec2b3c7e2b1c91",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Turning a knob, restoring a value or changing the specimen with K2 now shows the new value once, at the top of the screen, instead of also over the garden."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICA8dGl0bGU+Qm90YW5pY2EgQ29yZTwvdGl0bGU+CiAgPHBhdGggZD0iTTMyIDZjNiA4IDYgMTYgMCAyNC02LTgtNi0xNiAwLTI0WiIgc3Ryb2tlPSIjZThlOGUzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8cGF0aCBkPSJNMzIgMzBjOC02IDE2LTYgMjQgMC04IDYtMTYgNi0yNCAwWm0wIDBjLTgtNi0xNi02LTI0IDAgOCA2IDE2IDYgMjQgMFoiIHN0cm9rZT0iI2U4ZThlMyIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPHBhdGggZD0iTTMyIDM0djIyTTIyIDU4bDQtMTAgNiA4IDYtOCA0IDEwIiBzdHJva2U9IiNhYWE5YTUiIHN0cm9rZS13aWR0aD0iMi41Ii8+CiAgPHBhdGggZD0iTTEwIDE0aDVtNCAwaDNNNDQgNTBoNG00IDBoM000NiAxMmwzIDNtNCA0bDIgMiIgc3Ryb2tlPSIjZmYxNDkzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMwIiByPSIzLjUiIGZpbGw9IiNmZjE0OTMiIHN0cm9rZT0ibm9uZSIvPgo8L3N2Zz4K",
