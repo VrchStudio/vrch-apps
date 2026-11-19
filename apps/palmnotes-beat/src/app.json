@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "59388a02-eddb-46de-b431-2d2ccdef7b2e",
   "name": "PalmNotes Beat",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "roles": [
     "output"
   ],

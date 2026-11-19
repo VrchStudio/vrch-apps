@@ -50,9 +50,10 @@ async function boot(){
   const busy=()=>phase==='starting'||phase==='live';
   const sides=()=>settings.melodyHand==='left'?'Play with your left hand':'Play with your right hand';
   function beginCount(){round=new Round(songs[index],bpm,performance.now()+(follow?0:4)*60000/bpm,follow);dirty=true;controls();}
-  let outputVisible=false, hasPicture=false;
+  // Earlier SDKs can relay pictures but do not report whether an output is attached.
+  let outputVisible=typeof sdk.output?.onPresence!=='function', hasPicture=false;
   const offerPicture=createPictureSender(sdk.output,{maxWidth:640,intervalMs:65});
-  sdk.output?.onPresence(({active})=>{outputVisible=active;});
+  sdk.output?.onPresence?.(({active})=>{outputVisible=active;});
   const audio=instrument(config,settings,{
     hitTime:()=>round?.hitAt ?? -Infinity,
     onPicture(canvas){
