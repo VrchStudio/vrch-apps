@@ -5543,7 +5543,7 @@
     },
     "59388a02-eddb-46de-b431-2d2ccdef7b2e": {
       "slug": "palmnotes-beat",
-      "latest": "0.1.0",
+      "latest": "0.1.1",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -5563,6 +5563,25 @@
             "updateApi": 1
           },
           "notes": "- Play seven complete melodies with your hands, including Silent Night and Jingle Bells.\n- Follow at your own pace, try a timed challenge, or import your own score."
+        },
+        "0.1.1": {
+          "version": "0.1.1",
+          "name": "PalmNotes Beat",
+          "tag": "palmnotes-beat-v0.1.1",
+          "sourceCommit": "eec9bf8bb32bb753ee5b18e076eebe566535ca9d",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/palmnotes-beat-v0.1.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/palmnotes-beat-v0.1.1/palmnotes-beat-0.1.1.vrchapp",
+          "size": 16873458,
+          "sha256": "d59cf475c9f6fd6237309665b0138921b4b762b7e55b9a80de157f8697771af7",
+          "packageDigest": "d59cf475c9f6fd6237309665b0138921b4b762b7e55b9a80de157f8697771af7",
+          "revision": "27b015ffd1ff054721d31bdca7e50941aa3014a9171a132801f917a79db92927",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Open the songbook and show the live camera on both screens on earlier Playground hosts."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHBhdGggZmlsbD0iI2RlZGVkZSIgZD0iTTEwIDM2cS0yLTcgMy04dDggNlYxM3EwLTcgNi02IDMgMCAzIDZ2MTZoMlY4cTAtNiA1LTZ0NSA2djIyaDJWMTRxMC02IDUtNnQ1IDZ2MjZxMCAxOS0xOCAyMS0xMiAxLTE4LTl6Ii8+PHBhdGggZmlsbD0iI2ZmMTQ5MyIgZD0iTTMwIDM2aDE3djVIMzZ2OXEwIDYtNyA1dC0yLTlsMy0xeiIvPjwvc3ZnPgo=",
