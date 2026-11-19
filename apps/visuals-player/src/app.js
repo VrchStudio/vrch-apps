@@ -769,7 +769,7 @@
       music = new VisualsMusic({sdk: VrchApp, tracks, external: isOutput,
         onChange: () => { renderPlayer(); renderMute(); publish(); shareSoon(); }, onSection: sectionChanged});
       if (Number.isInteger(restored.track) && tracks[restored.track]) music.setTrack(restored.track, 0, performance.now(), false);
-      mirror.setAudioProvider(() => music.features(performance.now()));
+      mirror.setAudioProvider(() => music.picture(performance.now()));
       // A host that holds sound until a first tap anywhere on its page says when it can play.
       if (!isOutput) VrchApp.audio.onAvailable?.(() => music.wake(true));
       await catalogLoad;

@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.3.13
+
+- With Mic / Line in, short hits such as drums reach the picture even when it draws fewer frames than the screen refreshes.
+
 ## 0.3.12
 
 - With the picture on a second screen, Visuals stays open while you try visuals there; Done closes it.

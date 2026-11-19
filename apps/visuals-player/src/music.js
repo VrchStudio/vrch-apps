@@ -9,6 +9,7 @@
   // Sound never starts or stops abruptly: muting, unmuting, starting and leaving Music fade the level.
   const FADE_S = 0.6, START_FADE_S = 0.5, STOP_FADE_S = 0.4;
   const stale = () => Object.assign(Error('stale'), {code: 'stale'});
+  const loudness = features => Number(features?.v2_raw_energy ?? features?.rms) || 0;
 
   class VisualsMusic {
     // tracks: [{id, title, file, features, duration, sections: [seconds]}]; external: an output surface that follows a controller.
@@ -17,7 +18,7 @@
       this.source = 'music'; this.index = 0; this.loaded = new Map(); this.retired = []; this.spectrum = new Spectrum();
       this.anchor = {index: 0, offset: 0, at: performance.now()};
       this.output = null; this.opening = null; this.epoch = 0; this.retryAt = 0; this.error = null;
-      this.input = null; this.relayed = null; this.lastFeatures = null; this.lastAt = -1; this.readAt = -Infinity; this.reads = 0; this.section = -1; this.hidden = false;
+      this.input = null; this.relayed = null; this.held = null; this.lastFeatures = null; this.lastAt = -1; this.readAt = -Infinity; this.reads = 0; this.section = -1; this.hidden = false;
       this.muted = false; this.poked = false; this.retries = 0; this.retryTimer = 0;
       this.trim();
     }
@@ -115,6 +116,7 @@
         // One analyser reading per display refresh, for the picture and the output relay alike.
         if (!this.lastFeatures || now - this.readAt >= READ_MS || now < this.readAt) {
           this.lastFeatures = this.spectrum.readAnalyser(this.input.analyser); this.readAt = now; this.reads++;
+          this.hold(this.lastFeatures);
         }
         return this.lastFeatures;
       }
@@ -127,6 +129,15 @@
       this.lastFeatures = features.at(position);
       return this.lastFeatures;
     }
+    // The picture's features: with Mic / Line in, the loudest reading since the picture last drew. The input is read
+    // every display refresh, but a picture drawing fewer frames than that would otherwise miss short hits between them.
+    picture(now) {
+      const features = this.features(now);
+      if (this.source !== 'input' || !this.held) return features;
+      const held = this.held; this.held = null;
+      return held;
+    }
+    hold(features) { if (features && (!this.held || loudness(features) >= loudness(this.held))) this.held = features; }
     watchSections(position) {
       const sections = this.tracks[this.index]?.sections || [];
       let current = -1;
@@ -244,7 +255,7 @@
     async setSource(source) {
       if (!['music', 'input', 'silent'].includes(source)) return;
       const same = source === this.source;
-      this.source = source; this.error = null; this.relayed = null;
+      this.source = source; this.error = null; this.relayed = null; this.held = null;
       if (source !== 'music') this.stopOutput(true);
       if (source !== 'input') this.closeInput();
       this.onChange(this.state());
@@ -275,7 +286,7 @@
       } finally { this.onChange(this.state()); }
     }
     closeInput() {
-      const session = this.input; this.input = null;
+      const session = this.input; this.input = null; this.held = null;
       if (!session) return;
       session.cancelled = true;
       void session.handle?.close().catch(() => {});
@@ -292,13 +303,13 @@
 
     // An output surface: the controller's track position, or its live input features.
     follow({source, index, offset, at}) {
-      if (['music', 'input', 'silent'].includes(source)) { if (source !== 'input') this.relayed = null; this.source = source; }
+      if (['music', 'input', 'silent'].includes(source)) { if (source !== 'input') this.relayed = this.held = null; this.source = source; }
       if (Number.isInteger(index) && this.tracks[index] && Number.isFinite(offset) && Number.isFinite(at)) {
         const now = performance.now(), local = at - performance.timeOrigin;
         if (index !== this.index || Math.abs(this.position(now) - (offset + (now - local) / 1000)) > 0.08) this.setTrack(index, offset, local, false);
       }
     }
-    relay(features) { this.relayed = features && typeof features === 'object' ? features : null; }
+    relay(features) { this.relayed = features && typeof features === 'object' ? features : null; this.hold(this.relayed); }
     timing() {
       const now = performance.now();
       return {source: this.source, index: this.index, offset: this.position(now), at: performance.timeOrigin + now};
