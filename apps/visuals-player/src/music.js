@@ -13,8 +13,8 @@
 
   class VisualsMusic {
     // tracks: [{id, title, file, features, duration, sections: [seconds]}]; external: an output surface that follows a controller.
-    constructor({sdk, tracks, external = false, onChange = () => {}, onSection = () => {}}) {
-      this.sdk = sdk; this.tracks = tracks; this.external = external === true; this.onChange = onChange; this.onSection = onSection;
+    constructor({sdk, tracks, external = false, onChange = () => {}, onSection = () => {}, onAdvance = () => {}}) {
+      this.sdk = sdk; this.tracks = tracks; this.external = external === true; this.onChange = onChange; this.onSection = onSection; this.onAdvance = onAdvance;
       this.source = 'music'; this.index = 0; this.loaded = new Map(); this.retired = []; this.spectrum = new Spectrum();
       this.anchor = {index: 0, offset: 0, at: performance.now()};
       this.output = null; this.opening = null; this.epoch = 0; this.retryAt = 0; this.error = null;
@@ -95,10 +95,12 @@
     advance(now) {
       if (this.output?.playing) return;
       let guard = 0;
+      const from = this.index;
       while (this.position(now) >= this.duration(this.index) && guard++ < 8) {
         const end = this.anchor.at + (this.duration(this.index) - this.anchor.offset) * 1000;
         this.setTrack((this.index + 1) % this.tracks.length, 0, end);
       }
+      if (this.index !== from) this.onAdvance(this.index);
     }
     setTrack(index, offset = 0, at = performance.now(), announce = true) {
       const changed = index !== this.index;
@@ -220,7 +222,7 @@
       output.playing = false;
       const next = (output.index + 1) % this.tracks.length;
       this.setTrack(next, 0, performance.now(), false);
-      this.onChange(this.state());
+      this.onChange(this.state()); this.onAdvance(next);
       void this.startAt(performance.now(), 0).catch(error => { if (this.output === output) { this.error = error; this.stopOutput(); this.onChange(this.state()); } });
     }
     // fade: leaving Music lets the sound die away; errors and closing stop it at once.
