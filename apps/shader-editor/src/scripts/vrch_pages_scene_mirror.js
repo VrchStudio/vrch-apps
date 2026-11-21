@@ -158,6 +158,7 @@
         this.renderer.setPixelRatio(base * (this.performance ? this.performance.performanceState.render_scale : 1));
       }
       this.renderer.setSize(width, height, false);
+      if (this.performance && this.performance.resized) this.performance.resized();
       return true;
     }
 
@@ -450,7 +451,8 @@
       this.raf = requestAnimationFrame((stamp) => this._frame(stamp));
       if (!this.effect || !this.renderer || document.hidden) return;
       if (this.performance && !this.performance.shouldRender(performance.now(), frameStamp)) return;
-      if (this.cameraVideo) this.effect.sourceTextures.forEach((texture) => { if (texture) texture.needsUpdate = true; });
+      // A visual without picture sources never samples the camera: its frames are not uploaded.
+      if (this.cameraVideo && Number(this.effect.definition?.runtime?.max_sources) !== 0) this.effect.sourceTextures.forEach((texture) => { if (texture) texture.needsUpdate = true; });
       if (this.frameAnalysis) {
         const slot = this.frameAnalysis.sourceSlot || 'A';
         const source = this.externalSources?.[slot === 'B' ? 1 : 0] || this.cameraVideo || this.fixture;

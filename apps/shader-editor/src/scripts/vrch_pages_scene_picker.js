@@ -154,6 +154,12 @@
         favoritesStorageKey: FAVORITES_KEY,
         recentsStorageKey: RECENTS_KEY,
         recentLimit: 6,
+        // A tap on a visual uses it at once; the picker shows no separate confirm button.
+        confirmOnSelect: false,
+        // While this returns true, a used visual leaves the picker open and Cancel reads doneLabel.
+        stayOpen: null,
+        cancelLabel: 'Cancel',
+        doneLabel: 'Done',
         onConfirm: null,
         onClear: null,
         onDelete: null,
@@ -330,6 +336,7 @@
         this.leaveSearch();
       }, true);
       this.elements.confirm.textContent = this.options.primaryLabel;
+      this.elements.confirm.hidden = this.options.confirmOnSelect === true;
       this.selection.collections.forEach((collection) => {
         const button = document.createElement('button');
         button.type = 'button';
@@ -767,11 +774,21 @@
     _select(hash) {
       if (this.busy || !this._item(hash)) return;
       if (this.searching) this._endTyping();
+      const direct = this.options.confirmOnSelect === true;
+      // With direct use, the visual already in use only closes the picker (or stays, while the picker stays open).
+      if (direct && hash === this._currentHash()) { if (!this._staysOpen()) this.close('cancel'); return; }
+      this.preselect(hash, !direct);
+      if (direct) void this._confirm();
+    }
+
+    // Moves the choice without using it, as a knob stepping through the cards does.
+    preselect(hash, preview = true) {
+      if (this.busy || !this._item(hash)) return;
       this.pendingHash = hash;
       this._feedback('');
       this._syncCardState();
       this._syncInteractiveState();
-      this._renderPreview();
+      if (preview) this._renderPreview();
     }
 
     // Choosing a search result ends typing: release the search field and ask
@@ -877,8 +894,13 @@
       this.elements.feedback.classList.toggle('is-warn', tone === 'warn');
     }
 
+    _staysOpen() {
+      try { return typeof this.options.stayOpen === 'function' && this.options.stayOpen() === true; } catch (_) { return false; }
+    }
+
     _syncInteractiveState() {
       if (!this.overlay) return;
+      this.elements.cancel.textContent = this._staysOpen() ? this.options.doneLabel : this.options.cancelLabel;
       this.elements.filter.disabled = this.busy;
       this.elements.cancel.disabled = this.busy;
       this.elements.clear.hidden = typeof this.options.onClear !== 'function';
@@ -910,6 +932,11 @@
         this.syncTrigger();
         this._syncCardState();
         this.busy = false;
+        if (!clear && this._staysOpen()) {
+          this._feedback('');
+          this._syncInteractiveState();
+          return;
+        }
         this.close('confirmed');
       } catch (error) {
         if (generation !== this.openGeneration) return;

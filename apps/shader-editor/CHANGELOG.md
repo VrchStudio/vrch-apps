@@ -1,5 +1,9 @@
 # Shader Editor
 
+## 0.2.3
+
+- Every visual has a new preview, drawn the same way as in Visuals Player; none shows a person.
+
 ## 0.2.2
 
 - Show a camera or image source at once when its size changes, such as the camera's first picture; it no longer stays black.

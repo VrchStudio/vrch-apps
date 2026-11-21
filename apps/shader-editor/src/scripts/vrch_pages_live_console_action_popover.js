@@ -121,7 +121,7 @@
             if (options.collections) {
                 const nav = documentRef.createElement('nav');
                 nav.className = 'ui-tabs ui-tabs--navigation ui-tabs--edge ui-tabs--equal ui-action-popover__collections';
-                nav.setAttribute('aria-label', 'Visual collections');
+                nav.setAttribute('aria-label', options.collectionsLabel || 'Visual collections');
                 options.collections.forEach(collection => {
                     const tab = documentRef.createElement('button');
                     tab.type = 'button'; tab.className = 'ui-tab';

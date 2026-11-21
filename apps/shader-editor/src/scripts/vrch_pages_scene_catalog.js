@@ -7,6 +7,20 @@
   'use strict';
 
   const Contract = root.VrchSceneContract;
+  // Content revision only: catalog, definitions, selection and managed thumbnails.
+  const CONTENT_TOKEN = 'visuals-da0a6473b28854dd';
+  let selectionLoading = null;
+  function loadSelection() {
+    if (root.VrchSceneSelection) return Promise.resolve(root.VrchSceneSelection);
+    if (!selectionLoading) selectionLoading = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'scripts/vrch_pages_scene_selection.js?v=' + encodeURIComponent(CONTENT_TOKEN);
+      script.onload = () => resolve(root.VrchSceneSelection);
+      script.onerror = () => { script.remove(); selectionLoading = null; reject(new Error('Could not load visual selection.')); };
+      document.head.append(script);
+    });
+    return selectionLoading;
+  }
   function clone(value) { return value == null ? value : JSON.parse(JSON.stringify(value)); }
   function entryKey(entry) {
     if (!entry) return '';
@@ -30,7 +44,7 @@
   class PresetCatalog {
     constructor(options = {}) {
       this.baseUrl = options.baseUrl || 'scenes/v1/';
-      this.cacheToken = options.cacheToken || '20261004-perf-r13';
+      this.cacheToken = options.cacheToken || CONTENT_TOKEN;
       this.catalog = null;
       this.definitions = new Map();
       this.selectedKey = null;
@@ -287,5 +301,5 @@
     }
   }
 
-  return Object.freeze({ PresetCatalog: PresetCatalog });
+  return Object.freeze({ PresetCatalog: PresetCatalog, CONTENT_TOKEN: CONTENT_TOKEN, loadSelection: loadSelection });
 });
