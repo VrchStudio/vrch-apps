@@ -8,7 +8,7 @@
 
   const Contract = root.VrchSceneContract;
   // Content revision only: catalog, definitions, selection and managed thumbnails.
-  const CONTENT_TOKEN = '20261113-visuals-content-a1';
+  const CONTENT_TOKEN = 'visuals-5e8b35c191469ff9';
   let selectionLoading = null;
   function loadSelection() {
     if (root.VrchSceneSelection) return Promise.resolve(root.VrchSceneSelection);
