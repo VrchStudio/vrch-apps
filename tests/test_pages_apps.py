@@ -35,6 +35,22 @@ const contract = require(path.join(root, 'scripts/vrch_pages_scene_contract.js')
 })().catch(error => { console.error(error); process.exit(1); });
 """
 
+SONGS = r"""
+const fs = require('fs'), path = require('path'), vm = require('vm'), root = process.argv[1];
+Object.assign(globalThis, {self: globalThis, sampleRate: 48000, currentFrame: 0});
+vm.runInThisContext('globalThis.AudioWorkletProcessor = class { constructor() { this.port = {postMessage() {}, onmessage: null}; } };'
+  + 'globalThis.registerProcessor = (name, processor) => { self.VisualsDrum808 = processor; };');
+vm.runInThisContext('(() => {' + fs.readFileSync(path.join(root, 'beats/drum808-engine.js'), 'utf8') + '\n})()');
+vm.runInThisContext(fs.readFileSync(path.join(root, 'beats/songs.js'), 'utf8'));
+const beats = globalThis.VisualsBeats;
+console.log(JSON.stringify(beats.songs.map((song, index) => {
+  const second = beats.describe(index).parts[1].start, {left, right} = new beats.SongRenderer(index, self.VisualsDrum808).render(second, 2);
+  let peak = 0, sum = 0, finite = true;
+  for (let i = 0; i < left.length; i++) { finite = finite && Number.isFinite(left[i]) && Number.isFinite(right[i]); peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i])); sum += left[i] ** 2 + right[i] ** 2; }
+  return {id: song.id, finite, peak, rms: Math.sqrt(sum / left.length / 2), sections: song.sections, duration: song.duration};
+})));
+"""
+
 
 def names(source):
     return sorted(p.relative_to(source).as_posix() for p in source.rglob('*') if p.is_file())
@@ -60,7 +76,7 @@ class VisualsPlayerSource(unittest.TestCase):
 
     def test_budget_and_contents(self):
         files = names(self.source)
-        self.assertLessEqual(sum((self.source / n).stat().st_size for n in files), 40 * 1024 * 1024)
+        self.assertLessEqual(sum((self.source / n).stat().st_size for n in files), 24 * 1024 * 1024)
         for forbidden in ('hand_landmarker', 'face_landmarker', 'nosimd'):
             self.assertFalse([n for n in files if forbidden in n], forbidden)
         self.assertEqual([n for n in files if n.endswith(('.task', '.wasm'))],
@@ -70,17 +86,27 @@ class VisualsPlayerSource(unittest.TestCase):
         self.assertEqual([e['scene_ref']['scene_id'] for e in packaged], [item['scene_id'] for item in curated])
         for item in curated:
             self.assertIn(item['thumbnail'], files)
-        for track in json.loads((self.source / 'music/index.json').read_text())['tracks']:
-            self.assertIn('music/' + track['file'], files)
-            self.assertTrue(track['sections'] and track['bpm'] > 0, track['id'])
+        # The songs are made in the App (no recorded music; the drums are Drum 808's engine), and no picture shows a person.
+        self.assertFalse([n for n in files if n.startswith('music/') or n.endswith(('.mp3', '.vpf'))])
         pictures = json.loads((self.source / 'pictures/index.json').read_text())['pictures']
-        self.assertGreaterEqual(len(pictures), 2)
-        for picture in pictures:
-            self.assertIn('pictures/' + picture['file'], files)
+        self.assertEqual(sorted(['pictures/index.json'] + ['pictures/' + p['file'] for p in pictures]), [n for n in files if n.startswith('pictures/')])
+        self.assertFalse({'dancer', 'portrait', 'keys'} & {p['id'] for p in pictures})
+        self.assertEqual((self.source / 'beats/drum808-engine.js').read_bytes(), (ROOT / 'apps/drum-808/src/engine.js').read_bytes())
         capabilities = json.loads((self.source / 'app.json').read_text())['capabilities']
         self.assertTrue(all(capabilities[name] for name in ('controls', 'audio_input', 'audio_output', 'video_input')))
         self.assertIn('id="visual-settings"', (self.source / 'index.html').read_text())
         local_references(self, self.source)
+
+    @unittest.skipUnless(shutil.which('node'), 'node is not installed')
+    def test_songs_render(self):
+        # Each built-in song renders through the worker's shim: sound without overload, sections inside the song.
+        rows = json.loads(subprocess.check_output(['node', '-e', SONGS, str(self.source)]))
+        self.assertGreaterEqual(len(rows), 4)
+        for row in rows:
+            self.assertTrue(row['finite'], row['id'])
+            self.assertLess(row['peak'], 0.95, row['id'])
+            self.assertGreater(row['rms'], 0.02, row['id'])
+            self.assertTrue(0 < row['sections'][0] and row['sections'] == sorted(row['sections']) and row['sections'][-1] < row['duration'], row['id'])
 
     @unittest.skipUnless(shutil.which('node'), 'node is not installed')
     def test_content_hashes(self):

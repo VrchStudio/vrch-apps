@@ -1,33 +1,55 @@
-/* Visuals Player sound. Three sources: the built-in tracks, the host audio input (microphone or line in, as chosen
-   in the host's Device audio settings) and Silent. Music starts sounding as soon as the App opens; where the browser
-   waits for a first interaction, and while Silent, a clock plays the tracks without output for the picture to follow. Audio features always come
-   from the sound itself through the shared VrchImageAudio.computeSceneSignalSample, as in Live Console. */
+/* Visuals Player sound. Three sources: the built-in songs, the host audio input (microphone or line in, as chosen in the
+   host's Device audio settings) and Silent. The songs are original pieces synthesised in a worker a little ahead of
+   where they play (beats/songs.js, with the Drum 808 App's own drums), together with the audio features of that very
+   sound, so the picture follows exactly what is heard. Music starts sounding as soon as the App opens; where the browser
+   waits for a first interaction, and while Silent, a clock plays the songs without output for the picture to follow.
+   Mic / Line in features come from the input through the shared VrchImageAudio.computeSceneSignalSample, as in Live Console. */
 (() => {
   'use strict';
-  const {SR, FFT, MIN_DB, MAX_DB, Spectrum, TrackFeatures} = VisualsSpectrum;
-  const HOST_LATENCY_S = 0.03, RETRY_MS = 3000, KEEP_TRACKS = 2, READ_MS = 12;
+  const {SR, FFT, MIN_DB, MAX_DB, Spectrum, SongFeatures} = VisualsSpectrum;
+  const HOST_LATENCY_S = 0.03, RETRY_MS = 3000, READ_MS = 12, LEAD_S = 0.12, AHEAD_S = 16, PLAYHEAD_MS = 400, KEEP_S = 1;
   // Sound never starts or stops abruptly: muting, unmuting, starting and leaving Music fade the level.
   const FADE_S = 0.6, START_FADE_S = 0.5, STOP_FADE_S = 0.4;
+  const WORKER_FILES = ['scripts/vrch_pages_image_audio_reactivity.js', 'spectrum.js', 'beats/drum808-engine.js', 'beats/songs.js', 'beats/worker.js'];
   const stale = () => Object.assign(Error('stale'), {code: 'stale'});
   const loudness = features => Number(features?.v2_raw_energy ?? features?.rms) || 0;
 
+  // The songs render in a classic Worker made from this package's own scripts: an opaque frame cannot start one from a
+  // package URL. The blob URL is released once the worker has reported that it is running.
+  async function songWorker() {
+    const texts = await Promise.all(WORKER_FILES.map(file => fetch(file).then(response => {
+      if (!response.ok) throw Error(file + ' HTTP ' + response.status);
+      return response.text();
+    })));
+    const [analysis, spectrum, engine, songs, worker] = texts;
+    const source = ['self.window = self; self.sampleRate = ' + SR + '; self.currentFrame = 0;',
+      'class AudioWorkletProcessor { constructor() { this.port = {postMessage() {}, onmessage: null}; } }',
+      'function registerProcessor(name, processor) { self.VisualsDrum808 = processor; }',
+      analysis, spectrum, '(() => {\n' + engine + '\n})();', songs, worker].join('\n;\n');
+    const url = URL.createObjectURL(new Blob([source], {type: 'text/javascript'}));
+    try { return {worker: new Worker(url), url}; } catch (error) { URL.revokeObjectURL(url); throw error; }
+  }
+
   class VisualsMusic {
-    // tracks: [{id, title, file, features, duration, sections: [seconds]}]; external: an output surface that follows a controller.
+    // tracks: [{id, title, duration, bpm, sections: [seconds]}]; external: an output surface that follows a controller.
     constructor({sdk, tracks, external = false, onChange = () => {}, onSection = () => {}, onAdvance = () => {}}) {
       this.sdk = sdk; this.tracks = tracks; this.external = external === true; this.onChange = onChange; this.onSection = onSection; this.onAdvance = onAdvance;
-      this.source = 'music'; this.index = 0; this.loaded = new Map(); this.retired = []; this.spectrum = new Spectrum();
-      this.anchor = {index: 0, offset: 0, at: performance.now()};
+      this.source = 'music'; this.index = 0; this.spectrum = new Spectrum();
+      // The silent clock: the song position 'offset' at performance time 'at' (null: held at 'offset' until the sound is ready).
+      this.anchor = {offset: 0, at: performance.now()};
       this.output = null; this.opening = null; this.epoch = 0; this.retryAt = 0; this.error = null;
       this.input = null; this.relayed = null; this.held = null; this.lastFeatures = null; this.lastAt = -1; this.readAt = -Infinity; this.reads = 0; this.section = -1; this.hidden = false;
       this.muted = false; this.poked = false; this.retries = 0; this.retryTimer = 0;
-      this.trim();
+      // Rendering: the worker, its current job (where it plays from and which songs it has reached) and the features and
+      // sound it has sent. A song's features are the same whichever job rendered them, so they are kept across jobs.
+      this.worker = null; this.workerStart = null; this.job = null; this.jobs = 0; this.stores = new Map(); this.chunks = []; this.playheadAt = -Infinity;
     }
 
     get audible() { return !!this.output?.playing; }
     get title() { return this.tracks[this.index]?.title || ''; }
     state() { return {source: this.source, index: this.index, title: this.title, audible: this.audible, muted: this.muted, level: this.output ? Math.round(this.output.gain.gain.value * 1000) / 1000 : 0, position: this.position(performance.now()), error: this.error?.code || null}; }
 
-    // Muted, the track keeps playing at no level, so unmuting fades it back in time with the picture.
+    // Muted, the song keeps playing at no level, so unmuting fades it back in time with the picture.
     setMuted(muted) {
       this.muted = muted === true;
       if (this.output) this.fade(this.output, this.level(), FADE_S);
@@ -40,72 +62,103 @@
       gain.cancelScheduledValues(now); gain.setValueAtTime(from, now);
       gain.setTargetAtTime(target, now, seconds / 4); gain.setValueAtTime(target, now + seconds);
     }
+    duration(index) { return this.tracks[index]?.duration || 120; }
 
-    // A track is its precomputed features (about 1 MB) and, only while sound plays, its file as a blob: the App's opaque
-    // frame cannot hand its own package URL to Web Audio. Whole tracks are never decoded, so the picture follows the
-    // music with the same features whether or not sound is playing.
-    load(index) {
-      const track = this.tracks[index];
-      if (!track) return Promise.resolve(null);
-      if (!this.loaded.has(index)) {
-        const entry = {features: null, sound: null, pending: null};
-        entry.pending = fetch(track.features).then(response => {
-          if (!response.ok) throw Error('Track features HTTP ' + response.status);
-          return response.arrayBuffer();
-        }).then(bytes => { entry.features = new TrackFeatures(bytes); return entry; })
-          .catch(error => { if (this.loaded.get(index) === entry) this.loaded.delete(index); throw error; });
-        this.loaded.set(index, entry);
-      }
-      return this.loaded.get(index).pending;
+    // ---- Rendering -----------------------------------------------------------------------------------------------
+    ensureWorker() {
+      if (this.workerStart) return this.workerStart;
+      this.workerStart = songWorker().then(({worker, url}) => {
+        this.worker = worker;
+        worker.onmessage = ({data}) => {
+          if (data?.type === 'ready') URL.revokeObjectURL(url);
+          else if (data?.type === 'chunk') this.receive(data);
+        };
+        worker.onerror = event => { URL.revokeObjectURL(url); this.error = Object.assign(Error(event.message || 'Music unavailable.'), {code: 'music_unavailable'}); this.onChange(this.state()); };
+        return worker;
+      });
+      this.workerStart.catch(error => { this.error = Object.assign(error, {code: 'music_unavailable'}); this.workerStart = null; this.onChange(this.state()); });
+      return this.workerStart;
     }
-    async sound(index) {
-      const entry = await this.load(index);
-      if (!entry) return null;
-      if (!entry.sound) {
-        entry.sound = fetch(this.tracks[index].file).then(response => {
-          if (!response.ok) throw Error('Track HTTP ' + response.status);
-          return response.blob();
-        }).then(blob => URL.createObjectURL(blob)).catch(error => { entry.sound = null; throw error; });
-      }
-      return entry.sound;
+    store(index) {
+      if (!this.stores.has(index)) this.stores.set(index, new SongFeatures(this.duration(index)));
+      // Only the playing song and the next one are kept.
+      const keep = new Set([this.index, (this.index + 1) % this.tracks.length, index]);
+      for (const key of this.stores.keys()) if (!keep.has(key)) this.stores.delete(key);
+      return this.stores.get(index);
     }
-    // Keep the current and next tracks. A dropped track's sound is released once nothing plays it.
-    trim() {
-      const keep = new Set(Array.from({length: Math.min(KEEP_TRACKS, this.tracks.length)}, (_, step) => (this.index + step) % this.tracks.length));
-      for (const [key, entry] of [...this.loaded]) if (!keep.has(key)) { this.loaded.delete(key); if (entry.sound) this.retired.push(entry.sound); }
-      this.releaseSounds();
-      // An output picture loads a track's features only when it follows that track (Mic / Line in arrives relayed).
-      if (this.external) return;
-      void this.load(this.index).then(() => this.load((this.index + 1) % this.tracks.length)).catch(() => {});
+    // A new job plays 'index' from 'offset'; its sound is kept only by a controller.
+    startJob(index, offset) {
+      const job = this.job = {id: ++this.jobs, song: index, offset, bases: new Map([[index, -offset]]), covered: new Map(), last: index};
+      this.chunks = [];
+      void this.ensureWorker().then(worker => {
+        if (this.job === job) worker.postMessage({type: 'start', job: job.id, song: index, offset, audio: !this.external, ahead: AHEAD_S});
+      }, () => {});
+      return job;
     }
-    releaseSounds() {
-      const playing = this.output?.url || null, retired = this.retired;
-      this.retired = [];
-      for (const pending of retired) void pending.then(url => { if (url === playing) this.retired.push(pending); else URL.revokeObjectURL(url); }, () => {});
+    // Whether the current job reaches 'index' at 'offset', or will shortly.
+    covers(index, offset) {
+      const job = this.job;
+      if (!job) return false;
+      const range = job.covered.get(index);
+      if (!range) return index === job.song || index === (job.last + 1) % this.tracks.length;
+      return offset >= range[0] - 0.05 && offset <= range[1] + AHEAD_S;
     }
-    duration(index) { return this.loaded.get(index)?.features?.duration || this.tracks[index]?.duration || 180; }
+    receive(chunk) {
+      const job = this.job;
+      if (!job || chunk.job !== job.id) return;
+      const from = chunk.start / SR, to = from + chunk.frames / SR, base = chunk.stream - from;
+      job.bases.set(chunk.song, base); job.last = chunk.song;
+      const range = job.covered.get(chunk.song);
+      job.covered.set(chunk.song, range ? [Math.min(range[0], from), Math.max(range[1], to)] : [from, to]);
+      if (this.stores.has(chunk.song) || chunk.song === this.index || chunk.song === (this.index + 1) % this.tracks.length) this.store(chunk.song).add(chunk.first, new Uint8Array(chunk.features));
+      if (!chunk.left) return;
+      const entry = {song: chunk.song, stream: chunk.stream, end: chunk.stream + chunk.frames / SR, left: new Float32Array(chunk.left), right: new Float32Array(chunk.right), node: null};
+      this.chunks.push(entry);
+      const output = this.output;
+      if (output?.waiting) { if (this.ready(this.position(performance.now()))) this.begin(output); }
+      else if (output?.playing) this.schedule(output, entry);
+    }
+    // Tells the worker how far the music has played, so it keeps a few seconds rendered ahead.
+    report(now) {
+      const job = this.job;
+      if (!job || !this.worker || now - this.playheadAt < PLAYHEAD_MS) return;
+      const base = job.bases.get(this.index);
+      if (base == null) return;
+      this.playheadAt = now;
+      const stream = base + this.position(now);
+      this.worker.postMessage({type: 'playhead', job: job.id, stream});
+      // Sound already played is let go.
+      if (this.chunks.length && this.chunks[0].end < stream - KEEP_S) this.chunks = this.chunks.filter(entry => entry.end >= stream - KEEP_S);
+    }
 
-    // Track position in seconds at performance time 'now'.
+    // ---- Time ----------------------------------------------------------------------------------------------------
+    // Song position in seconds at performance time 'now': what is heard while sound plays, else the silent clock.
     position(now) {
       const output = this.output;
-      if (output?.playing) return Math.max(0, output.audio.currentTime - output.latency);
+      if (output?.playing) {
+        const base = this.job?.bases.get(this.index) ?? 0;
+        return Math.max(0, output.s0 + (output.ctx.currentTime - output.t0) - output.latency - base);
+      }
+      if (this.anchor.at == null) return this.anchor.offset;
       return Math.max(0, this.anchor.offset + (now - this.anchor.at) / 1000);
     }
-    // Moves the silent clock to the next track at the end of the current one.
+    // Moves on to the next song at the end of the current one; the job is already rendering it.
     advance(now) {
-      if (this.output?.playing) return;
       let guard = 0;
       const from = this.index;
       while (this.position(now) >= this.duration(this.index) && guard++ < 8) {
-        const end = this.anchor.at + (this.duration(this.index) - this.anchor.offset) * 1000;
-        this.setTrack((this.index + 1) % this.tracks.length, 0, end);
+        const next = (this.index + 1) % this.tracks.length, base = this.job?.bases.get(this.index);
+        if (this.job && base != null && !this.job.bases.has(next)) this.job.bases.set(next, base + this.duration(this.index));
+        if (this.output?.playing) { this.index = next; this.section = -1; continue; }
+        const end = this.anchor.at == null ? now : this.anchor.at + (this.duration(this.index) - this.anchor.offset) * 1000;
+        this.index = next; this.section = -1; this.anchor = {offset: 0, at: end};
       }
-      if (this.index !== from) this.onAdvance(this.index);
+      if (this.index !== from) { this.store(this.index); this.onChange(this.state()); this.onAdvance(this.index); }
     }
     setTrack(index, offset = 0, at = performance.now(), announce = true) {
-      const changed = index !== this.index;
-      this.index = index; this.anchor = {index, offset, at}; this.section = -1;
-      if (changed) this.trim();
+      this.index = index; this.anchor = {offset, at}; this.section = -1;
+      this.store(index);
+      if (!this.covers(index, offset)) this.startJob(index, offset);
       if (announce) this.onChange(this.state());
     }
 
@@ -123,13 +176,13 @@
         return this.lastFeatures;
       }
       this.advance(now);
-      if (this.external && !this.loaded.has(this.index)) void this.load(this.index).catch(() => {});
-      const features = this.loaded.get(this.index)?.features;
-      if (!features) { this.lastFeatures = null; return null; }
       const position = this.position(now);
-      this.watchSections(position);
-      this.lastFeatures = features.at(position);
-      return this.lastFeatures;
+      if (!this.covers(this.index, position)) this.startJob(this.index, position);
+      this.report(now);
+      const features = this.stores.get(this.index)?.at(position) || null;
+      if (features) this.watchSections(position);
+      this.lastFeatures = features;
+      return features;
     }
     // The picture's features: with Mic / Line in, the loudest reading since the picture last drew. The input is read
     // every display refresh, but a picture drawing fewer frames than that would otherwise miss short hits between them.
@@ -151,6 +204,7 @@
       }
     }
 
+    // ---- Sound ---------------------------------------------------------------------------------------------------
     // Sound starts when the App opens. Where the browser needs a gesture first, the next interaction ('force') starts it,
     // also one that arrives while an attempt is still failing; other failures retry by themselves, further apart each time.
     wake(force = false) {
@@ -172,21 +226,21 @@
         const ctx = new AudioContext({sampleRate: SR, latencyHint: 'playback', sinkId: {type: 'none'}});
         let handle = null, output = null;
         try {
-          void ctx.resume().catch(() => {});
+          const resumed = ctx.resume();
           handle = await this.sdk.audio.openOutput({channels: 2});
           if (epoch !== this.epoch) throw stale();
           const sink = await handle.createNode(ctx);
           if (epoch !== this.epoch) throw stale();
-          const audio = new Audio(); audio.preload = 'auto';
-          const source = ctx.createMediaElementSource(audio), gain = ctx.createGain();
-          gain.gain.value = 0;
-          source.connect(gain).connect(sink);
-          output = this.output = {ctx, handle, audio, source, gain, url: null, index: -1, playing: false,
+          // A context the browser keeps suspended until a gesture plays nothing; say so instead of drifting from the picture.
+          await Promise.race([resumed, new Promise(resolve => setTimeout(resolve, 400))]);
+          if (ctx.state !== 'running') throw Object.assign(Error('Sound needs a tap.'), {name: 'NotAllowedError'});
+          const gain = ctx.createGain();
+          gain.gain.value = 0; gain.connect(sink);
+          output = this.output = {ctx, handle, gain, nodes: new Set(), playing: false, waiting: false, t0: 0, s0: 0,
             latency: (ctx.baseLatency || 0) + (ctx.outputLatency || 0) + HOST_LATENCY_S};
-          audio.addEventListener('ended', () => { if (this.output === output) this.ended(output); });
           handle.onError(error => { if (this.output === output) { this.error = error; this.stopOutput(); this.onChange(this.state()); } });
           this.error = null;
-          await this.startAt(performance.now());
+          this.startAt(performance.now());
         } catch (error) {
           if (error.code !== 'stale') this.error = error?.name === 'NotAllowedError' ? Object.assign(Error('Sound needs a tap.'), {code: 'interaction_required'}) : error;
           if (output && this.output === output) this.stopOutput();
@@ -199,31 +253,54 @@
       })();
       return this.opening;
     }
-    // Plays the current track from where the picture is (or from 'offset').
-    async startAt(now, offset = null) {
+    // Plays from where the picture is (or from 'offset'), as soon as that part of the song is rendered.
+    startAt(now, offset = null) {
       const output = this.output;
       if (!output) return;
+      this.silence(output);
       if (offset == null) { this.advance(now); offset = this.position(now); }
-      const index = this.index, url = await this.sound(index);
-      if (this.output !== output || this.index !== index || !url) return;
-      const at = Math.min(offset + (performance.now() - now) / 1000, this.duration(index));
-      const audio = output.audio;
       output.playing = false;
-      if (output.url !== url) { audio.src = url; output.url = url; this.releaseSounds(); }
-      audio.currentTime = at; output.index = index;
-      await audio.play();
-      if (this.output !== output || output.url !== url) return;
-      output.playing = !this.hidden;
+      if (!this.covers(this.index, offset)) this.startJob(this.index, offset);
+      // Until that part of the song is rendered the clock holds still, so the sound starts where the picture is.
+      const ready = this.ready(offset);
+      this.anchor = {offset, at: ready ? now : null};
+      output.waiting = true;
+      if (ready) this.begin(output);
+    }
+    // Whether the sound at 'offset' into the current song has arrived.
+    ready(offset) {
+      const base = this.job?.bases.get(this.index);
+      if (base == null) return false;
+      const at = base + offset;
+      return this.chunks.some(entry => entry.stream <= at + 0.02 && entry.end > at);
+    }
+    // The heard position continues from the silent clock; the sound starts a moment later at the matching point.
+    begin(output) {
+      const now = performance.now(), offset = this.position(now), base = this.job?.bases.get(this.index);
+      if (base == null || this.output !== output || this.hidden) return;
+      output.waiting = false;
+      output.t0 = output.ctx.currentTime + LEAD_S; output.s0 = base + offset + LEAD_S + output.latency;
+      output.playing = true;
+      for (const entry of this.chunks) this.schedule(output, entry);
       this.fade(output, this.level(), START_FADE_S);
       this.onChange(this.state());
     }
-    // The next track follows the end of the current one.
-    ended(output) {
-      output.playing = false;
-      const next = (output.index + 1) % this.tracks.length;
-      this.setTrack(next, 0, performance.now(), false);
-      this.onChange(this.state()); this.onAdvance(next);
-      void this.startAt(performance.now(), 0).catch(error => { if (this.output === output) { this.error = error; this.stopOutput(); this.onChange(this.state()); } });
+    schedule(output, entry) {
+      const ctx = output.ctx, at = output.t0 + (entry.stream - output.s0), length = entry.left.length / SR;
+      const start = Math.max(at, ctx.currentTime + 0.005), skip = start - at;
+      if (skip >= length || entry.node) return;
+      const buffer = ctx.createBuffer(2, entry.left.length, SR);
+      buffer.copyToChannel(entry.left, 0); buffer.copyToChannel(entry.right, 1);
+      const node = entry.node = ctx.createBufferSource();
+      node.buffer = buffer; node.connect(output.gain); node.start(start, skip);
+      output.nodes.add(node);
+      node.onended = () => { output.nodes.delete(node); if (entry.node === node) entry.node = null; node.disconnect(); };
+    }
+    // Stops every scheduled part of the song (their chunks can be scheduled again).
+    silence(output) {
+      for (const node of output.nodes) { try { node.onended = null; node.stop(); node.disconnect(); } catch (_) {} }
+      output.nodes.clear();
+      for (const entry of this.chunks) entry.node = null;
     }
     // fade: leaving Music lets the sound die away; errors and closing stop it at once.
     stopOutput(fade = false) {
@@ -231,25 +308,29 @@
       this.output = null; this.epoch++; this.opening = null;
       if (!output) return;
       // The picture carries on from the same position on the silent clock.
-      if (output.playing) this.anchor = {index: this.index, offset: Math.max(0, output.audio.currentTime - output.latency), at: performance.now()};
+      if (output.playing) { const now = performance.now(); this.anchor = {offset: Math.max(0, output.s0 + (output.ctx.currentTime - output.t0) - output.latency - (this.job?.bases.get(this.index) ?? 0)), at: now}; }
+      else if (this.anchor.at == null) this.anchor = {offset: this.anchor.offset, at: performance.now()};
       if (fade && output.playing && output.gain.gain.value > 0.001) {
         output.playing = false; this.fade(output, 0, STOP_FADE_S);
         setTimeout(() => this.closeOutput(output), STOP_FADE_S * 1000 + 60);
         return;
       }
+      output.playing = false;
       this.closeOutput(output);
     }
     closeOutput(output) {
-      try { output.audio.pause(); output.audio.removeAttribute('src'); output.audio.load(); output.source.disconnect(); } catch (_) {}
-      this.releaseSounds();
+      this.silence(output);
+      try { output.gain.disconnect(); } catch (_) {}
       void Promise.allSettled([output.handle.close(), output.ctx.state === 'closed' ? null : output.ctx.close()]);
     }
 
-    // Plays a chosen track from its start.
+    // Plays a chosen song from its start.
     choose(index) {
       if (!this.tracks[index]) return;
-      this.setTrack(index, 0, performance.now(), false);
-      if (this.output) void this.startAt(performance.now(), 0).catch(() => {});
+      if (this.output) this.silence(this.output);
+      this.index = index; this.section = -1; this.anchor = {offset: 0, at: performance.now()};
+      this.store(index); this.startJob(index, 0);
+      if (this.output) this.startAt(performance.now(), 0);
       this.onChange(this.state());
     }
     next() { this.choose((this.index + 1) % this.tracks.length); }
@@ -303,7 +384,7 @@
       if (this.source === 'input') await this.openInput(); else await this.setSource('input');
     }
 
-    // An output surface: the controller's track position, or its live input features.
+    // An output surface: the controller's song position, or its live input features.
     follow({source, index, offset, at}) {
       if (['music', 'input', 'silent'].includes(source)) { if (source !== 'input') this.relayed = this.held = null; this.source = source; }
       if (Number.isInteger(index) && this.tracks[index] && Number.isFinite(offset) && Number.isFinite(at)) {
@@ -322,18 +403,17 @@
       const output = this.output;
       if (!output) { if (!hidden) this.wake(); return; }
       if (hidden) {
-        if (output.playing) this.anchor = {index: this.index, offset: this.position(performance.now()), at: performance.now()};
-        output.playing = false; output.audio.pause(); void output.ctx.suspend().catch(() => {});
+        if (output.playing || output.waiting) this.anchor = {offset: this.position(performance.now()), at: performance.now()};
+        output.playing = false; output.waiting = false; this.silence(output); void output.ctx.suspend().catch(() => {});
       } else {
         void output.ctx.resume().catch(() => {});
-        void this.startAt(performance.now()).catch(() => {});
+        this.startAt(performance.now());
       }
     }
     dispose() {
       this.stopOutput(); this.closeInput();
-      for (const entry of this.loaded.values()) if (entry.sound) this.retired.push(entry.sound);
-      this.loaded.clear(); this.releaseSounds();
+      this.worker?.terminate(); this.worker = null; this.job = null; this.chunks = []; this.stores.clear();
     }
   }
   window.VisualsMusic = VisualsMusic;
-})()
+})();

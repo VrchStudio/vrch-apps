@@ -2,32 +2,32 @@
   "schema_version": 1,
   "pictures": [
     {
-      "id": "dancer",
-      "file": "dancer.webp"
-    },
-    {
-      "id": "portrait",
-      "file": "portrait.webp"
-    },
-    {
       "id": "rain-street",
       "file": "rain-street.webp"
     },
     {
-      "id": "crowd",
-      "file": "crowd.webp"
+      "id": "aurora",
+      "file": "aurora.webp"
     },
     {
       "id": "flowers",
       "file": "flowers.webp"
     },
     {
-      "id": "keys",
-      "file": "keys.webp"
+      "id": "fireworks",
+      "file": "fireworks.webp"
     },
     {
       "id": "shoreline",
       "file": "shoreline.webp"
+    },
+    {
+      "id": "jellyfish",
+      "file": "jellyfish.webp"
+    },
+    {
+      "id": "crowd",
+      "file": "crowd.webp"
     },
     {
       "id": "dunes",

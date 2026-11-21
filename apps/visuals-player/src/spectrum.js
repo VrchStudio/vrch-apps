@@ -1,5 +1,5 @@
-/* Visuals Player audio features, shared by the App (a live microphone or line in) and the build script that
-   precomputes the built-in tracks: a Web Audio AnalyserNode reading (Blackman window, smoothing 0) turned into the
+/* Visuals Player audio features, shared by the App (a live microphone or line in) and the music worker that renders
+   the built-in songs: a Web Audio AnalyserNode reading (Blackman window, smoothing 0) turned into the
    shared VrchImageAudio.computeSceneSignalSample features, exactly as Live Console reads them. */
 (root => {
   'use strict';
@@ -57,43 +57,42 @@
     }
   }
 
-  // A precomputed track: a 56-byte header (magic VPF1, version, frame rate, frame count, scalar count, band count, the
-  // track file's SHA-256), then per frame the scalars as float32 and the spectrum bands as dB steps in one byte each.
-  const MAGIC = 0x31465056, HEADER = 56, FRAME = SCALARS.length * 4 + BANDS;
+  // Song features as the picture reads them, RATE frames a second: per frame the scalars as float32 and the spectrum bands
+  // as dB steps in one byte each. The music worker encodes frames as it renders; the App fills a song's store as they arrive.
+  const RATE = 60, FRAME = SCALARS.length * 4 + BANDS;
   const encodeDb = db => Math.max(0, Math.min(255, Math.round((Math.max(DB_FLOOR, db) - DB_FLOOR) * 255 / -DB_FLOOR)));
   const decodeDb = value => DB_FLOOR + value * -DB_FLOOR / 255;
-  function encodeTrack(frames, rate, sha256) {
-    const bytes = new Uint8Array(HEADER + frames.length * FRAME), view = new DataView(bytes.buffer);
-    [MAGIC, 1, rate, frames.length, SCALARS.length, BANDS].forEach((value, index) => view.setUint32(index * 4, value, true));
-    for (let i = 0; i < 32; i++) bytes[24 + i] = parseInt(sha256.slice(i * 2, i * 2 + 2), 16);
-    frames.forEach((sample, index) => {
-      const at = HEADER + index * FRAME;
+  function encodeFrames(samples) {
+    const bytes = new Uint8Array(samples.length * FRAME), view = new DataView(bytes.buffer);
+    samples.forEach((sample, index) => {
+      const at = index * FRAME;
       SCALARS.forEach((key, k) => view.setFloat32(at + k * 4, Number(sample[key]) || 0, true));
       for (let b = 0; b < BANDS; b++) bytes[at + SCALARS.length * 4 + b] = encodeDb(sample.v2_spectrum?.[b] ?? DB_FLOOR);
     });
     return bytes;
   }
-  class TrackFeatures {
-    constructor(buffer) {
-      const view = this.view = new DataView(buffer);
-      if (buffer.byteLength < HEADER || view.getUint32(0, true) !== MAGIC || view.getUint32(4, true) !== 1
-        || view.getUint32(16, true) !== SCALARS.length || view.getUint32(20, true) !== BANDS) throw Error('Unknown track features.');
-      this.rate = view.getUint32(8, true); this.frames = view.getUint32(12, true);
-      if (buffer.byteLength !== HEADER + this.frames * FRAME) throw Error('Track features are incomplete.');
-      this.sha256 = [...new Uint8Array(buffer, 24, 32)].map(value => value.toString(16).padStart(2, '0')).join('');
+  class SongFeatures {
+    constructor(duration) {
+      this.frames = Math.max(1, Math.ceil(duration * RATE));
+      this.bytes = new Uint8Array(this.frames * FRAME); this.view = new DataView(this.bytes.buffer); this.ready = new Uint8Array(this.frames);
     }
-    get duration() { return this.frames / this.rate; }
-    // The features at 'seconds' into the track, as computeSceneSignalSample returns them.
+    add(first, bytes) {
+      const count = Math.min(Math.floor(bytes.length / FRAME), this.frames - first);
+      if (first < 0 || count <= 0) return;
+      this.bytes.set(bytes.subarray(0, count * FRAME), first * FRAME); this.ready.fill(1, first, first + count);
+    }
+    // The features at 'seconds' into the song, as computeSceneSignalSample returns them (null until rendered).
     at(seconds) {
-      const index = Math.max(0, Math.min(this.frames - 1, Math.floor(seconds * this.rate)));
-      const at = HEADER + index * FRAME, view = this.view, sample = {v2_spectrum: new Float32Array(BANDS)};
+      const index = Math.max(0, Math.min(this.frames - 1, Math.floor(seconds * RATE)));
+      if (!this.ready[index]) return null;
+      const at = index * FRAME, view = this.view, sample = {v2_spectrum: new Float32Array(BANDS)};
       SCALARS.forEach((key, k) => { sample[key] = view.getFloat32(at + k * 4, true); });
-      for (let b = 0; b < BANDS; b++) sample.v2_spectrum[b] = decodeDb(view.getUint8(at + SCALARS.length * 4 + b));
+      for (let b = 0; b < BANDS; b++) sample.v2_spectrum[b] = decodeDb(this.bytes[at + SCALARS.length * 4 + b]);
       return sample;
     }
   }
 
-  const api = Object.freeze({SR, FFT, MIN_DB, MAX_DB, Spectrum, TrackFeatures, encodeTrack});
+  const api = Object.freeze({SR, FFT, MIN_DB, MAX_DB, RATE, Spectrum, SongFeatures, encodeFrames});
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.VisualsSpectrum = api;
 })(typeof window !== 'undefined' ? window : globalThis);
