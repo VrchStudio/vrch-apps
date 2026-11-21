@@ -1,5 +1,12 @@
 # Visuals Player
 
+## 0.4.0
+
+- The built-in music is four original songs made in the App, from deep house to lo-fi, with drums from Drum 808.
+- With the camera off, image visuals show landscapes, light and city scenes; the pictures of people are gone.
+- Visuals open with new previews.
+- The App is about half the size.
+
 ## 0.3.14
 
 - Player shows the Mic / Line in level beside Sound, and No signal when the input stays quiet.

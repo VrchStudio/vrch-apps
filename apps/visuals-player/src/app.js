@@ -13,8 +13,9 @@
   // While a small host also draws the picture on its second screen, the device screen previews it at this rate and scale.
   const OUTPUT_PREVIEW_FPS = 10, OUTPUT_PREVIEW_SCALE = 0.5;
   const COLLECTIONS = ['curated'];
-  // Image visuals that read best with a particular picture; the others take the next one in turn.
-  const PICTURE_FOR = {'vrch.matrix': 'portrait', 'user.vp-rain-glass': 'rain-street', 'user.vp-print-echo': 'keys'};
+  // The picture each image visual opens with; while it plays, the next picture follows on a new section of the song.
+  const PICTURE_FOR = {'vrch.matrix': 'jellyfish', 'user.vp-rain-glass': 'rain-street', 'user.vp-print-echo': 'dunes', 'user.vp-beat-fracture': 'crowd',
+    'user.vp-gallery-shutter': 'aurora', 'user.vp-luminous-tiles': 'flowers', 'user.vp-paper-blocks': 'shoreline'};
   const DATA_KEY = 'player';
   const isOutput = VrchApp.context?.role === 'output';
   const relay = VrchApp.output || null;
@@ -94,7 +95,7 @@
     const item = catalog.get(key);
     if (!item || !mirror) return false;
     const previous = active;
-    if (source && source !== 'follow' && needsPicture(item.definition) && pictures.length) {
+    if (source !== 'follow' && needsPicture(item.definition) && pictures.length) {
       const preferred = pictures.findIndex(entry => entry.id === PICTURE_FOR[item.definition.scene_id]);
       pictureIndex = preferred >= 0 ? preferred : (pictureIndex + 1) % pictures.length;
       pictureImage(pictureIndex + 1);
@@ -750,12 +751,8 @@
   window.addEventListener('pagehide', () => { music?.dispose(); camera?.close(); picker?.destroy?.(); mirror?.dispose(); });
 
   // ---- Start ------------------------------------------------------------------------------------------------------
-  async function loadTracks() {
-    const response = await fetch('music/index.json');
-    if (!response.ok) throw Error('Music index HTTP ' + response.status);
-    const index = await response.json();
-    return index.tracks.map(track => ({...track, file: 'music/' + track.file, features: 'music/' + track.features}));
-  }
+  // The built-in songs are made by the App itself (beats/songs.js).
+  const loadTracks = () => VisualsBeats.songs.map(song => ({...song, sections: [...song.sections]}));
   async function loadPictures() {
     try {
       const response = await fetch('pictures/index.json');
@@ -795,11 +792,12 @@
     if (isOutput) VrchApp.ready().catch(() => {});
     let restored = {};
     try {
-      // The visual catalog loads alongside the music and picture lists.
+      // The visual catalog loads alongside the saved state.
       const loading = new VrchSceneCatalog.PresetCatalog();
       const catalogLoad = loading.load();
       catalogLoad.catch(() => {});
-      const [tracks, value, list] = await Promise.all([loadTracks(), isOutput ? {} : restore(), loadPictures()]);
+      const tracks = loadTracks();
+      const [value, list] = await Promise.all([isOutput ? {} : restore(), loadPictures()]);
       restored = value;
       pictures = list;
       if (pictureIndex >= pictures.length) pictureIndex = 0;
