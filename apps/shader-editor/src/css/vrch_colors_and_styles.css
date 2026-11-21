@@ -4941,6 +4941,21 @@ vrch-dialog-header.ui-dialog-header > .ui-dialog-header__action {
 }
 .ui-card-row__actions--spaced { gap:8px; }
 
+.ui-card-row--compact {
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+}
+.ui-card-row--compact > .ui-card-row__main { align-items:center; gap:8px; }
+.ui-card-row--compact :is(.ui-card-row__title,.ui-card-row__description) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ui-card-row--compact .ui-btn--fixed-label {
+  --ui-button-inline-size:72px;
+  --ui-button-block-size:44px;
+  min-width:var(--ui-button-inline-size);
+  min-height:var(--ui-button-block-size);
+  padding-inline:6px;
+}
+
 .ui-select-control--inline { width:auto;max-width:100%; }
 .ui-list-section--sortable { container-type:inline-size; }
 .ui-card-row--wrap-actions { flex-wrap:wrap; }
