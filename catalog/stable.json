@@ -2225,7 +2225,7 @@
     },
     "a591c7e9-3faa-4207-a1c2-2a88153ed934": {
       "slug": "shader-editor",
-      "latest": "0.2.2",
+      "latest": "0.2.3",
       "versions": {
         "0.1.0": {
           "version": "0.1.0",
@@ -2359,6 +2359,25 @@
             "updateApi": 1
           },
           "notes": "- Show a camera or image source at once when its size changes, such as the camera's first picture; it no longer stays black."
+        },
+        "0.2.3": {
+          "version": "0.2.3",
+          "name": "Shader Editor",
+          "tag": "shader-editor-v0.2.3",
+          "sourceCommit": "11d249f5b7a29a7c40960caa33e02b22e62af4bc",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/shader-editor-v0.2.3",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/shader-editor-v0.2.3/shader-editor-0.2.3.vrchapp",
+          "size": 33229513,
+          "sha256": "a2bc60270bd2bd24569c0f281811574b9292922c0280653904290fae0193194c",
+          "packageDigest": "a2bc60270bd2bd24569c0f281811574b9292922c0280653904290fae0193194c",
+          "revision": "729a4dc87e8c4253fef18925848b22a59a5ea22dd9023dd38f07a247425a7ea9",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Every visual has a new preview, drawn the same way as in Visuals Player; none shows a person."
         }
       },
       "guide": {
