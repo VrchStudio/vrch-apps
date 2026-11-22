@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.4.1
+
+- Takes the current visual catalog from VRCH Pages; nothing changes on screen.
+
 ## 0.4.0
 
 - The built-in music is four original songs made in the App, from deep house to lo-fi, with drums from Drum 808.
