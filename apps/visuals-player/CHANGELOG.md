@@ -1,5 +1,10 @@
 # Visuals Player
 
+## 0.5.0
+
+- The built-in music is six tracks by independent artists from Free Music Archive, credited in Player and the Guide.
+- The picture follows the built-in tracks from their own sound, with the music playing, muted or Silent.
+
 ## 0.4.1
 
 - Takes the current visual catalog from VRCH Pages; nothing changes on screen.

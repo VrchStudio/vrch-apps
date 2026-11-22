@@ -31,8 +31,14 @@
       "category": "visuals",
       "featured": 1,
       "deferred": [
+        "music/keepsake.webm",
         "vendor/mediapipe/tasks-vision-1.0.1/wasm/vision_wasm_internal.wasm",
-        "models/"
+        "models/",
+        "music/house-classic.webm",
+        "music/resurrection.webm",
+        "music/regret.webm",
+        "music/after-party.webm",
+        "music/forever.webm"
       ]
     },
     "botanica-core": {

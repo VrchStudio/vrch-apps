@@ -325,7 +325,7 @@
       input.dataset.row = 'input'; rows.push(input);
     }
     if (state.source !== 'input') {
-      const tracks = row('Track', '', music.tracks.map((track, index) => ({id: String(index), label: track.title, current: index === state.index})),
+      const tracks = row('Track', music.tracks[state.index]?.artist || '', music.tracks.map((track, index) => ({id: String(index), label: track.label || track.title, current: index === state.index})),
         id => { interact('panel'); music.choose(Number(id)); remember(); renderPlayer(); });
       tracks.dataset.row = 'track'; rows.push(tracks);
     }
@@ -751,8 +751,13 @@
   window.addEventListener('pagehide', () => { music?.dispose(); camera?.close(); picker?.destroy?.(); mirror?.dispose(); });
 
   // ---- Start ------------------------------------------------------------------------------------------------------
-  // The built-in songs are made by the App itself (beats/songs.js).
-  const loadTracks = () => VisualsBeats.songs.map(song => ({...song, sections: [...song.sections]}));
+  // The built-in tracks and their credits (music/index.json).
+  async function loadTracks() {
+    const response = await fetch('music/index.json');
+    if (!response.ok) throw Error('Music index HTTP ' + response.status);
+    const index = await response.json();
+    return index.tracks.map(track => ({...track, file: 'music/' + track.file}));
+  }
   async function loadPictures() {
     try {
       const response = await fetch('pictures/index.json');
@@ -796,8 +801,7 @@
       const loading = new VrchSceneCatalog.PresetCatalog();
       const catalogLoad = loading.load();
       catalogLoad.catch(() => {});
-      const tracks = loadTracks();
-      const [value, list] = await Promise.all([isOutput ? {} : restore(), loadPictures()]);
+      const [tracks, value, list] = await Promise.all([loadTracks(), isOutput ? {} : restore(), loadPictures()]);
       restored = value;
       pictures = list;
       if (pictureIndex >= pictures.length) pictureIndex = 0;

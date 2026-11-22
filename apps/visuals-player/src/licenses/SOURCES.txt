@@ -4,6 +4,12 @@ three.min.js (three.js r158): licenses/three-LICENSE.txt, https://raw.githubuser
 MediaPipe Tasks Vision 1.0.1 and the Pose Landmarker Lite model: vendor/mediapipe/tasks-vision-1.0.1/LICENSE (Apache 2.0), models/mediapipe/README.md
 Fonts: webfonts/*-LICENSE.txt (SIL Open Font License 1.1); Font Awesome Free icons: css/fontawesome-local.css header.
 
-beats/: the built-in songs are composed for Visuals Player and synthesised in the App (beats/songs.js). Their drums
-are the Drum 808 App's own engine, copied unchanged as beats/drum808-engine.js.
+music/: the built-in tracks, from Free Music Archive, loudness-matched to -14 LUFS and encoded as Opus (80 kbps, WebM).
+They are used unchanged apart from that encoding. Section times in music/index.json come from an analysis of the same files.
+  keepsake.webm: "Keepsake" by JMHBM, https://freemusicarchive.org/music/beat-mekanik/single/keepsake-1/, licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+  house-classic.webm: "House Music Classic Four Minute Set" by Alex Morgan, https://freemusicarchive.org/music/alex-morgan/electronic-dance-vol-1/house-music-classic-four-minute-set/, licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+  resurrection.webm: "RESURRECTION" by Play House, https://freemusicarchive.org/music/play-house/single/resurrection-3/, licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+  regret.webm: "Regret" by JMHBM, https://freemusicarchive.org/music/beat-mekanik/single/regret/, licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+  after-party.webm: "After Party" by Loyalty Freak Music, https://freemusicarchive.org/music/Loyalty_Freak_Music/ROBOT_DANCE_/Loyalty_Freak_Music_-_ROBOT_DANCE__-_03_After_Party/, licensed CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)
+  forever.webm: "Forever" by Atch, https://freemusicarchive.org/music/atch/single/forever/, licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
 pictures/: the pictures image visuals show while the camera is off; none of them shows a person.

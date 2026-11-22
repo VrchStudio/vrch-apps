@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "tracks": [
+    {
+      "id": "keepsake",
+      "title": "Keepsake",
+      "artist": "JMHBM",
+      "file": "keepsake.webm",
+      "duration": 198.26,
+      "sections": [
+        8.64,
+        41.68,
+        59.23,
+        82.11,
+        100.15,
+        116.42,
+        133.98,
+        167.02,
+        182.79
+      ],
+      "source": "https://freemusicarchive.org/music/beat-mekanik/single/keepsake-1/",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "id": "house-classic",
+      "title": "House Music Classic Four Minute Set",
+      "label": "House Classic",
+      "artist": "Alex Morgan",
+      "file": "house-classic.webm",
+      "duration": 243.28,
+      "sections": [
+        16.76,
+        38.55,
+        62.88,
+        92.83,
+        115.54,
+        139.64,
+        154.13,
+        170.5,
+        185.95,
+        199.02,
+        219.1,
+        235.59
+      ],
+      "source": "https://freemusicarchive.org/music/alex-morgan/electronic-dance-vol-1/house-music-classic-four-minute-set/",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "id": "resurrection",
+      "title": "RESURRECTION",
+      "label": "Resurrection",
+      "artist": "Play House",
+      "file": "resurrection.webm",
+      "duration": 131.76,
+      "sections": [
+        10.08,
+        28.86,
+        47.69,
+        67.87,
+        86.52,
+        102.7,
+        125.34
+      ],
+      "source": "https://freemusicarchive.org/music/play-house/single/resurrection-3/",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "id": "regret",
+      "title": "Regret",
+      "artist": "JMHBM",
+      "file": "regret.webm",
+      "duration": 196.06,
+      "sections": [
+        16.02,
+        30.05,
+        47.95,
+        61.74,
+        79.9,
+        98.75,
+        113.03,
+        129.24,
+        143.64,
+        177.15
+      ],
+      "source": "https://freemusicarchive.org/music/beat-mekanik/single/regret/",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "id": "after-party",
+      "title": "After Party",
+      "artist": "Loyalty Freak Music",
+      "file": "after-party.webm",
+      "duration": 177.0,
+      "sections": [
+        7.99,
+        32.62,
+        48.0,
+        65.99,
+        81.99,
+        97.99,
+        128.99,
+        165.72
+      ],
+      "source": "https://freemusicarchive.org/music/Loyalty_Freak_Music/ROBOT_DANCE_/Loyalty_Freak_Music_-_ROBOT_DANCE__-_03_After_Party/",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "forever",
+      "title": "Forever",
+      "artist": "Atch",
+      "file": "forever.webm",
+      "duration": 198.06,
+      "sections": [
+        8.27,
+        31.14,
+        55.15,
+        80.29,
+        104.65,
+        128.64,
+        153.02,
+        191.26
+      ],
+      "source": "https://freemusicarchive.org/music/atch/single/forever/",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
+    }
+  ]
+}

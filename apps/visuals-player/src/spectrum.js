@@ -1,5 +1,5 @@
-/* Visuals Player audio features, shared by the App (a live microphone or line in) and the music worker that renders
-   the built-in songs: a Web Audio AnalyserNode reading (Blackman window, smoothing 0) turned into the
+/* Visuals Player audio features, shared by the App (a live microphone or line in) and the feature worker that reads
+   the built-in tracks: a Web Audio AnalyserNode reading (Blackman window, smoothing 0) turned into the
    shared VrchImageAudio.computeSceneSignalSample features, exactly as Live Console reads them. */
 (root => {
   'use strict';
@@ -57,8 +57,8 @@
     }
   }
 
-  // Song features as the picture reads them, RATE frames a second: per frame the scalars as float32 and the spectrum bands
-  // as dB steps in one byte each. The music worker encodes frames as it renders; the App fills a song's store as they arrive.
+  // Track features as the picture reads them, RATE frames a second: per frame the scalars as float32 and the spectrum bands
+  // as dB steps in one byte each. The feature worker encodes frames as it reads them; the App fills a track's store as they arrive.
   const RATE = 60, FRAME = SCALARS.length * 4 + BANDS;
   const encodeDb = db => Math.max(0, Math.min(255, Math.round((Math.max(DB_FLOOR, db) - DB_FLOOR) * 255 / -DB_FLOOR)));
   const decodeDb = value => DB_FLOOR + value * -DB_FLOOR / 255;
@@ -73,7 +73,7 @@
   }
   class SongFeatures {
     constructor(duration) {
-      this.frames = Math.max(1, Math.ceil(duration * RATE));
+      this.duration = duration; this.frames = Math.max(1, Math.ceil(duration * RATE));
       this.bytes = new Uint8Array(this.frames * FRAME); this.view = new DataView(this.bytes.buffer); this.ready = new Uint8Array(this.frames);
     }
     add(first, bytes) {
@@ -81,7 +81,7 @@
       if (first < 0 || count <= 0) return;
       this.bytes.set(bytes.subarray(0, count * FRAME), first * FRAME); this.ready.fill(1, first, first + count);
     }
-    // The features at 'seconds' into the song, as computeSceneSignalSample returns them (null until rendered).
+    // The features at 'seconds' into the track, as computeSceneSignalSample returns them (null until read).
     at(seconds) {
       const index = Math.max(0, Math.min(this.frames - 1, Math.floor(seconds * RATE)));
       if (!this.ready[index]) return null;
