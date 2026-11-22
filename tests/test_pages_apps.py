@@ -35,20 +35,28 @@ const contract = require(path.join(root, 'scripts/vrch_pages_scene_contract.js')
 })().catch(error => { console.error(error); process.exit(1); });
 """
 
-SONGS = r"""
-const fs = require('fs'), path = require('path'), vm = require('vm'), root = process.argv[1];
-Object.assign(globalThis, {self: globalThis, sampleRate: 48000, currentFrame: 0});
-vm.runInThisContext('globalThis.AudioWorkletProcessor = class { constructor() { this.port = {postMessage() {}, onmessage: null}; } };'
-  + 'globalThis.registerProcessor = (name, processor) => { self.VisualsDrum808 = processor; };');
-vm.runInThisContext('(() => {' + fs.readFileSync(path.join(root, 'beats/drum808-engine.js'), 'utf8') + '\n})()');
-vm.runInThisContext(fs.readFileSync(path.join(root, 'beats/songs.js'), 'utf8'));
-const beats = globalThis.VisualsBeats;
-console.log(JSON.stringify(beats.songs.map((song, index) => {
-  const second = beats.describe(index).parts[1].start, {left, right} = new beats.SongRenderer(index, self.VisualsDrum808).render(second, 2);
-  let peak = 0, sum = 0, finite = true;
-  for (let i = 0; i < left.length; i++) { finite = finite && Number.isFinite(left[i]) && Number.isFinite(right[i]); peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i])); sum += left[i] ** 2 + right[i] ** 2; }
-  return {id: song.id, finite, peak, rms: Math.sqrt(sum / left.length / 2), sections: song.sections, duration: song.duration};
-})));
+FEATURES = r"""
+const fs = require('fs'), path = require('path'), vm = require('vm'), root = process.argv[1], out = [];
+// A worker's global scope: no module system, the scripts music.js puts in the worker's blob.
+const scope = vm.createContext({postMessage: message => out.push(message)});
+vm.runInContext('self = this; window = this;', scope);
+for (const file of ['scripts/vrch_pages_image_audio_reactivity.js', 'spectrum.js', 'features-worker.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), scope);
+const self = scope, {SR, RATE, Spectrum, SongFeatures, encodeFrames} = scope.VisualsSpectrum;
+// 7.3 s of kick-like bursts over noise, handed over as music.js does: 1 s, then 4 s chunks.
+const length = Math.round(SR * 7.3), mono = new Float32Array(length);
+let seed = 1; const noise = () => ((seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5) * 0.05;
+for (let i = 0; i < length; i++) { const beat = (i / SR) % 0.5; mono[i] = noise() + Math.exp(-beat * 30) * Math.sin(2 * Math.PI * 60 * beat) * 0.8; }
+const store = new SongFeatures(length / SR);
+for (let start = 0, size = SR; start < length; start += size, size = SR * 4) {
+  const count = Math.min(size, length - start);
+  self.onmessage({data: {type: 'analyse', job: 1, start, frames: store.frames, last: start + count >= length, mono: mono.slice(start, start + count).buffer}});
+}
+for (const message of out) if (message.type === 'features') store.add(message.first, new Uint8Array(message.features));
+// The same readings taken over the whole sound at once.
+const whole = new Spectrum(), expected = encodeFrames(Array.from({length: store.frames}, (_, f) => whole.read(mono, mono, Math.round(f * SR / RATE))));
+let differ = 0;
+for (let i = 0; i < expected.length; i++) if (expected[i] !== store.bytes[i]) differ++;
+console.log(JSON.stringify({frames: store.frames, ready: store.ready.reduce((a, b) => a + b, 0), differ, peak: Math.max(...Array.from({length: store.frames}, (_, f) => store.at(f / RATE).v2_raw_low))}));
 """
 
 
@@ -76,7 +84,7 @@ class VisualsPlayerSource(unittest.TestCase):
 
     def test_budget_and_contents(self):
         files = names(self.source)
-        self.assertLessEqual(sum((self.source / n).stat().st_size for n in files), 24 * 1024 * 1024)
+        self.assertLessEqual(sum((self.source / n).stat().st_size for n in files), 36 * 1024 * 1024)
         for forbidden in ('hand_landmarker', 'face_landmarker', 'nosimd'):
             self.assertFalse([n for n in files if forbidden in n], forbidden)
         self.assertEqual([n for n in files if n.endswith(('.task', '.wasm'))],
@@ -86,27 +94,33 @@ class VisualsPlayerSource(unittest.TestCase):
         self.assertEqual([e['scene_ref']['scene_id'] for e in packaged], [item['scene_id'] for item in curated])
         for item in curated:
             self.assertIn(item['thumbnail'], files)
-        # The songs are made in the App (no recorded music; the drums are Drum 808's engine), and no picture shows a person.
-        self.assertFalse([n for n in files if n.startswith('music/') or n.endswith(('.mp3', '.vpf'))])
+        # Every built-in track is listed with its artist, source and free license, and credited in licenses/SOURCES.txt.
+        tracks = json.loads((self.source / 'music/index.json').read_text())['tracks']
+        self.assertEqual(sorted(['music/index.json'] + ['music/' + t['file'] for t in tracks]), [n for n in files if n.startswith('music/')])
+        self.assertEqual(len(tracks), 6)
+        sources = (self.source / 'licenses/SOURCES.txt').read_text()
+        for track in tracks:
+            self.assertTrue(track['file'].endswith('.webm') and track['artist'] and track['source'].startswith('https://freemusicarchive.org/'), track['id'])
+            self.assertIn(track['license'], ('CC BY 4.0', 'CC0 1.0'))
+            self.assertTrue(0 < track['sections'][0] and track['sections'] == sorted(track['sections']) and track['sections'][-1] < track['duration'], track['id'])
+            for credit in (track['title'], track['artist'], track['source'], track['license']):
+                self.assertIn(credit, sources)
+        # No picture shows a person.
         pictures = json.loads((self.source / 'pictures/index.json').read_text())['pictures']
         self.assertEqual(sorted(['pictures/index.json'] + ['pictures/' + p['file'] for p in pictures]), [n for n in files if n.startswith('pictures/')])
         self.assertFalse({'dancer', 'portrait', 'keys'} & {p['id'] for p in pictures})
-        self.assertEqual((self.source / 'beats/drum808-engine.js').read_bytes(), (ROOT / 'apps/drum-808/src/engine.js').read_bytes())
         capabilities = json.loads((self.source / 'app.json').read_text())['capabilities']
         self.assertTrue(all(capabilities[name] for name in ('controls', 'audio_input', 'audio_output', 'video_input')))
         self.assertIn('id="visual-settings"', (self.source / 'index.html').read_text())
         local_references(self, self.source)
 
     @unittest.skipUnless(shutil.which('node'), 'node is not installed')
-    def test_songs_render(self):
-        # Each built-in song renders through the worker's shim: sound without overload, sections inside the song.
-        rows = json.loads(subprocess.check_output(['node', '-e', SONGS, str(self.source)]))
-        self.assertGreaterEqual(len(rows), 4)
-        for row in rows:
-            self.assertTrue(row['finite'], row['id'])
-            self.assertLess(row['peak'], 0.95, row['id'])
-            self.assertGreater(row['rms'], 0.02, row['id'])
-            self.assertTrue(0 < row['sections'][0] and row['sections'] == sorted(row['sections']) and row['sections'][-1] < row['duration'], row['id'])
+    def test_features_in_chunks(self):
+        # The worker reads a track handed over in chunks exactly as one reading over the whole sound would.
+        row = json.loads(subprocess.check_output(['node', '-e', FEATURES, str(self.source)]))
+        self.assertEqual(row['ready'], row['frames'])
+        self.assertEqual(row['differ'], 0)
+        self.assertGreater(row['peak'], 0.1)
 
     @unittest.skipUnless(shutil.which('node'), 'node is not installed')
     def test_content_hashes(self):
