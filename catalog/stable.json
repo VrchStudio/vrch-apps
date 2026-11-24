@@ -3709,7 +3709,7 @@
     },
     "b5ad6149-dc87-473a-87c0-c1a6cf3fdf6c": {
       "slug": "visuals-player",
-      "latest": "0.5.0",
+      "latest": "0.5.1",
       "versions": {
         "0.1.3": {
           "version": "0.1.3",
@@ -4147,6 +4147,25 @@
             "updateApi": 1
           },
           "notes": "- The built-in music is six tracks by independent artists from Free Music Archive, credited in Player and the Guide.\n- The picture follows the built-in tracks from their own sound, with the music playing, muted or Silent."
+        },
+        "0.5.1": {
+          "version": "0.5.1",
+          "name": "Visuals Player",
+          "tag": "visuals-player-v0.5.1",
+          "sourceCommit": "0747f6290ec7e84cebfb679716329518d443231c",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/visuals-player-v0.5.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/visuals-player-v0.5.1/visuals-player-0.5.1.vrchapp",
+          "size": 35088212,
+          "sha256": "05210b18a6a488e4f8e2b6657d4e7c090555206d5b85b85b92666a71c57b705c",
+          "packageDigest": "05210b18a6a488e4f8e2b6657d4e7c090555206d5b85b85b92666a71c57b705c",
+          "revision": "fedfb5fbcc9b97acd40231ad458629cd976860f35a4d44c3b13a79c651f1e4ee",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "- Where the browser needs a tap before it plays sound, the speaker shows as muted until then, and a tap on it starts the music."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSI+CiAgPHRpdGxlPlZpc3VhbHMgUGxheWVyPC90aXRsZT4KICA8cmVjdCB4PSIzIiB5PSI1IiB3aWR0aD0iMjYiIGhlaWdodD0iMjIiIHJ4PSIyIiBzdHJva2U9IiNkZWRlZGUiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik02IDIyYzMtNiA2LTYgOSAwczYgNiAxMCAwIiBzdHJva2U9IiM4NTg1ODUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNNiAxN2MzLTYgNi02IDkgMHM2IDYgMTAgMCIgc3Ryb2tlPSIjZGVkZWRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTcgOC41djVsNC0yLjV6IiBmaWxsPSIjZmYxNDkzIi8+Cjwvc3ZnPgo=",
