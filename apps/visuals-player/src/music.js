@@ -14,6 +14,15 @@
   const WORKER_FILES = ['scripts/vrch_pages_image_audio_reactivity.js', 'spectrum.js', 'features-worker.js'], CHUNK_S = 4;
   const stale = () => Object.assign(Error('stale'), {code: 'stale'});
   const loudness = features => Number(features?.v2_raw_energy ?? features?.rms) || 0;
+  // A moment of silence (a 10 ms WAV) that a tap plays on the audio element being opened, before its track has arrived.
+  let silence = '';
+  function silentUrl() {
+    if (silence) return silence;
+    const samples = 480, bytes = new DataView(new ArrayBuffer(44 + samples * 2)), text = (at, value) => [...value].forEach((c, i) => bytes.setUint8(at + i, c.charCodeAt(0)));
+    text(0, 'RIFF'); bytes.setUint32(4, 36 + samples * 2, true); text(8, 'WAVEfmt '); bytes.setUint32(16, 16, true); bytes.setUint16(20, 1, true); bytes.setUint16(22, 1, true);
+    bytes.setUint32(24, SR, true); bytes.setUint32(28, SR * 2, true); bytes.setUint16(32, 2, true); bytes.setUint16(34, 16, true); text(36, 'data'); bytes.setUint32(40, samples * 2, true);
+    return silence = URL.createObjectURL(new Blob([bytes.buffer], {type: 'audio/wav'}));
+  }
 
   // A classic Worker made from this package's own scripts: an opaque frame cannot start one from a package URL. The blob
   // URL is released once the worker has reported that it is running.
@@ -34,7 +43,7 @@
       this.anchor = {index: 0, offset: 0, at: performance.now()};
       this.output = null; this.opening = null; this.epoch = 0; this.retryAt = 0; this.error = null;
       this.input = null; this.relayed = null; this.held = null; this.lastFeatures = null; this.lastAt = -1; this.readAt = -Infinity; this.reads = 0; this.section = -1; this.hidden = false;
-      this.muted = false; this.poked = false; this.retries = 0; this.retryTimer = 0;
+      this.muted = false; this.poked = false; this.retries = 0; this.retryTimer = 0; this.pending = null; this.primed = new WeakSet();
       this.worker = null; this.workerStart = null; this.jobs = 0; this.analysing = new Map();
       this.trim();
     }
@@ -207,21 +216,38 @@
     // also one that arrives while an attempt is still failing; other failures retry by themselves, further apart each time.
     wake(force = false) {
       if (this.external || this.source !== 'music' || this.output || this.hidden) return;
-      if (this.opening) { if (force) this.poked = true; return; }
+      if (this.opening) { if (force) { this.poked = true; this.prime(); } return; }
       if ((!force || this.error?.code !== 'interaction_required') && performance.now() < this.retryAt) return;
       clearTimeout(this.retryTimer);
       this.retryAt = performance.now() + RETRY_MS; this.poked = false;
-      void this.play().then(() => { this.retries = 0; }, error => {
+      const playing = this.play();
+      if (force) this.prime();
+      void playing.then(() => { this.retries = 0; }, error => {
         if (error?.code === 'stale') return;
         if (this.poked) { this.poked = false; this.retryAt = 0; this.wake(true); return; }
         if (this.error?.code === 'interaction_required') return;
         this.retryTimer = setTimeout(() => { this.retryAt = 0; this.wake(); }, Math.min(8000, 1000 * 2 ** this.retries++));
       });
     }
+    // WebKit lets an audio element start later (once its track has downloaded, which takes seconds on a slow connection)
+    // only if it was played during a tap. A tap therefore plays the element being opened, silence until its track is set,
+    // and resumes its context; Chrome and Firefox let the frame play after any tap, so there it changes nothing.
+    prime() {
+      const pending = this.pending;
+      if (!pending) return;
+      void pending.ctx.resume().catch(() => {});
+      const audio = pending.audio;
+      if (this.primed.has(audio)) return;
+      if (!audio.getAttribute('src')) audio.src = silentUrl();
+      void audio.play().then(() => { this.primed.add(audio); if (audio.src === silentUrl()) audio.pause(); }, () => {});
+    }
     async play() {
       const epoch = ++this.epoch;
       this.opening = (async () => {
         const ctx = new AudioContext({sampleRate: SR, latencyHint: 'playback', sinkId: {type: 'none'}});
+        // The element exists from the first moment, so a tap during the opening can prime it.
+        const audio = new Audio(); audio.preload = 'auto';
+        this.pending = {ctx, audio};
         let handle = null, output = null;
         try {
           void ctx.resume().catch(() => {});
@@ -229,7 +255,6 @@
           if (epoch !== this.epoch) throw stale();
           const sink = await handle.createNode(ctx);
           if (epoch !== this.epoch) throw stale();
-          const audio = new Audio(); audio.preload = 'auto';
           const source = ctx.createMediaElementSource(audio), gain = ctx.createGain();
           gain.gain.value = 0;
           source.connect(gain).connect(sink);
@@ -245,7 +270,7 @@
           else if (!output) await Promise.allSettled([handle?.close(), ctx.close()]);
           throw error;
         } finally {
-          if (epoch === this.epoch) this.opening = null;
+          if (epoch === this.epoch) { this.opening = null; this.pending = null; }
           this.onChange(this.state());
         }
       })();
@@ -280,7 +305,7 @@
     // fade: leaving Music lets the sound die away; errors and closing stop it at once.
     stopOutput(fade = false) {
       const output = this.output;
-      this.output = null; this.epoch++; this.opening = null;
+      this.output = null; this.epoch++; this.opening = null; this.pending = null;
       if (!output) return;
       // The picture carries on from the same position on the silent clock.
       if (output.playing) this.anchor = {index: this.index, offset: Math.max(0, output.audio.currentTime - output.latency), at: performance.now()};

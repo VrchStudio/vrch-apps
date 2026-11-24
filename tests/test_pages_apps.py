@@ -84,7 +84,7 @@ class VisualsPlayerSource(unittest.TestCase):
 
     def test_budget_and_contents(self):
         files = names(self.source)
-        self.assertLessEqual(sum((self.source / n).stat().st_size for n in files), 36 * 1024 * 1024)
+        self.assertLessEqual(sum((self.source / n).stat().st_size for n in files), 42 * 1024 * 1024)
         for forbidden in ('hand_landmarker', 'face_landmarker', 'nosimd'):
             self.assertFalse([n for n in files if forbidden in n], forbidden)
         self.assertEqual([n for n in files if n.endswith(('.task', '.wasm'))],
@@ -100,7 +100,7 @@ class VisualsPlayerSource(unittest.TestCase):
         self.assertEqual(len(tracks), 6)
         sources = (self.source / 'licenses/SOURCES.txt').read_text()
         for track in tracks:
-            self.assertTrue(track['file'].endswith('.webm') and track['artist'] and track['source'].startswith('https://freemusicarchive.org/'), track['id'])
+            self.assertTrue(track['file'].endswith('.mp3') and track['artist'] and track['source'].startswith('https://freemusicarchive.org/'), track['id'])
             self.assertIn(track['license'], ('CC BY 4.0', 'CC0 1.0'))
             self.assertTrue(0 < track['sections'][0] and track['sections'] == sorted(track['sections']) and track['sections'][-1] < track['duration'], track['id'])
             for credit in (track['title'], track['artist'], track['source'], track['license']):

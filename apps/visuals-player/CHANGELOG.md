@@ -1,5 +1,10 @@
 # Visuals Player
 
+## 0.5.2
+
+- The built-in music plays as MP3, so muting and the device volume work on iPhone too.
+- One tap starts the music on iPhone, even while a track is still downloading on a slow connection.
+
 ## 0.5.1
 
 - Where the browser needs a tap before it plays sound, the speaker shows as muted until then, and a tap on it starts the music.
