@@ -1,5 +1,9 @@
 # Visuals Player
 
+## 0.5.1
+
+- Where the browser needs a tap before it plays sound, the speaker shows as muted until then, and a tap on it starts the music.
+
 ## 0.5.0
 
 - The built-in music is six tracks by independent artists from Free Music Archive, credited in Player and the Guide.

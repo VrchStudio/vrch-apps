@@ -551,13 +551,15 @@
     if (camera.on) stopCamera(); else void startCamera();
   });
   // The speaker is always there. With Music it mutes and unmutes with a fade; with Silent or Mic / Line in (nothing is
-  // played back) it shows as muted, and a tap brings the music back.
+  // played back) it shows as muted, and a tap brings the music back. While the browser waits for a tap before it plays
+  // sound, it shows as muted too, and a tap on it starts the music.
+  const waitingForTap = () => music.source === 'music' && music.error?.code === 'interaction_required';
   function renderMute() {
     const button = $('mute');
     if (!button || !music) return;
-    const playing = music.source === 'music', muted = !playing || music.muted;
+    const playing = music.source === 'music', waiting = waitingForTap(), muted = !playing || music.muted || waiting;
     button.hidden = isOutput; button.dataset.on = String(!muted);
-    button.setAttribute('aria-pressed', String(muted)); button.setAttribute('aria-label', !playing ? 'Play music' : muted ? 'Unmute' : 'Mute');
+    button.setAttribute('aria-pressed', String(muted)); button.setAttribute('aria-label', !playing || waiting ? 'Play music' : muted ? 'Unmute' : 'Mute');
     button.title = button.getAttribute('aria-label');
     button.firstElementChild.className = 'fas ' + (muted ? 'fa-volume-xmark' : 'fa-volume-high');
   }
@@ -565,6 +567,7 @@
     event.stopPropagation();
     if (isOutput || !music) return;
     if (music.source !== 'music') { music.setMuted(false); void music.setSource('music').then(renderPlayer); }
+    else if (waitingForTap()) music.setMuted(false);
     else music.setMuted(!music.muted);
     interact('tap'); remember(); renderMute();
   });
