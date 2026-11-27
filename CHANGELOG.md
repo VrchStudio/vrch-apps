@@ -4,6 +4,8 @@
 
 ### Added
 
+- Play melodies and drums in Note Deck through the device speaker, over USB MIDI, or both at once.
+
 - Play seven melodies with hand gestures in PalmNotes Beat, including Silent Night and Jingle Bells.
 - Add Chladni 3D: a box of ringing air with sand in it. Three knobs choose the note, and the sand gathers onto that note's still surfaces as glowing sheets, on the device and on a large output.
 - The Playground catalog says when each App first arrived and when its current feature version came out, so the Playground can mark new and updated Apps.

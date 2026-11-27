@@ -89,9 +89,9 @@ def source(app, root=ROOT):
     if manifest.get('entry') not in files or not manifest['entry'].lower().endswith(('.html','.htm')):
         raise ValueError('App HTML entry is missing.')
     caps=manifest.get('capabilities')
-    if not isinstance(caps,dict) or set(caps)-{'controls','audio_input','audio_output','video_input','imu_input','websocket'}:
+    if not isinstance(caps,dict) or set(caps)-{'controls','audio_input','audio_output','video_input','imu_input','midi_input','midi_output','midi_usb_output','websocket'}:
         raise ValueError('Unsupported capabilities.')
-    for key in ('controls','audio_input','audio_output','video_input','imu_input'):
+    for key in ('controls','audio_input','audio_output','video_input','imu_input','midi_input','midi_output','midi_usb_output'):
         if key in caps and type(caps[key]) is not bool:
             raise ValueError('Capability flags must be boolean.')
     channels=caps.get('websocket',[])
@@ -258,7 +258,7 @@ def write_playground_catalog(catalog, root=None, presentation=None, sources=comm
         guide = manifest.get('guide') if isinstance(manifest.get('guide'), dict) else {}
         summary = guide.get('description') if isinstance(guide.get('description'), str) else ''
         caps = manifest.get('capabilities', {})
-        capabilities = sorted([key for key in ('controls', 'audio_input', 'audio_output', 'video_input', 'imu_input') if caps.get(key) is True]
+        capabilities = sorted([key for key in ('controls', 'audio_input', 'audio_output', 'video_input', 'imu_input', 'midi_input', 'midi_output', 'midi_usb_output') if caps.get(key) is True]
                               + (['websocket'] if caps.get('websocket') else []))
         entry = {'appId': identifier, 'slug': app['slug'], 'name': manifest['name'], 'version': release['version'],
                  'summary': summary.strip()[:240], 'category': meta['category'], 'featured': meta.get('featured'),

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Note Deck</title><link rel="stylesheet" href="style.css">
+  <script src="/apps/sdk/apps-v1.js"></script><script defer src="local-sound.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+<main aria-label="Note Deck">
+  <nav aria-label="Performance settings">
+    <div class="modes"><button data-mode="melody" aria-pressed="true">Melody</button><button data-mode="drums" aria-pressed="false">Drums</button></div>
+    <button id="tonal" aria-expanded="false">C Major</button>
+    <span id="drum-range" hidden>C1–E♭2</span>
+    <button id="bank">Macros 1–4</button>
+  </nav>
+  <div id="pads" aria-label="Performance pads"></div>
+  <footer><button id="sound" role="switch" aria-checked="false" disabled>Local sound</button><button id="route" class="needs-output" aria-live="polite" disabled>Connect USB</button><button id="other" aria-label="Choose another MIDI output" disabled>Other outputs</button><output id="event" aria-live="off">Tap higher to play louder</output></footer>
+  <section id="sheet" aria-labelledby="settings-title" hidden>
+    <header><h1 id="settings-title">Root &amp; scale</h1><button id="done">Done</button></header>
+    <h2>Root note</h2><div id="roots"></div>
+    <label for="scale">Scale</label><select id="scale"></select>
+    <p id="tones"></p>
+    <h2>Pad velocity</h2>
+    <p id="velocity-tip">Tap higher for louder notes and lower for softer notes. Use the middle for a more even touch.</p>
+  </section>
+</main>
+</body>
+</html>
