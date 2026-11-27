@@ -25,7 +25,7 @@ const currentOutput = () => output?.state === 'open' ? output : null;
 
 function performanceOutput() {
   const port = currentOutput();
-  if (!port) show(output?.state === 'suspended' ? 'Not sent · Wake USB host' : 'Not sent · Connect USB');
+  if (!port) show(output?.state === 'suspended' ? 'Not sent · Wake USB host' : sdk.context.mode === 'preview' ? 'Choose a MIDI output' : 'Not sent · Connect USB');
   return port;
 }
 function padVelocity(position) {
@@ -43,7 +43,11 @@ function send(port, status, number, value) {
 function noteOn(id, pad, velocity) {
   if (touches.has(id) || (choosing && !localSound) || !el('sheet').hidden) return;
   const port = currentOutput();
-  if (!port && !localSound) { performanceOutput(); return; }
+  if (!port && !localSound) {
+    if (sdk.context.mode === 'preview') show('Turn on Local sound to play');
+    else performanceOutput();
+    return;
+  }
   const note = Number(pad.dataset.note);
   const voice = voices.get(note);
   if (voice) voice.count++;
@@ -178,11 +182,13 @@ function releaseMidi() {
   for (const key of pressed.keys()) keyUp(key);
 }
 function renderRoute() {
-  el('route').disabled = el('other').disabled = !ready || choosing || !sdk.midi || sdk.context.mode !== 'device';
+  const preview = ready && sdk.context.mode === 'preview';
+  el('other').hidden = preview;
+  el('route').disabled = el('other').disabled = !ready || choosing || !sdk.midi;
   const route = el('route');
   route.classList.toggle('needs-output', !currentOutput() && !localSound);
   if (output?.state === 'suspended') route.textContent = 'USB suspended';
-  else if (!currentOutput()) route.textContent = 'Connect USB';
+  else if (!currentOutput()) route.textContent = preview ? 'MIDI output' : 'Connect USB';
   else route.textContent = output.name === 'USB to computer / tablet' ? 'USB · Ch 1' : output.name;
 }
 async function chooseOutput(route) {
@@ -212,7 +218,7 @@ async function chooseOutput(route) {
 }
 function renderSound() {
   const button = el('sound');
-  button.disabled = soundBusy || !ready || !sdk.audio || sdk.context.mode !== 'device';
+  button.disabled = soundBusy || !ready || !sdk.audio;
   button.setAttribute('aria-checked', String(!!localSound));
   renderRoute();
 }
@@ -247,7 +253,7 @@ el('sound').onclick = async () => {
   } catch (error) { show(error.message); }
   finally { soundBusy = false; renderSound(); }
 };
-el('route').onclick = () => chooseOutput('usb-to-host');
+el('route').onclick = () => chooseOutput(sdk.context.mode === 'preview' ? undefined : 'usb-to-host');
 el('other').onclick = () => chooseOutput();
 function updateSettings() {
   for (const [index, button] of Array.from(el('roots').children).entries()) {
@@ -303,6 +309,10 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) relea
 renderPads();
 sdk.ready().then(() => {
   ready = true;
+  if (sdk.context.mode === 'preview') {
+    document.body.classList.add('preview');
+    show('Turn on Local sound to play');
+  }
   sdk.controls.onEvent(onControl);
   syncMonitor();
   renderSound();

@@ -4,6 +4,8 @@
 
 ### Added
 
+- Audition Note Deck in Instruments and send or receive browser MIDI with MIDI Monitor in Tools.
+
 - Play melodies and drums in Note Deck through the device speaker, over USB MIDI, or both at once.
 
 - Play seven melodies with hand gestures in PalmNotes Beat, including Silent Night and Jingle Bells.

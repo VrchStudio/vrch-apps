@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MIDI Monitor</title><link rel="stylesheet" href="style.css">
+  <script src="/apps/sdk/apps-v1.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+<main>
+  <header><h1>MIDI Monitor</h1><span id="count">0 received</span></header>
+  <div class="ports">
+    <button id="input" disabled><small>Input</small><span>Choose port</span></button>
+    <button id="output" disabled><small>Output</small><span>Choose port</span></button>
+  </div>
+  <section class="signal" aria-label="Received MIDI">
+    <div><small id="kind">Input</small><strong id="note">—</strong></div>
+    <div class="reading"><small id="valueLabel">Velocity</small><output id="value">—</output></div>
+    <div id="meter" aria-hidden="true"><i></i></div>
+    <div class="events"><span id="channel">Channel —</span><span id="raw">—</span></div>
+  </section>
+  <section class="parameters" aria-label="Send parameters" id="parameters"></section>
+  <div class="actions">
+    <button id="listen" aria-pressed="false" disabled><kbd>K2</kbd><span>Listen</span></button>
+    <button id="testNote" disabled><kbd>K3</kbd><span>Send note</span></button>
+    <button id="testCC" disabled><kbd>K4</kbd><span>Send CC1</span></button>
+  </div>
+  <output id="status" role="status"></output>
+</main>
+</body>
+</html>

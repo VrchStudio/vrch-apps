@@ -35,3 +35,5 @@ h2,label {display:block;margin:9px 0 5px;font-size:13px;font-weight:600;color:#c
 #roots [aria-pressed=true] {background:#74334f;color:#ffe1ed}select {width:100%;min-height:36px;border:1px solid #686066;border-radius:3px;background:#373437;padding:5px}
 #velocity-tip {margin:4px 0;font-size:14px;line-height:1.35}
 #tones {margin:7px 0;color:#c8c1c4;font:12px/1.25 ui-monospace,monospace}
+
+.preview footer {grid-template-columns:repeat(2,minmax(0,1fr))}

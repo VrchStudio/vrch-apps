@@ -8,6 +8,8 @@ Update notifications require a My Apps platform release with official update sup
 
 ## Apps
 
+- [Note Deck](apps/note-deck) (Instruments): play a scale or drum kit with Local sound, MIDI output, or both.
+- [MIDI Monitor](apps/midi-monitor) (Tools): choose a MIDI input and output, inspect notes and controls, and send test messages.
 - [Hardware Check](apps/hardware-check): check controls, audio, touch, camera and motion.
 - [Metronome](apps/metronome): keep time with adjustable tempo, meter and subdivisions.
 - [Drum 808](apps/drum-808): program twelve synthesized drum voices on a 16-step sequencer.

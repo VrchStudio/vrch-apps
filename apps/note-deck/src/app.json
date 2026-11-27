@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "f2802ccb-7ba2-4397-86ba-7737f4c71eee",
   "name": "Note Deck",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "entry": "index.html",
   "icon": "icon.svg",
   "capabilities": {
@@ -21,7 +21,7 @@
         "controls": [
           {
             "control": "Local sound",
-            "action": "Switch on to play melody and drum sounds on the device speaker. MIDI can play at the same time. Local sound starts off."
+            "action": "Switch on to play melody and drum sounds through the device speaker or your browser. MIDI can play at the same time. Local sound starts off."
           },
           {
             "control": "MIDI output",
