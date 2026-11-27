@@ -3,6 +3,7 @@ const sdk = window.VrchApp;
 const $ = id => document.getElementById(id);
 const selected = {input:null, output:null};
 const voices = new Map(), sustain = new Set();
+let listening = true, openingAudio;
 let audio, frame, received = 0, last, testing = false;
 const names = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 const parameters = [
@@ -27,7 +28,7 @@ function refreshMonitor() {
   monitorFrame = requestAnimationFrame(async () => {
     monitorFrame = 0;
     const values = Object.fromEntries(parameters.map(p => [p.control, {label:p.label, value:displayParameter(p)}]));
-    values.K2 = {label:'Listen', pressed:!!audio};
+    values.K2 = {label:'Listen', pressed:listening};
     values.K3 = {label:'Send note', pressed:testing};
     values.K4 = {label:'Send CC1', pressed:heldKeys.has('K4')};
     publishing = true;
@@ -171,9 +172,10 @@ function ports() {
   $('testCC').disabled = !available;
   monitorChanged();
 }
-async function choose(direction) {
+async function choose(direction, automatic = false) {
   try {
-    const handle = await sdk.midi.requestPort({direction});
+    if (direction === 'input' && listening) void startListening();
+    const handle = automatic ? await sdk.midi.openDefaultPort({direction}) : await sdk.midi.requestPort({direction});
     if (!handle) return;
     selected[direction] = handle;
     if (direction === 'input') {
@@ -193,45 +195,55 @@ async function choose(direction) {
     $('status').textContent = ''; ports();
   } catch (error) { $('status').textContent = error.message; }
 }
-async function listen() {
-  $('listen').disabled = true;
+function showListening() {
+  $('listen').setAttribute('aria-pressed', String(listening));
+  $('listen').querySelector('span').textContent = listening ? 'Listen on' : 'Listen';
+  monitorChanged();
+}
+async function closeAudio(current) {
+  try { await current?.port?.close(); }
+  finally { await current?.ctx.close(); }
+}
+async function openAudio() {
+  const ctx = new AudioContext({sampleRate:48000, latencyHint:'interactive', sinkId:{type:'none'}});
+  let port;
   try {
-    if (audio) {
-      silenceAll(); const current = audio; audio = null;
-      await current.port.close(); await current.ctx.close();
-    } else {
-      const ctx = new AudioContext({sampleRate:48000, latencyHint:'interactive', sinkId:{type:'none'}});
-      let port;
-      try {
-        const started = ctx.resume();
-        // This instrument is mono. The host routes it to both speaker channels.
-        port = await sdk.audio.openOutput({channels:1});
-        const node = await port.createNode(ctx); await started;
-        const master = ctx.createDynamicsCompressor();
-        master.threshold.value = -10; master.knee.value = 6; master.ratio.value = 4;
-        master.connect(node);
-        // Upper harmonics carry low drum-pad notes through the built-in speaker.
-        const harmonics = Float32Array.of(0, 1, .8, .65, .52, .42, .28, .18, .12);
-        const wave = ctx.createPeriodicWave(new Float32Array(harmonics.length), harmonics);
-        audio = {ctx, port, node, master, wave};
-        port.onError(error => {
-          if (audio?.port !== port) return;
-          silenceAll(); audio = null;
-          void ctx.close().catch(() => {});
-          $('listen').setAttribute('aria-pressed','false');
-          $('listen').querySelector('span').textContent = 'Listen';
-          monitorChanged();
-          $('status').textContent = error.message;
-        });
-      } catch (cause) { await port?.close().catch(()=>{}); await ctx.close().catch(()=>{}); throw cause; }
-    }
-    $('status').textContent = '';
-  } catch (error) { $('status').textContent = error.message; }
-  finally {
-    $('listen').disabled = false;
-    $('listen').setAttribute('aria-pressed',String(!!audio));
-    $('listen').querySelector('span').textContent = audio ? 'Listen on' : 'Listen';
-    monitorChanged();
+    const started = ctx.resume();
+    // A muted AudioContext feeds the SDK; the host owns physical output routing.
+    port = await sdk.audio.openOutput({channels:1});
+    const node = await port.createNode(ctx);
+    await started;
+    const master = ctx.createDynamicsCompressor();
+    master.threshold.value = -10; master.knee.value = 6; master.ratio.value = 4;
+    master.connect(node);
+    const harmonics = Float32Array.of(0, 1, .8, .65, .52, .42, .28, .18, .12);
+    const wave = ctx.createPeriodicWave(new Float32Array(harmonics.length), harmonics);
+    if (!listening) { await closeAudio({port, ctx}); return; }
+    audio = {ctx, port, node, master, wave};
+    port.onError(error => {
+      if (audio?.port !== port) return;
+      silenceAll(); audio = null;
+      void ctx.close().catch(() => {});
+      listening = false; showListening();
+      $('status').textContent = error.message;
+    });
+  } catch (error) { await closeAudio({port, ctx}).catch(() => {}); throw error; }
+}
+function startListening() {
+  if (audio || openingAudio || !listening) return;
+  openingAudio = openAudio().catch(error => {
+    listening = false; showListening();
+    $('status').textContent = error.message;
+  }).finally(() => { openingAudio = null; });
+}
+function toggleListen() {
+  listening = !listening;
+  showListening();
+  if (listening) startListening();
+  else if (audio) {
+    silenceAll();
+    const current = audio; audio = null;
+    void closeAudio(current).catch(error => { $('status').textContent = error.message; });
   }
 }
 async function test(note) {
@@ -251,12 +263,20 @@ async function test(note) {
   finally { if(note) testing=false; ports(); }
 }
 $('input').onclick=()=>choose('input'); $('output').onclick=()=>choose('output');
-$('listen').onclick=listen; $('testNote').onclick=()=>test(true); $('testCC').onclick=()=>test(false);
-addEventListener('pagehide',silenceAll);
-sdk.ready().then(()=>{
+$('listen').onclick=toggleListen; $('testNote').onclick=()=>test(true); $('testCC').onclick=()=>test(false);
+addEventListener('pagehide', () => {
+  listening = false;
+  silenceAll();
+  if (audio) { const current = audio; audio = null; void closeAudio(current).catch(() => {}); }
+});
+sdk.ready().then(async ()=>{
   sdk.controls.onEvent(onControl);
   controlsReady = true;
   monitorChanged();
   if (!sdk.midi || (sdk.context.mode === 'preview' && !navigator.requestMIDIAccess)) { $('status').textContent='Web MIDI is unavailable. Open this App in a browser with Web MIDI support.'; return; }
-  for (const id of ['input','output','listen']) $(id).disabled=false;
+  $('listen').disabled = false;
+  for (const direction of ['input', 'output']) {
+    if (sdk.context.mode === 'device' && sdk.midi.openDefaultPort) await choose(direction, true);
+  }
+  $('input').disabled = $('output').disabled = false;
 }).catch(error=>{ $('status').textContent=error.message; });

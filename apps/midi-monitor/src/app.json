@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "7302bb7a-d821-46c5-8c70-67ce366d0579",
   "name": "MIDI Monitor",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "entry": "index.html",
   "icon": "icon.svg",
   "capabilities": {
@@ -13,6 +13,7 @@
     "midi_output": true,
     "audio_output": true
   },
+  "optional_capabilities": ["midi_auto_connect"],
   "guide": {
     "description": "See and hear notes from a USB MIDI instrument and send messages back.",
     "sections": [
@@ -21,7 +22,7 @@
         "controls": [
           {
             "control": "Input / Output",
-            "action": "Tap a port and choose the instrument, or USB from / to computer or tablet. In Playground, allow browser MIDI access and select an input or output port."
+            "action": "On device, a single USB instrument input and the connected computer output open automatically on supported hosts. Tap Input or Output to change ports. In Playground, choose a browser MIDI port."
           },
           {
             "control": "Incoming notes",
@@ -59,7 +60,7 @@
           },
           {
             "control": "K2 · Listen",
-            "action": "Toggle incoming MIDI sound on the selected audio output."
+            "action": "Incoming notes sound by default. Press to mute or listen again."
           },
           {
             "control": "K3 · Send note",

@@ -4,6 +4,8 @@
 
 ### Added
 
+- MIDI Monitor starts with Listen on and connects the instrument input and computer output automatically on supported devices.
+
 - Play Note Deck from Instruments and open MIDI Monitor from Tools in the Playground gallery.
 
 - Play melodies and drums in Note Deck through the device speaker, over USB MIDI, or both at once.

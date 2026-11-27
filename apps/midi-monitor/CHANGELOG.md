@@ -1,3 +1,7 @@
+## 0.2.1
+
+MIDI Monitor starts with Listen on and connects the instrument input and computer output automatically on supported devices.
+
 ## 0.2.0
 
 Choose a browser MIDI input and output in Playground to inspect notes and send test messages.
