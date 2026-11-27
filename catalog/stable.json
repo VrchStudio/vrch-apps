@@ -5833,6 +5833,92 @@
           }
         ]
       }
+    },
+    "7302bb7a-d821-46c5-8c70-67ce366d0579": {
+      "slug": "midi-monitor",
+      "latest": "0.2.0",
+      "versions": {
+        "0.2.0": {
+          "version": "0.2.0",
+          "name": "MIDI Monitor",
+          "tag": "midi-monitor-v0.2.0",
+          "sourceCommit": "0c1b870d5b740ebf19973895434bc3eb5c0d1a06",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/midi-monitor-v0.2.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/midi-monitor-v0.2.0/midi-monitor-0.2.0.vrchapp",
+          "size": 18231,
+          "sha256": "68bf6d222725a37ea9abe9f822b1dcfd56cc6c24b9bd3b114adb0b7a38f92433",
+          "packageDigest": "68bf6d222725a37ea9abe9f822b1dcfd56cc6c24b9bd3b114adb0b7a38f92433",
+          "revision": "6fd6754624c314facfc7e9672543cf1083671b93bf71e43d5f31a34a82052cb7",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "Choose a browser MIDI input and output in Playground to inspect notes and send test messages."
+        }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NiA5NiI+PGcgZmlsbD0iI2RlZGVkZSI+PHBhdGggZD0iTTEwIDU0aDEzdjI3SDEwem0yMS0xOGgxM3Y0NUgzMXptMjEtMjBoMTN2NjVINTJ6Ii8+PC9nPjxwYXRoIGZpbGw9IiNmZjE0OTMiIGQ9Ik03MyA0M2gxM3YzOEg3M3oiLz48L3N2Zz4K",
+      "guide": {
+        "description": "See and hear notes from a USB MIDI instrument and send messages back.",
+        "sections": [
+          {
+            "title": "Connect",
+            "controls": [
+              {
+                "control": "Input / Output",
+                "action": "Tap a port and choose the instrument, or USB from / to computer or tablet. In Playground, allow browser MIDI access and select an input or output port."
+              },
+              {
+                "control": "Incoming notes",
+                "action": "Play a pad to see its note, channel, velocity and MIDI bytes."
+              }
+            ]
+          },
+          {
+            "title": "Turn a knob",
+            "controls": [
+              {
+                "control": "E1 · Channel",
+                "action": "Set the outgoing MIDI channel, 1–16."
+              },
+              {
+                "control": "E2 · Note",
+                "action": "Set the outgoing note, from MIDI 0 to 127."
+              },
+              {
+                "control": "E3 · Velocity",
+                "action": "Set the strength of the outgoing note, 1–127."
+              },
+              {
+                "control": "E4 · CC1",
+                "action": "Set the modulation value, 0–127. The screen sliders adjust the same four values."
+              }
+            ]
+          },
+          {
+            "title": "Press a key",
+            "controls": [
+              {
+                "control": "K1 · Menu",
+                "action": "Open the system Menu."
+              },
+              {
+                "control": "K2 · Listen",
+                "action": "Toggle incoming MIDI sound on the selected audio output."
+              },
+              {
+                "control": "K3 · Send note",
+                "action": "Play the selected note on the output for a quarter second."
+              },
+              {
+                "control": "K4 · Send CC1",
+                "action": "Send the modulation value on the selected output and channel."
+              }
+            ]
+          }
+        ]
+      }
     }
   }
 }
