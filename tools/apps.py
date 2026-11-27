@@ -89,11 +89,14 @@ def source(app, root=ROOT):
     if manifest.get('entry') not in files or not manifest['entry'].lower().endswith(('.html','.htm')):
         raise ValueError('App HTML entry is missing.')
     caps=manifest.get('capabilities')
-    if not isinstance(caps,dict) or set(caps)-{'controls','audio_input','audio_output','video_input','imu_input','midi_input','midi_output','midi_usb_output','websocket'}:
+    if not isinstance(caps,dict) or set(caps)-{'controls','audio_input','audio_output','video_input','imu_input','midi_input','midi_output','midi_usb_output','websocket','visual_library'}:
         raise ValueError('Unsupported capabilities.')
     for key in ('controls','audio_input','audio_output','video_input','imu_input','midi_input','midi_output','midi_usb_output'):
         if key in caps and type(caps[key]) is not bool:
             raise ValueError('Capability flags must be boolean.')
+    # My Visuals access, as the device host accepts it.
+    if 'visual_library' in caps and caps['visual_library'] not in ('read','readwrite'):
+        raise ValueError('My Visuals access must be read or readwrite.')
     channels=caps.get('websocket',[])
     if not isinstance(channels,list) or len(channels)>32 or any(not isinstance(c,dict) or type(c.get('channel')) is not int or not 1<=c['channel']<=8 or c.get('format') not in ('json','midi','audio','image') for c in channels):
         raise ValueError('Invalid WebSocket capability.')

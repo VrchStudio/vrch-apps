@@ -1,5 +1,11 @@
 # Visuals Player
 
+## 0.6.0
+
+- Play your works from My Visuals under My Library, each by itself even when two use the same visual.
+- Knob and Visual Settings changes to a work stay in Visuals Player; the work in My Visuals is unchanged.
+- A large output or second screen shows the exact version of the work that is playing.
+
 ## 0.5.2
 
 - The built-in music plays as MP3, so muting and the device volume work on iPhone too.

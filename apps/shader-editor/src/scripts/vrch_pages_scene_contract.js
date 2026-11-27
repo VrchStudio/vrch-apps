@@ -562,7 +562,7 @@
     if (typeof audio.enabled !== 'boolean' || !finiteNumber(audio.gain) || audio.gain < 0 || audio.gain > 4) throw new ContractError('schema_invalid', 'schema', 'Invalid audio modulation master.');
   }
 
-  function validateDefinition(definition, options = {}) {
+  function validateDefinitionStructure(definition) {
     assertShape(definition,
       ['schema_version', 'scene_id', 'title', 'description', 'runtime', 'fragment', 'frame', 'coarse', 'parameters', 'ui', 'signals', 'default_bindings', 'analysis_requirements', 'quality', 'catalog', 'provenance'],
       ['schema_version', 'scene_id', 'title', 'description', 'runtime', 'fragment', 'parameters', 'signals', 'default_bindings', 'quality', 'catalog', 'provenance'], 'SceneDefinition');
@@ -664,6 +664,10 @@
       throw new ContractError('schema_invalid', 'semantic', 'Scene namespace cannot elevate provenance.');
     }
     if (utf8Size(definition) > CONFIG.definitionBytes) throw new ContractError('message_too_large', 'schema', 'Canonical SceneDefinition exceeds 80 KiB.');
+  }
+
+  function validateDefinition(definition, options = {}) {
+    validateDefinitionStructure(definition);
     validateFragmentPolicy(definition, options);
     return { ok: true };
   }
@@ -1043,6 +1047,7 @@ void main() { gl_Position = vec4(position, 1.0); }`;
     tokenizeGlsl: tokenizeGlsl,
     validateFragmentPolicy: validateFragmentPolicy,
     validateDefinition: validateDefinition,
+    validateDefinitionStructure: validateDefinitionStructure,
     normalizeInstance: normalizeInstance,
     parameterDefaultMap: parameterDefaultMap,
     buildFragmentShader: buildFragmentShader,

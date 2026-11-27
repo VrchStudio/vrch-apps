@@ -71,6 +71,7 @@
       this.running = false; this.raf = 0; this.resizeRaf = 0; this.resizeObserver = null;
       this.lastSize = { width: 0, height: 0 };
       this.disposed = false;
+      this.pausedAt = null;
       this.fixture = fixtureCanvas();
       this.externalSources = null;
       this.externalSourceGenerations = { A: 0, B: 0 };
@@ -140,7 +141,7 @@
       if (this.disposed || this.resizeRaf) return;
       this.resizeRaf = requestAnimationFrame(() => {
         this.resizeRaf = 0;
-        this._resizeNow();
+        if (this._resizeNow() && this.pausedAt !== null && this.effect) this.drawFrame();
       });
     }
 
@@ -165,6 +166,7 @@
     show(definition, instance, trusted) {
       this.onState('loading');
       this.running = false;
+      this.pausedAt = null;
       if (this.raf) cancelAnimationFrame(this.raf);
       this.raf = 0;
       if (this.effect) this.effect.dispose();
@@ -217,6 +219,31 @@
       if (!this.effect || !Number.isFinite(seconds)) return false;
       this.effect.epochSeconds = performance.now() * 0.001 - Math.max(0, seconds);
       return true;
+    }
+
+    getSceneTime() {
+      return this.effect?.uniforms.iTime.value || 0;
+    }
+
+    setPlaybackPaused(paused) {
+      if (!this.running || (this.pausedAt !== null) === paused) return;
+      if (paused) {
+        this.pausedAt = this.effect.lastTimeSeconds ?? performance.now() * 0.001;
+        cancelAnimationFrame(this.raf);
+        this.raf = 0;
+      } else {
+        const now = performance.now() * 0.001;
+        this.setSceneTime(this.getSceneTime());
+        this.effect.lastTimeSeconds = now;
+        this.pausedAt = null;
+        this._frame();
+      }
+    }
+
+    drawFrame() {
+      if (!this.effect || !this.renderer) return;
+      this.effect.render(this.pausedAt ?? performance.now() * 0.001, null, this._audioData());
+      this.renderer.render(this.scene, this.camera);
     }
 
     setRenderBudget(budget) { return this.performance ? this.performance.setRenderBudget(budget) : false; }
@@ -433,6 +460,7 @@
 
     hide() {
       this.running = false;
+      this.pausedAt = null;
       if (this.raf) cancelAnimationFrame(this.raf);
       this.raf = 0;
       if (this.effect) this.effect.dispose();
@@ -447,7 +475,7 @@
     }
 
     _frame(frameStamp) {
-      if (!this.running || this.disposed) return;
+      if (!this.running || this.disposed || this.pausedAt !== null) return;
       this.raf = requestAnimationFrame((stamp) => this._frame(stamp));
       if (!this.effect || !this.renderer || document.hidden) return;
       if (this.performance && !this.performance.shouldRender(performance.now(), frameStamp)) return;
@@ -464,14 +492,14 @@
           rotation: 0
         }).catch(() => {});
       }
-      this.effect.render(performance.now() * 0.001, null, this._audioData());
-      this.renderer.render(this.scene, this.camera);
+      this.drawFrame();
     }
 
     dispose() {
       if (this.disposed) return;
       this.disposed = true;
       this.running = false;
+      this.pausedAt = null;
       if (this.raf) cancelAnimationFrame(this.raf);
       if (this.resizeRaf) cancelAnimationFrame(this.resizeRaf);
       this.raf = 0; this.resizeRaf = 0;

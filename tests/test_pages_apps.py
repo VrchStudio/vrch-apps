@@ -111,6 +111,7 @@ class VisualsPlayerSource(unittest.TestCase):
         self.assertFalse({'dancer', 'portrait', 'keys'} & {p['id'] for p in pictures})
         capabilities = json.loads((self.source / 'app.json').read_text())['capabilities']
         self.assertTrue(all(capabilities[name] for name in ('controls', 'audio_input', 'audio_output', 'video_input')))
+        self.assertEqual(capabilities['visual_library'], 'read')
         self.assertIn('id="visual-settings"', (self.source / 'index.html').read_text())
         local_references(self, self.source)
 
@@ -136,7 +137,8 @@ class ShaderEditorSource(unittest.TestCase):
     def test_contents(self):
         files = names(self.source)
         manifest = json.loads((self.source / 'app.json').read_text())
-        self.assertEqual(set(manifest['capabilities']), {'audio_input', 'video_input', 'websocket'})
+        self.assertEqual(set(manifest['capabilities']), {'audio_input', 'video_input', 'websocket', 'visual_library'})
+        self.assertEqual(manifest['capabilities']['visual_library'], 'readwrite')
         self.assertEqual(len(manifest['capabilities']['websocket']), 16)
         for absent in ('scripts/vrch_pages_gateway_auth_utils.js', 'scripts/vrch_pages_scene_settings_bridge.js',
                        'scripts/vrch_pages_websocket_utils.js', 'models/mediapipe/face_landmarker-lite-v1.task'):

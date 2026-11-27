@@ -1440,6 +1440,7 @@
         }
         const restored = saved.active;
         const hash = restored.revision.scene_ref.content_hash;
+        if (await Contract.sha256Ref(restored.definition) !== hash) throw runtimeError('definition_hash_mismatch', 'persistence', 'Stored scene definition hash differs.');
         const trusted = this.trustedHashes.has(hash);
         this._assertTrusted(restored.definition, hash);
         Contract.validateDefinition(restored.definition, { trusted: trusted });
@@ -1473,7 +1474,7 @@
       return clone(this.persistence);
     }
 
-    async registerCatalog(catalog, definitions) {
+    async registerCatalog(catalog, definitions, trustedHistory = []) {
       const definitionById = new Map((definitions || []).map((definition) => [definition.scene_id, definition]));
       for (const entry of (catalog && catalog.entries) || []) {
         const definition = definitionById.get(entry.scene_ref.scene_id);
@@ -1483,6 +1484,12 @@
         Contract.validateDefinition(definition, { trusted: entry.trusted === true });
         this.definitionCache.set(hash, clone(definition));
         if (entry.trusted === true) this.trustedHashes.add(hash);
+      }
+      // Only the host supplies history from its pinned catalog. A work cannot add trust.
+      for (const ref of trustedHistory) {
+        if (/^vrch\.[a-z0-9.-]+$/.test(ref?.scene_id) && /^sha256:[0-9a-f]{64}$/.test(ref.content_hash)) {
+          this.trustedHashes.add(ref.content_hash);
+        }
       }
       return { definitions: this.definitionCache.size, trusted: this.trustedHashes.size };
     }
@@ -1662,7 +1669,7 @@
 
     _assertTrusted(definition, hash) {
       if (definition.provenance && definition.provenance.kind === 'builtin' && !this.trustedHashes.has(hash)) {
-        throw runtimeError('policy_rejected', 'trust', 'Unrecognized content cannot self-declare the builtin trust tier.');
+        throw runtimeError('builtin_unverified', 'trust', 'Update Components to verify this builtin visual.');
       }
     }
 

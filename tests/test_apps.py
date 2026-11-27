@@ -141,6 +141,19 @@ class Packages(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'stable'):
             self.build()
 
+    def test_visual_library_access_levels(self):
+        for level in ('read','readwrite'):
+            self.manifest['capabilities']={'controls':True,'visual_library':level}
+            (self.src/'app.json').write_text(json.dumps(self.manifest))
+            path,_=self.build()
+            with zipfile.ZipFile(path) as archive:
+                self.assertEqual(json.loads(archive.read('app.json'))['capabilities']['visual_library'],level)
+        for level in (True,'write','',None):
+            self.manifest['capabilities']={'visual_library':level}
+            (self.src/'app.json').write_text(json.dumps(self.manifest))
+            with self.assertRaisesRegex(ValueError,'My Visuals'):
+                self.build()
+
     def test_missing_release_notes_rejected(self):
         (self.src.parent/'CHANGELOG.md').write_text('# Demo\n')
         with self.assertRaisesRegex(ValueError,'CHANGELOG'):

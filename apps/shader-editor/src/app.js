@@ -8,6 +8,8 @@
   const backend = new VrchSceneAppsStore.AppsBackend(VrchApp);
   const store = new VrchSceneStore.SceneStore({backendFactory: () => backend.open()});
   const catalog = new VrchSceneCatalog.PresetCatalog();
+  // Works in My Visuals open by their visual ID at a fixed digest; Update Visual saves a revision of a personal work there.
+  const library = new VisualsLibrary({sdk: VrchApp, catalog});
   const isOutput = VrchApp.context?.role === 'output', relay = VrchApp.output || null;
   document.documentElement.dataset.role = isOutput ? 'output' : 'control';
   let active = null, preferences = {}, residue = {}, picker = null, parameters = null, mirror = null;
@@ -15,6 +17,8 @@
   let editVersion = 0, savedVersion = 0, lastError = null, mode = 'simple';
   let deleting = null;
   let media = null, mediaChoices = {};
+  // A library save not yet confirmed: a retry of the same edit sends the identical request.
+  let pendingCommit = null;
   const preferenceStorage = {
     getItem(key) { return Object.hasOwn(preferences, key) ? preferences[key] : null; },
     setItem(key, value) {
@@ -26,6 +30,13 @@
     scene_ref: instance.scene_ref, params: instance.params, bindings: instance.bindings,
     modulation_master: instance.modulation_master, quality_mode: instance.quality_mode,
   });
+  // The open visual saves to My Visuals when it came from there and saving there is allowed; otherwise in this App.
+  const toLibrary = edit => !!edit?.visual && !edit.presetId && library.write;
+  const ownWork = edit => toLibrary(edit) && edit.visual.visual_id.startsWith('local.');
+  // Read-only diagnostics for tests.
+  window.__shaderEditor = {state: () => clone({visual: active?.visual || null, params: active?.instance.params || null,
+    saved: active?.savedInstance?.params || null, changed: !!active && comparable(active.instance) !== comparable(active.savedInstance),
+    library: {off: library.off, write: library.write}, saving: librarySaving, error: lastError ? lastError.code || lastError.message : null})};
 
   function feedback(message = '') {
     $('saveFeedback').textContent = message;
@@ -42,8 +53,9 @@
     $('mediaSources').hidden = !active;
     $('saveState').textContent = lastError?.code === 'persistence_unknown' ? (deleting ? 'Delete unknown' : 'Save unknown') : lastError ? (deleting ? 'Not deleted' : 'Not saved') : saving || savedVersion !== editVersion ? 'Saving draft' : 'Draft saved';
     $('saveState').classList.toggle('is-warn', !!lastError);
-    $('saveVisual').textContent = active?.presetId ? 'Update Visual' : 'Save Visual';
-    $('saveVisual').disabled = !loaded || !active || librarySaving || !!deleting || !!lastError || (active.presetId && comparable(active.instance) === comparable(active.savedInstance));
+    const saved = active?.presetId || ownWork(active);
+    $('saveVisual').textContent = saved ? 'Update Visual' : 'Save Visual';
+    $('saveVisual').disabled = !loaded || !active || librarySaving || !!deleting || !!lastError || (saved && comparable(active.instance) === comparable(active.savedInstance));
     $('recoveryActions').hidden = !lastError;
     $('retrySave').textContent = !loaded ? 'Retry' : lastError?.code === 'version_conflict' ? 'Reload Saved' : lastError?.code === 'persistence_unknown' ? (deleting ? 'Check Delete' : 'Check Save') : deleting ? 'Retry Delete' : 'Retry Save';
     $('retrySave').disabled = retrying;
@@ -139,13 +151,15 @@
   async function choose(item) {
     const instance = catalog.makeInstance(catalog.itemKey(item));
     contract.validateDefinition(item.definition, {trusted: item.entry.trusted === true});
+    const entry = item.entry, visual = entry.visual_id ? {visual_id: entry.visual_id, package_digest: entry.package_digest, title: entry.display_name} : null;
     active = {
       definition: clone(item.definition), instance, baseInstance: clone(instance),
-      selectedKey: catalog.itemKey(item), presetId: item.entry.user_preset_id || null,
-      name: item.entry.user_preset_id ? item.entry.display_name : '',
-      savedInstance: item.entry.user_preset_id ? clone(instance) : null,
-      pendingPresetId: null,
+      selectedKey: catalog.itemKey(item), presetId: entry.user_preset_id || null,
+      name: entry.user_preset_id || visual ? entry.display_name : '',
+      savedInstance: entry.user_preset_id || visual ? clone(instance) : null,
+      pendingPresetId: null, visual,
     };
+    if (!lastError) feedback('');
     changed();
     return true;
   }
@@ -186,6 +200,7 @@
 
   async function saveVisual() {
     if (!active || librarySaving || deleting || lastError) return;
+    if (toLibrary(active)) return saveToLibrary();
     librarySaving = true;
     render();
     const editing = active;
@@ -211,11 +226,77 @@
       editing.presetId = saved.preset_id; editing.pendingPresetId = null;
       editing.name = saved.name; editing.savedInstance = clone(saved.instance_snapshot);
       editing.baseInstance = clone(saved.instance_snapshot); editing.selectedKey = 'preset:' + saved.preset_id;
+      editing.visual = null;
       await catalog.hydrateUserPresets(store);
       changed();
       await persist();
     } catch (error) { failed(error); }
     finally { librarySaving = false; render(); }
+  }
+
+  function dataBlob(url) {
+    const [head, body] = url.split(','), bytes = atob(body);
+    const data = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) data[i] = bytes.charCodeAt(i);
+    return new Blob([data], {type: head.slice(5, head.indexOf(';'))});
+  }
+
+  // Saves the look of the open work to My Visuals: a revision of a personal work, or a personal copy of any other.
+  // The saved revision is read back at its digest, and the editor continues from it.
+  async function saveToLibrary() {
+    librarySaving = true; feedback(''); render();
+    const editing = active, ref = editing.visual, own = ref.visual_id.startsWith('local.');
+    const exact = clone(editing.instance), signature = ref.visual_id + '/' + ref.package_digest + '/' + comparable(exact);
+    try {
+      await persist();
+      if (pendingCommit?.signature !== signature) {
+        const current = await library.call('get', ref.visual_id, ref.package_digest);
+        const look = {schema_version: 1, params: exact.params, bindings: exact.bindings};
+        if (exact.modulation_master?.audio) look.modulation_master = exact.modulation_master;
+        if (exact.quality_mode) look.quality_mode = exact.quality_mode;
+        const args = {base: {visual_id: ref.visual_id, package_digest: ref.package_digest}, request_id: crypto.randomUUID(), set: {'look.json': {json: look}}};
+        if (own) Object.assign(args, {visual_id: ref.visual_id, expected_row_version: current.row_version});
+        else args.manifest = {title: (ref.title || editing.definition.title) + ' / Remix'};
+        const cover = mirror?.captureThumbnail() || '';
+        if (/^data:image\/(webp|png);base64,/.test(cover)) {
+          const blob = dataBlob(cover), file = 'preview.' + (blob.type === 'image/png' ? 'png' : 'webp');
+          const upload = await library.call('upload', blob);
+          args.set['thumbnails/' + file] = {blob_ref: upload.blob_ref};
+          args.manifest = {...args.manifest, thumbnails: [file, ...(current.manifest?.thumbnails || []).filter(name => name !== file)]};
+        }
+        pendingCommit = {signature, args};
+      }
+      let saved;
+      try { saved = await library.call('commit', pendingCommit.args); }
+      catch (error) { if (['reference_unavailable', 'invalid_request'].includes(error?.code)) pendingCommit = null; throw error; }
+      pendingCommit = null;
+      const row = await library.call('get', saved.visual_id, saved.package_digest);
+      const item = await library.open({visual_id: saved.visual_id, package_digest: saved.package_digest, title: row.title, cover_path: row.cover_path, updated_at: row.updated_at, origin: row.origin, row_version: saved.row_version});
+      if (item.entry.package_digest !== saved.package_digest) throw Object.assign(Error('The saved visual did not reopen.'), {code: 'persistence_unknown'});
+      library.put(item, {...row, row_version: saved.row_version, package_digest: saved.package_digest});
+      if (active === editing) {
+        editing.visual = {visual_id: saved.visual_id, package_digest: saved.package_digest, title: item.entry.display_name};
+        editing.name = item.entry.display_name; editing.selectedKey = catalog.itemKey(item);
+        editing.savedInstance = clone(item.entry.default_instance); editing.baseInstance = clone(item.entry.default_instance);
+        // Unchanged while saving: continue from the revision as read back, so the editor shows exactly what was saved.
+        if (comparable(editing.instance) === comparable(exact)) {
+          editing.instance = clone(item.entry.default_instance);
+          mirror?.patchInstance(editing.instance);
+          parameters?.render(editing.definition, editing.instance, {force: true});
+        }
+        changed();
+        await persist();
+      }
+    } catch (error) {
+      if (VisualsLibrary.isOff(error) || ['read_only', 'preview_read_only'].includes(error?.code)) library.write = false;
+      feedback(error?.code === 'version_conflict' ? 'This visual changed in My Visuals. Your edit is still open; choose the visual again for its latest version.'
+        : library.write ? 'Could not save to My Visuals. Your edit is still open; try again.'
+        : 'Saving to My Visuals is not allowed. Save Visual now keeps it in this App.');
+    } finally { librarySaving = false; render(); }
+  }
+
+  function refreshLibrary() {
+    return library.refresh(() => { if (picker?.isOpen()) picker.refresh(); }).then(render, () => {});
   }
 
   async function restore(value) {
@@ -316,7 +397,7 @@
       title: 'Choose a Visual', primaryLabel: 'Edit This', progressLabel: 'Opening...',
       emptyTitle: 'Choose a visual', emptyMeta: '', currentLabel: 'EDITING',
       getCurrentHash: () => active?.presetId ? 'preset:' + active.presetId : active?.selectedKey,
-      onOpen: () => { media?.stop(); mirror?.hide(); }, onClose: showPreview, onConfirm: choose,
+      onOpen: () => { media?.stop(); mirror?.hide(); void refreshLibrary(); }, onClose: showPreview, onConfirm: choose,
       onClear: clearVisual, onDelete: deleteVisual,
     });
     const popover = VrchPagesLiveConsoleActionPopover.createActionPopoverController({document, window});
@@ -347,6 +428,15 @@
       loaded = true;
       parameters.setMode(mode, {force: true});
       showPreview(); render();
+      // My Visuals is optional: without the API or the visitor's permission the App keeps its own visuals. The library
+      // is listed when the picker opens; a restored work is read alone so the picker summary shows it.
+      library.info().then(() => {
+        render();
+        const ref = active?.visual;
+        if (ref && !catalog.get('visual:' + ref.visual_id)) return library.call('get', ref.visual_id, ref.package_digest)
+          .then(row => library.open({visual_id: ref.visual_id, package_digest: ref.package_digest, title: row.title, cover_path: row.cover_path, updated_at: row.updated_at}))
+          .then(item => { library.put(item); render(); });
+      }).catch(() => {});
     } catch (error) { failed(error); }
   }
 
@@ -370,7 +460,8 @@
     if (isOutput || !relay || !loaded) return;
     const state = active ? {scene_id: active.definition.scene_id, params: active.instance.params, bindings: active.instance.bindings,
       modulation_master: active.instance.modulation_master, quality_mode: active.instance.quality_mode, shown_at: shownAt,
-      live: {A: !!liveSource('A'), B: !!liveSource('B')}} : {scene_id: null};
+      live: {A: !!liveSource('A'), B: !!liveSource('B')}, content_hash: active.instance.scene_ref.content_hash,
+      ...(active.visual ? {visual_id: active.visual.visual_id, package_digest: active.visual.package_digest} : {})} : {scene_id: null};
     const text = JSON.stringify(state);
     if (text === published) return;
     published = text;
@@ -460,27 +551,43 @@
       await Promise.all([catalog.load(), VrchApp.ready()]);
     } catch (_) { return; }
     const pictures = {A: new OutputPicture(), B: new OutputPicture()};
-    let relayed = null, shown = null, state = null, count = 1;
+    let relayed = null, shown = null, state = null, count = 1, unreadable = null;
     mirror.setAudioProvider(() => relayed);
     const sources = () => {
       const a = state?.live?.A && pictures.A.live ? pictures.A.canvas : undefined, b = state?.live?.B && pictures.B.live ? pictures.B.canvas : undefined;
       mirror.setSources(a, count > 1 ? b : a);
     };
+    // A work from My Visuals is read at the digest the editor shows (the editor's access covers its output). If it
+    // cannot be read, a packaged visual with the same definition stands in.
+    const visualKey = next => next.visual_id + '/' + next.package_digest;
+    const openVisual = next => {
+      const key = visualKey(next);
+      library.open({visual_id: next.visual_id, package_digest: next.package_digest}).then(item => { library.put(item); }, () => { unreadable = key; })
+        .then(() => { if (state && visualKey(state) === key) follow(state); });
+    };
     const follow = next => {
       state = next; window.__shaderOutput.followed++; window.__shaderOutput.params = next?.params || null;
-      if (!next || typeof next.scene_id !== 'string') { shown = null; window.__shaderOutput.scene = null; mirror.hide(); return; }
-      const item = catalog.getBySceneId(next.scene_id);
+      if (!next || typeof next.scene_id !== 'string') { shown = null; window.__shaderOutput.scene = window.__shaderOutput.visual = null; mirror.hide(); return; }
+      let item = catalog.getBySceneId(next.scene_id);
+      if (typeof next.visual_id === 'string') {
+        item = catalog.get('visual:' + next.visual_id);
+        if (item?.entry.package_digest !== next.package_digest) item = null;
+        if (!item && unreadable !== visualKey(next) && !library.off) { openVisual(next); return; }
+        item ||= catalog.list().find(entry => !entry.entry.visual_id && entry.entry.scene_ref.content_hash === next.content_hash) || null;
+      }
       if (!item) return;
+      const key = catalog.itemKey(item) + '/' + item.entry.scene_ref.content_hash;
       const instance = contract.normalizeInstance(item.definition, {...catalog.makeInstance(catalog.itemKey(item)),
         ...(next.params ? {params: next.params} : {}), ...(next.bindings ? {bindings: next.bindings} : {}),
         ...(next.modulation_master ? {modulation_master: next.modulation_master} : {}), ...(next.quality_mode ? {quality_mode: next.quality_mode} : {})}, {trusted: false});
       count = item.definition.runtime?.max_sources ?? 1;
       for (const key of ['A', 'B']) if (!next.live?.[key]) pictures[key].live = false;
-      if (shown?.scene_id !== next.scene_id || shown?.shown_at !== next.shown_at) {
+      if (shown?.key !== key || shown?.shown_at !== next.shown_at) {
         if (!mirror.show(item.definition, instance, true)) return;
         if (Number.isFinite(next.shown_at) && next.shown_at > 0) mirror.setSceneTime(Math.max(0, (performance.timeOrigin + performance.now() - next.shown_at) / 1000));
       } else mirror.patchInstance(instance);
-      shown = {scene_id: next.scene_id, shown_at: next.shown_at}; window.__shaderOutput.scene = next.scene_id;
+      shown = {key, shown_at: next.shown_at}; window.__shaderOutput.scene = next.scene_id;
+      window.__shaderOutput.visual = item.entry.visual_id ? {visual_id: item.entry.visual_id, package_digest: item.entry.package_digest} : null;
       sources();
     };
     relay?.onMessage(({kind, data} = {}) => {
@@ -503,7 +610,8 @@
   $('saveVisual').addEventListener('click', saveVisual);
   $('retrySave').addEventListener('click', retry);
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { media?.stop(); mirror?.hide(); } else if (!picker?.isOpen()) showPreview();
+    if (document.hidden) { media?.stop(); mirror?.hide(); return; }
+    if (!picker?.isOpen()) showPreview();
   });
   window.addEventListener('pagehide', () => {
     disposed = true; clearTimeout(timer); media?.dispose(); mirror?.dispose(); picker?.destroy?.(); store.close();

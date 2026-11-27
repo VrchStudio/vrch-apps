@@ -4,7 +4,7 @@
   "data_schema_version": 1,
   "id": "a591c7e9-3faa-4207-a1c2-2a88153ed934",
   "name": "Shader Editor",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "roles": [
     "output"
   ],
@@ -78,7 +78,8 @@
         "channel": 8,
         "format": "image"
       }
-    ]
+    ],
+    "visual_library": "readwrite"
   },
   "guide": {
     "description": "Choose a visual, adjust its parameters and save your own variations. Your workspace is saved automatically.",
@@ -89,7 +90,7 @@
       },
       {
         "title": "Keep your work",
-        "text": "Draft saved means your current workspace will reopen here. Save Visual adds a reusable version to My Visuals; Update Visual replaces that saved version. If a save is not confirmed, keep the App open and use Check Save."
+        "text": "Draft saved means your current workspace will reopen here. Your works from My Visuals are in My Library: Update Visual saves a new version of your own work there, and Save Visual saves your copy of any other. Other visuals save in this App. If a save is not confirmed, keep the App open and use Check Save."
       },
       {
         "title": "Sources and tracking",

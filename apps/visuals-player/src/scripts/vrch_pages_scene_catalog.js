@@ -25,6 +25,7 @@
   function entryKey(entry) {
     if (!entry) return '';
     const hash = entry.scene_ref && entry.scene_ref.content_hash || '';
+    if (entry.visual_id) return 'visual:' + entry.visual_id;
     if (entry.user_preset_id) return 'preset:' + entry.user_preset_id;
     if (entry.ephemeral) return 'candidate:' + hash;
     const sceneId = entry.scene_ref && entry.scene_ref.scene_id || '';
@@ -163,7 +164,7 @@
 
     setUserPresets(items) {
       if (!this.catalog) this.catalog = { catalog_version: 'local', schema_version: 1, entries: [] };
-      this.catalog.entries = this.catalog.entries.filter((entry) => entry.user_saved !== true);
+      this.catalog.entries = this.catalog.entries.filter((entry) => entry.user_saved !== true || entry.visual_id);
       (Array.isArray(items) ? items : []).forEach((item) => {
         const record = item && item.record;
         const definition = item && item.definition;
@@ -190,6 +191,32 @@
       this.renderAll();
       this._emit('loaded', this.list());
       return this.list({ pickerOnly: true });
+    }
+
+    async visualEntry(work, row) {
+      const hash = await Contract.sha256Ref(work.definition);
+      if (work.visual_id !== row.visual_id || hash !== work.instance.scene_ref.content_hash ||
+          work.package_digest !== row.package_digest) throw new Error('The selected visual has changed.');
+      const trusted = this.catalog.entries.some(entry => !entry.visual_id && entry.trusted === true &&
+        entry.scene_ref.content_hash === hash);
+      Contract.validateDefinition(work.definition, {trusted});
+      const instance = Contract.normalizeInstance(work.definition, work.instance, {trusted});
+      return {definition: work.definition, entry: {
+        visual_id: row.visual_id, package_digest: row.package_digest, display_name: row.title,
+        scene_ref: instance.scene_ref, default_instance: instance, updated_at: row.updated_at,
+        thumbnail_ref: row.thumbnail || '', local: true, user_saved: true, picker_visible: true, trusted
+      }};
+    }
+
+    setVisualEntries(items, replace = true) {
+      const ids = new Set(items.map(item => item.entry.visual_id));
+      this.catalog.entries = this.catalog.entries.filter(entry => !entry.visual_id || (!replace && !ids.has(entry.visual_id)));
+      for (const { entry, definition } of items) {
+        this.definitions.set(entry.scene_ref.content_hash, clone(definition));
+        this.catalog.entries.push(clone(entry));
+      }
+      this.renderAll();
+      this._emit('loaded', this.list());
     }
 
     async hydrateUserPresets(store) {

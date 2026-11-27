@@ -1,5 +1,12 @@
 # Shader Editor
 
+## 0.3.0
+
+- Open your works from My Visuals under My Library, each by itself even when two use the same visual.
+- Update Visual saves a new version of your own work in My Visuals; Save Visual on any other work there saves your copy.
+- A large output or second screen shows the exact version of the work you are editing.
+- Without My Visuals access, the App keeps its own saved visuals as before.
+
 ## 0.2.3
 
 - Every visual has a new preview, drawn the same way as in Visuals Player; none shows a person.

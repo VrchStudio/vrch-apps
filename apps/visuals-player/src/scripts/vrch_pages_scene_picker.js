@@ -638,7 +638,7 @@
         event.stopPropagation();
         this._toggleFavorite(hash, titleText);
       });
-      const deletable = options.deletable === true && item.entry.user_saved === true && typeof this.options.onDelete === 'function';
+      const deletable = options.deletable === true && !item.entry.visual_id && item.entry.user_saved === true && typeof this.options.onDelete === 'function';
       const deleteButton = document.createElement('button');
       if (deletable) {
         deleteButton.type = 'button';
@@ -727,7 +727,7 @@
 
     async _delete(item) {
       const generation = this.openGeneration;
-      if (this.busy || !item || item.entry.user_saved !== true || typeof this.options.onDelete !== 'function') return;
+      if (this.busy || !item || item.entry.visual_id || item.entry.user_saved !== true || typeof this.options.onDelete !== 'function') return;
       const hash = this._key(item);
       const title = this._title(item);
       const confirmed = root.VrchDialogs && typeof root.VrchDialogs.confirm === 'function'

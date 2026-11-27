@@ -22,6 +22,8 @@
   document.body.dataset.role = isOutput ? 'output' : 'control';
 
   let catalog = null, selection = null, labels = new Map(), playlistKeys = [];
+  // Works in My Visuals, read only: knob and Visual Settings changes to one stay in this App for this session.
+  let library = null;
   // Image visuals show the built-in pictures (as Image Viewer shows its images) until the camera is on.
   let pictures = [], pictureIndex = 0;
   let active = null, instances = {}, mirror = null, music = null, picker = null, popover = null;
@@ -39,7 +41,7 @@
   // Read-only diagnostics for tests and measurements.
   const stats = window.__visualsPlayer = {role: isOutput ? 'output' : 'control', startedAt: performance.now(), firstFrameAt: null,
     firstInteraction: null, changes: [], controls: [], received: [], camera: null, analysis: null, fps: null, degrades: [], simd: VisualsCamera.simd,
-    state: () => ({scene_id: active?.definition.scene_id || null, key: active?.key || null, title: active ? title(active) : null, open, page, speeds: {...speeds}, auto,
+    state: () => ({scene_id: active?.definition.scene_id || null, key: active?.key || null, title: active ? title(active) : null, visual: visualRef(active), open, page, speeds: {...speeds}, auto,
       picture: active && needsPicture(active.definition) && !camera?.on ? pictures[pictureIndex]?.id || null : null,
       camera: cameraState, music: music?.state() || null, playlist: playlistKeys.map(key => catalog.get(key)?.definition.scene_id),
       params: clone(active?.instance.params || {}), audio: clone(active?.instance.modulation_master?.audio || null),
@@ -48,7 +50,10 @@
     signal: id => mirror?.effect?.signalBus?.values[id] ?? null};
 
   function fatal(text) { $('message').textContent = text; $('message').hidden = !text; }
-  function title(visual) { return labels.get(visual.definition.scene_id) || visual.entry.display_name || visual.definition.title; }
+  function title(visual) { return (!visual.entry.visual_id && labels.get(visual.definition.scene_id)) || visual.entry.display_name || visual.definition.title; }
+  function visualRef(visual) { return visual?.entry.visual_id ? {visual_id: visual.entry.visual_id, package_digest: visual.entry.package_digest} : null; }
+  // Changes are kept per packaged visual, and per work and digest for My Visuals: two works on one shader stay apart.
+  function tuning(item) { return item.entry.visual_id ? 'visual:' + item.entry.visual_id + '/' + item.entry.package_digest : item.definition.scene_id; }
   function send(data) { if (!isOutput && relay) try { relay.send(data); } catch (_) {} }
 
   // ---- Visuals -------------------------------------------------------------------------------------------------
@@ -86,7 +91,7 @@
     });
   }
   function instanceFor(key, item) {
-    const base = catalog.makeInstance(key), kept = instances[item.definition.scene_id];
+    const base = catalog.makeInstance(key), kept = instances[tuning(item)];
     if (!kept) return base;
     try { return contract.normalizeInstance(item.definition, {...base, params: {...base.params, ...kept.params}, modulation_master: kept.modulation_master || base.modulation_master}, {trusted: item.entry.trusted === true}); }
     catch (_) { return base; }
@@ -150,7 +155,7 @@
     try { active.instance = contract.normalizeInstance(active.definition, next, {trusted: active.entry.trusted === true}); }
     catch (_) { return false; }
     mirror.patchInstance(active.instance);
-    instances[active.definition.scene_id] = {params: clone(active.instance.params), modulation_master: clone(active.instance.modulation_master)};
+    instances[tuning(active)] = {params: clone(active.instance.params), modulation_master: clone(active.instance.modulation_master)};
     monitorDirty = true; publish(); remember();
     return true;
   }
@@ -597,7 +602,10 @@
   }
   function shareNow() {
     if (!active || !music) return;
-    const look = lookOf(active.definition.scene_id);
+    // A work from My Visuals is shared as the packaged visual with the same definition, when there is one.
+    const shown = active.entry.visual_id ? catalog.list().find(item => !item.entry.visual_id && item.entry.scene_ref.content_hash === active.instance.scene_ref.content_hash) : active;
+    if (!shown) return;
+    const look = lookOf(shown.definition.scene_id);
     if (!LOOK.test(look)) return;
     const values = encoders().parameters.slice(0, 4).map(parameter => String(Number(Number(parameter.value).toFixed(3))));
     const state = 'v1.' + (music.source === 'input' ? 'in' : 'm' + music.index) + values.map(value => '_' + value).join('');
@@ -609,7 +617,7 @@
   function readShare() {
     const share = VrchApp.context?.share;
     if (isOutput || !share || typeof share !== 'object') return null;
-    const item = typeof share.look === 'string' && LOOK.test(share.look) ? catalog.list().find(entry => lookOf(entry.definition.scene_id) === share.look) || null : null;
+    const item = typeof share.look === 'string' && LOOK.test(share.look) ? catalog.list().find(entry => !entry.entry.visual_id && lookOf(entry.definition.scene_id) === share.look) || null : null;
     const match = typeof share.state === 'string' ? SHARE_STATE.exec(share.state) : null;
     return {item, track: match?.[1] != null ? Number(match[1]) : null, input: !!match?.[2], values: match && item ? match[3].split('_').slice(1).map(Number) : []};
   }
@@ -632,8 +640,10 @@
     shareSoon();
   }
   async function save() {
-    const value = {schema_version: 1, scene: active?.definition.scene_id || null, source: music?.source || 'music', track: music?.index || 0, auto,
-      camera: cameraWanted, picture: pictureIndex, instances, picker: pickerStore};
+    // A work from My Visuals reopens at its current version, without this session's changes.
+    const kept = Object.fromEntries(Object.entries(instances).filter(([key]) => !key.startsWith('visual:')));
+    const value = {schema_version: 1, scene: active && !active.entry.visual_id ? active.definition.scene_id : null, visual: visualRef(active)?.visual_id || null,
+      source: music?.source || 'music', track: music?.index || 0, auto, camera: cameraWanted, picture: pictureIndex, instances: kept, picker: pickerStore};
     try {
       const result = await VrchApp.data.set(DATA_KEY, value, {expectedVersion: saved.version});
       saved.version = result?.version ?? saved.version + 1;
@@ -658,18 +668,34 @@
     if (isOutput || !relay || !active) return;
     lastTimingRelay = performance.now();
     try { relay.publish({scene_id: active.definition.scene_id, params: active.instance.params, modulation_master: active.instance.modulation_master,
+      content_hash: active.instance.scene_ref.content_hash, ...visualRef(active),
       shown_at: performance.timeOrigin + lastChangeAt, camera: !!camera?.on, picture: pictureIndex, music: music?.timing() || null}); } catch (_) {}
+  }
+  // The output reads a work from My Visuals at the digest the controlling instance plays (its access covers the
+  // output). If the work cannot be read, a packaged visual with the same definition stands in.
+  let unreadable = null;
+  const followKey = state => state.visual_id + '/' + state.package_digest;
+  function openFollowed(state) {
+    const key = followKey(state);
+    library.open({visual_id: state.visual_id, package_digest: state.package_digest}).then(item => library.put(item), () => { unreadable = key; })
+      .then(() => { if (followed && followKey(followed) === key) follow(followed); });
   }
   function follow(state) {
     followed = state;
     if (!catalog || !state || typeof state.scene_id !== 'string') return;
     if (state.music) music.follow(state.music);
     if (Number.isInteger(state.picture) && state.picture >= 0 && state.picture < pictures.length) pictureIndex = state.picture;
-    const item = catalog.getBySceneId(state.scene_id);
+    let item = catalog.getBySceneId(state.scene_id);
+    if (typeof state.visual_id === 'string') {
+      item = catalog.get('visual:' + state.visual_id);
+      if (item?.entry.package_digest !== state.package_digest) item = null;
+      if (!item && unreadable !== followKey(state) && !library.off) { openFollowed(state); return; }
+      item ||= catalog.list().find(entry => !entry.entry.visual_id && entry.entry.scene_ref.content_hash === state.content_hash) || null;
+    }
     if (!item) return;
     const key = catalog.itemKey(item);
-    instances[state.scene_id] = {params: state.params || {}, modulation_master: state.modulation_master};
-    if (active?.key !== key) {
+    instances[tuning(item)] = {params: state.params || {}, modulation_master: state.modulation_master};
+    if (active?.key !== key || active.entry.package_digest !== item.entry.package_digest) {
       present(key, 'follow');
       if (Number.isFinite(state.shown_at)) mirror.setSceneTime((performance.timeOrigin + performance.now() - state.shown_at) / 1000);
     } else {
@@ -750,7 +776,9 @@
     for (const [key, value] of Object.entries(features)) compact[key] = typeof value === 'number' ? Math.round(value * 1e4) / 1e4 : value && value.length ? Array.from(value, v => Math.round(v * 10) / 10) : value;
     send({type: 'audio', features: compact});
   }
-  document.addEventListener('visibilitychange', () => music?.pause(document.hidden));
+  document.addEventListener('visibilitychange', () => {
+    music?.pause(document.hidden);
+  });
   window.addEventListener('pagehide', () => { music?.dispose(); camera?.close(); picker?.destroy?.(); mirror?.dispose(); });
 
   // ---- Start ------------------------------------------------------------------------------------------------------
@@ -781,7 +809,8 @@
       // While the picture is on a second screen, a tapped visual plays there and the picker stays open (Done closes it);
       // the device keeps drawing its light preview underneath, so tracking and the second screen stay live.
       stayOpen: () => outputOn === true,
-      onOpen: () => { setOpen('visuals'); if (outputOn !== true) mirror.hide(); },
+      // My Visuals is listed when Visuals opens; the open picker redraws when the list arrives.
+      onOpen: () => { setOpen('visuals'); if (outputOn !== true) mirror.hide(); void library.refresh(() => { if (picker.isOpen()) picker.refresh(); }).catch(() => {}); },
       onClose: () => { if (open === 'visuals') setOpen(null); if (active && !mirror.effect) { applySources(); mirror.show(active.definition, active.instance, active.entry.trusted === true); } },
       onConfirm: async item => {
         auto = false;
@@ -819,6 +848,8 @@
       await catalogLoad;
       catalog = loading;
     } catch (_) { fatal('The visuals could not load.'); return; }
+    // My Visuals loads beside the packaged visuals; without the SDK API or the visitor's permission only they show.
+    library = new VisualsLibrary({sdk: VrchApp, catalog});
     // The shared Curated collection (and the visitor's own favourites and recents), limited to this package.
     const shared = clone(VrchSceneSelection), present_ = new Set(catalog.list().map(item => item.definition.scene_id));
     shared.collections = shared.collections.filter(collection => COLLECTIONS.includes(collection.id) || collection.id === 'library');
@@ -836,7 +867,9 @@
     const fromLink = readShare();
     if (fromLink) applyShare(fromLink);
     if (Number.isInteger(fromLink?.track) && music.tracks[fromLink.track]) music.setTrack(fromLink.track, 0, performance.now(), false);
-    const first = fromLink?.item && playable(catalog.itemKey(fromLink.item)) ? fromLink.item : restored.scene && catalog.getBySceneId(restored.scene);
+    let first = fromLink?.item && playable(catalog.itemKey(fromLink.item)) ? fromLink.item : restored.scene && catalog.getBySceneId(restored.scene);
+    // The last work played from My Visuals reopens at its current version, read by its ID alone.
+    if (!first && !fromLink?.item && typeof restored.visual === 'string' && !isOutput) first = await library.openId(restored.visual).catch(() => null);
     const firstKey = first && playable(catalog.itemKey(first)) ? catalog.itemKey(first) : playlistKeys.find(playable);
     if (!isOutput) {
       if (needsPicture(catalog.get(firstKey).definition)) await pictures[pictureIndex]?.loading;
