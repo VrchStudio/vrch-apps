@@ -5768,6 +5768,71 @@
           }
         ]
       }
+    },
+    "f2802ccb-7ba2-4397-86ba-7737f4c71eee": {
+      "slug": "note-deck",
+      "latest": "0.2.0",
+      "versions": {
+        "0.2.0": {
+          "version": "0.2.0",
+          "name": "Note Deck",
+          "tag": "note-deck-v0.2.0",
+          "sourceCommit": "0c1b870d5b740ebf19973895434bc3eb5c0d1a06",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/note-deck-v0.2.0",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/note-deck-v0.2.0/note-deck-0.2.0.vrchapp",
+          "size": 24275,
+          "sha256": "2c13145f988f8b15d5e83ae6eaa31e6aaeac6bf48d2f988b3b7c000a83457d58",
+          "packageDigest": "2c13145f988f8b15d5e83ae6eaa31e6aaeac6bf48d2f988b3b7c000a83457d58",
+          "revision": "10c57d720344668dad0e4fdb18d14d198f8a56746764f703330bc55b312a6a7f",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "Audition melodies and drums with Local sound in Playground, or choose a browser MIDI output."
+        }
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2U5ZTZlOCI+PHJlY3QgeD0iNiIgeT0iNiIgd2lkdGg9IjE1IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjI1IiB5PSI2IiB3aWR0aD0iMTUiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iNiIgeT0iMjUiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cmVjdCB4PSI0NCIgeT0iMjUiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cmVjdCB4PSIyNSIgeT0iNDQiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cmVjdCB4PSI0NCIgeT0iNDQiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgcng9IjMiLz48L2c+PGcgZmlsbD0iI2ZmMTQ5MyI+PHJlY3QgeD0iNDQiIHk9IjYiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cmVjdCB4PSIyNSIgeT0iMjUiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cmVjdCB4PSI2IiB5PSI0NCIgd2lkdGg9IjE1IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjwvZz48L3N2Zz4K",
+      "guide": {
+        "description": "Play melodies and drums, shape eight macros and trigger mapped actions over MIDI.",
+        "sections": [
+          {
+            "title": "Play",
+            "controls": [
+              {
+                "control": "Local sound",
+                "action": "Switch on to play melody and drum sounds through the device speaker or your browser. MIDI can play at the same time. Local sound starts off."
+              },
+              {
+                "control": "MIDI output",
+                "action": "Tap Connect USB to send to a connected computer or tablet. Use Other outputs for an external instrument. All messages use channel 1."
+              },
+              {
+                "control": "Melody / Drums",
+                "action": "Tap higher within a pad for a stronger note. Use the middle for a more even touch. Lift to release. Melody uses a 5×5 grid. Play the scale from left to right, starting at the bottom left and continuing on the row above. Tap the key and scale to change them. The 4×4 drum grid starts at C1 (36)."
+              }
+            ]
+          },
+          {
+            "title": "Map in Ableton Note",
+            "controls": [
+              {
+                "control": "E1–E4 · Macros",
+                "action": "Turn the four encoders. Tap Macros 1–4 or Macros 5–8 to switch groups (CC20–27). Bind each encoder to its target in Note."
+              },
+              {
+                "control": "K2 / K3 / K4",
+                "action": "Map Start / Stop, Capture and Undo in Note to CC100, CC101 and CC102. Press sends 127, release sends 0. The encoders and performance keys also work in Root & scale."
+              },
+              {
+                "control": "K1 · Menu",
+                "action": "Open the system menu."
+              }
+            ]
+          }
+        ]
+      }
     }
   }
 }
