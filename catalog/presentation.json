@@ -27,6 +27,12 @@
     }
   ],
   "apps": {
+    "note-deck": {
+      "category": "instruments"
+    },
+    "midi-monitor": {
+      "category": "tools"
+    },
     "visuals-player": {
       "category": "visuals",
       "featured": 1,

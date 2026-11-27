@@ -4,7 +4,7 @@
 
 ### Added
 
-- Audition Note Deck in Instruments and send or receive browser MIDI with MIDI Monitor in Tools.
+- Play Note Deck from Instruments and open MIDI Monitor from Tools in the Playground gallery.
 
 - Play melodies and drums in Note Deck through the device speaker, over USB MIDI, or both at once.
 
