@@ -5836,7 +5836,7 @@
     },
     "7302bb7a-d821-46c5-8c70-67ce366d0579": {
       "slug": "midi-monitor",
-      "latest": "0.2.0",
+      "latest": "0.2.1",
       "versions": {
         "0.2.0": {
           "version": "0.2.0",
@@ -5856,6 +5856,25 @@
             "updateApi": 1
           },
           "notes": "Choose a browser MIDI input and output in Playground to inspect notes and send test messages."
+        },
+        "0.2.1": {
+          "version": "0.2.1",
+          "name": "MIDI Monitor",
+          "tag": "midi-monitor-v0.2.1",
+          "sourceCommit": "b8db77f01a21c7a45ecdead4521ddffabac05f03",
+          "releaseUrl": "https://github.com/VrchStudio/vrch-apps/releases/tag/midi-monitor-v0.2.1",
+          "assetUrl": "https://github.com/VrchStudio/vrch-apps/releases/download/midi-monitor-v0.2.1/midi-monitor-0.2.1.vrchapp",
+          "size": 18955,
+          "sha256": "157d1722e8b68cafc8764d38bcb57400204bfee080e033998c953ddb9b63755f",
+          "packageDigest": "157d1722e8b68cafc8764d38bcb57400204bfee080e033998c953ddb9b63755f",
+          "revision": "5674a929d6587013dcee86350890b43f9c80b3fe544901f77770dd2fcddcbabb",
+          "requires": {
+            "schema": 1,
+            "sdk": 1,
+            "dataSchema": 1,
+            "updateApi": 1
+          },
+          "notes": "MIDI Monitor starts with Listen on and connects the instrument input and computer output automatically on supported devices."
         }
       },
       "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NiA5NiI+PGcgZmlsbD0iI2RlZGVkZSI+PHBhdGggZD0iTTEwIDU0aDEzdjI3SDEwem0yMS0xOGgxM3Y0NUgzMXptMjEtMjBoMTN2NjVINTJ6Ii8+PC9nPjxwYXRoIGZpbGw9IiNmZjE0OTMiIGQ9Ik03MyA0M2gxM3YzOEg3M3oiLz48L3N2Zz4K",
@@ -5867,7 +5886,7 @@
             "controls": [
               {
                 "control": "Input / Output",
-                "action": "Tap a port and choose the instrument, or USB from / to computer or tablet. In Playground, allow browser MIDI access and select an input or output port."
+                "action": "On device, a single USB instrument input and the connected computer output open automatically on supported hosts. Tap Input or Output to change ports. In Playground, choose a browser MIDI port."
               },
               {
                 "control": "Incoming notes",
@@ -5905,7 +5924,7 @@
               },
               {
                 "control": "K2 · Listen",
-                "action": "Toggle incoming MIDI sound on the selected audio output."
+                "action": "Incoming notes sound by default. Press to mute or listen again."
               },
               {
                 "control": "K3 · Send note",
